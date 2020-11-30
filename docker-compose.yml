@@ -1,0 +1,26 @@
+version: '3.7'
+
+services:
+  web:
+    build: .
+    command: python /code/manage.py runserver 0.0.0.0:8100
+    environment:
+      - DB_HOST=db
+    volumes:
+      - .:/code
+    ports:
+      - 8100:8100
+    depends_on:
+      - db
+  db:
+    image: postgres:12.5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - POSTGRES_DB=npo_rm_db
+      - POSTGRES_USER=npo_rm_user
+      - POSTGRES_PASSWORD=testpass123
+
+volumes:
+  postgres_data:
