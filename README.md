@@ -1,8 +1,10 @@
 # NPO Resource Manager
 
 ## Installation instructions
-For local deployment you can run it in 2 ways: in Docker and just local on your pc. 
-If you can deploy it in Docker, than that is the easier, since all dependencies (python, libraries and postgres database) are included in the Docker images. Only debugging and accessing the database is harder.
+For local deployment you can run it in 2 ways: 
+- in Docker or
+- local on your pc 
+The preferred way is to deploy it in Docker,since all dependencies (python, libraries and postgres database) are included in the Docker images. Only debugging and accessing the database is harder.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
