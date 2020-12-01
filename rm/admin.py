@@ -24,6 +24,6 @@ class ContractAdmin(admin.ModelAdmin):
     """
     Change the way the list of contracts looks
     """
-    list_display = ["nr", "description", "owner"]
+    list_display = ["contract_nr", "description", "contract_owner"]
 
 admin.site.register(Contract, ContractAdmin)
