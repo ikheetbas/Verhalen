@@ -14,6 +14,7 @@ Global steps (to be refined later)
 1) install Docker, see https://www.docker.com/products/docker-desktop
 2) install git, see https://git-scm.com/downloads
 3) checkout the code
+
     On the command line, go to the location where the project directory has to be
     placed, e.g. /python/django. Clone the repository which will create a subdirectory
     'npo-rm' in there. Type:
