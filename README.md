@@ -2,8 +2,9 @@
 
 ## Installation instructions
 For local deployment you can run it in 2 ways: 
-- in Docker or
-- local on your pc 
+- in Docker on your pc
+- local on your pc
+
 The preferred way is to deploy it in Docker,since all dependencies (python, libraries and postgres database) are included in the Docker images. Only debugging and accessing the database is harder.
 
 ### Installation in Docker on your desktop
