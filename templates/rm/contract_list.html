@@ -1,0 +1,20 @@
+{% extends '_base.html' %}
+
+{% block title %}Contracts{% endblock title %}
+
+{% block content %}
+  <table>
+      <tr>
+          <th>Contract nr</th>
+          <th>Beschrijving</th>
+          <th>Eigenaar</th>
+      </tr>
+      {% for contract in contract_list %}
+          <tr>
+              <td>{{  contract.nr }}</td>
+              <td>{{  contract.description }}</td>
+              <td>{{  contract.owner }}</td>
+          </tr>
+      {% endfor %}
+  </table>
+{% endblock content %}}
