@@ -2,7 +2,7 @@
 
 ## Installation instructions
 For local deployment you can run it in 2 ways: in Docker and just local on your pc. 
-If you can deploy it in Docker, than that is the easiests, since all dependencies (python, libraries and postgress database) are included in the Docker images. Only debugging and accessing the database is harder.
+If you can deploy it in Docker, than that is the easier, since all dependencies (python, libraries and postgres database) are included in the Docker images. Only debugging and accessing the database is harder.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
@@ -20,8 +20,8 @@ Global steps (to be refined later)
     ```
     docker-compose up --build 
     ```
-    This first time it will take a while since the base images for Python and Postgress have to be downloaded.
-    If all goes well it shoud end with something like:
+    This first time it will take a while since the base images for Python and Postgres have to be downloaded.
+    If all goes well it should end with something like:
     ```
     web_1  | [30/Nov/2020 16:46:36] "GET /admin/jsi18n/ HTTP/1.1" 200 3187
     web_1  | Watching for file changes with StatReloader
