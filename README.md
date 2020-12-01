@@ -13,11 +13,14 @@ Only debugging and accessing the database is harder.
 Global steps (to be refined later)
 1) install Docker, see https://www.docker.com/products/docker-desktop
 2) install git, see https://git-scm.com/downloads
-3) checkout this repo:
+3) checkout the code
+    On the command line, go to the location where the project directory has to be
+    placed, e.g. /python/django. Clone the repository which will create a subdirectory
+    'npo-rm' in there. Type:
     ```
     git clone https://github.com/EelcoA/npo-rm.git
     ```
-4) go into the dir:
+4) go into the newly created directory:
     ```
     cd npo-rm
     ```
