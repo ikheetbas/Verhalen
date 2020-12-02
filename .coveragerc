@@ -1,0 +1,7 @@
+[run]
+omit =
+    # omitting django's manage
+    manage.py
+    # omit not changed config files
+    config/asgi.py
+    config/wsgi.py

@@ -6,35 +6,35 @@ from django.db.utils import IntegrityError
 
 class ContractTest(TestCase):
 
+    def setUp(self):
+        self.interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                     status='TestStatus',
+                                                     filename='Text.xls')
+        self.conctract_1 = Contract.objects.create(contract_nr='NL-123',
+                                description='Test Contract',
+                                contract_owner='T. Ester',
+                                interface_call=self.interfaceCall,
+                                contract_name='Test contract naam')
+
     def test_homepage(self):
         response = self.client.get("")
         self.assertEqual(response.status_code, 200)
 
+    def test_contract(self):
+        expected = 'NL-123: Test contract naam'
+        self.assertEqual(self.conctract_1.__str__(),expected)
+
     def test_one_contract_on_page(self):
-        interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                     status='TestStatus',
-                                                     filename='Text.xls')
-        Contract.objects.create(contract_nr='NL-123',
-                                description='Test Contract',
-                                contract_owner='T. Ester',
-                                interface_call=interfaceCall)
         response = self.client.get('/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester')
 
     def test_two_contracts_on_page(self):
-        interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                     status='TestStatus',
-                                                     filename='Text.xls')
-        Contract.objects.create(contract_nr='NL-123',
-                                description='Test Contract',
-                                contract_owner='T. Ester',
-                                interface_call=interfaceCall)
         Contract.objects.create(contract_nr='NL-345',
                                 description='Test Contract 2',
                                 contract_owner='T. Ester',
-                                interface_call=interfaceCall)
+                                interface_call=self.interfaceCall)
         response = self.client.get('/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
