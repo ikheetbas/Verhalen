@@ -1,8 +1,94 @@
+import pathlib
+import logging
+
+from django.core.files.uploadedfile import UploadedFile
+from django.db.models.functions import Now
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.views.generic import ListView
+from openpyxl import load_workbook
 
-from rm.models import Contract
+from rm.forms import UploadFileForm
+from rm.models import Contract, InterfaceCall
 
+logger = logging.getLogger(__name__)
+
+def file_has_excel_extension(filename: str) -> [bool, str]:
+    extension = pathlib.Path(filename).suffix.upper()
+    if not extension in ['.XLS', '.XLSX']:
+        return [ False ,
+                 f"Bestand heeft geen excel extensie maar: '{extension}'"]
+    else:
+        return [ True, "OK"]
+
+def file_is_excel_file(file: UploadedFile) -> [bool, str]:
+    try:
+        load_workbook(filename=file)
+    except Exception as ex:
+        return [ False , f"Het openen van dit bestand als excel bestand"
+                         f" geeft een foutmelding: {ex.__str__()}"]
+    return [True, "OK"]
+
+
+def is_valid_header_row(row):
+    return ["Contract nr.", "Contract status"] in row
+
+
+def get_headers(sheet):
+    headers = []
+    for value in sheet.iter_rows(min_row=1,
+                                  max_row=1,
+                                  values_only=True):
+        headers.append(value)
+    return headers
+
+def process_excel_file(file):
+    workbook = load_workbook(filename=file)
+    sheet = workbook.active
+    headers = get_headers(sheet)
+    if is_valid_header_row(sheet[1]):
+        raise Exception(f"File {file.name} has no (valid) header row")
+
+
+def handle_uploaded_file(file):
+    has_excel_extension, msg = file_has_excel_extension(file.name)
+    if not has_excel_extension:
+        return [False, msg]
+
+    is_excel, message = file_is_excel_file(file)
+    if not is_excel:
+        raise Exception(message)
+    
+    # register file in InterfaceCall
+    InterfaceCall.objects.create(filename=file.name,
+                                 status='New',
+                                 date_time_creation=Now(),
+                                 type="FILE-UPLOAD")
+
+    process_excel_file(file)
+
+
+def upload_file(request):
+    print('in upload_file')
+    if request.method == 'POST':
+        print('in upload_file.. POST')
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            print('in upload_file.. form is valid')
+            try:
+                file = request.FILES['file']
+                logger.warning(f"Type of file {type(file)}")
+                handle_uploaded_file(file)
+            except Exception as ex:
+                form.add_error("file", ex.__str__())
+                return render(request, 'rm/upload.html', {'form': form})
+            return HttpResponseRedirect('/rm/')
+        else:
+            print('in upload_file.. form not valid')
+    else:
+        print('in upload_file.. <>POST')
+        form = UploadFileForm()
+    return render(request, 'rm/upload.html', {'form': form})
 
 class ContractListView(ListView):
     model = Contract

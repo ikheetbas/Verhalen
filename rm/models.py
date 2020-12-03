@@ -8,7 +8,8 @@ class InterfaceCall(models.Model):
     """
     date_time_creation = models.DateTimeField(auto_now=False)
     filename = models.CharField(max_length=150, blank=True)
-    status = models.CharField(max_length=10)
+    status = models.CharField(max_length=15)
+    type = models.CharField(max_length=15)
 
 class ReceivedData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
