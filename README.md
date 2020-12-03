@@ -12,6 +12,9 @@ Only debugging and accessing the database is harder.
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
 1) install Docker, see https://www.docker.com/products/docker-desktop
+
+    And make sure that docker is running!
+
 2) install git, see https://git-scm.com/downloads
 3) checkout the code
 
@@ -53,7 +56,7 @@ Global steps (to be refined later)
 
 7) Create the admin user
     ```
-    docker-compose exec weeb python manage.py createsuperuser
+    docker-compose exec web python manage.py createsuperuser
     ```
     Fill in: npo-rm-admin with password testpass123, or something else ;-)
 

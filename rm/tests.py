@@ -5,7 +5,7 @@ from django.test import TestCase
 from .models import Contract, InterfaceCall
 from django.db.utils import IntegrityError
 
-from .views import file_is_excel_file, file_has_excel_extension
+from .views import file_is_excel_file, file_has_excel_extension, is_valid_header_row
 
 
 class ContractTest(TestCase):
@@ -55,7 +55,9 @@ class ContractTest(TestCase):
                        "violates not-null constraint"
             self.assertTrue(expected in exception.__str__())
 
-## Excel file extension
+class ExcelTests(TestCase):
+
+    ## Excel file extension
 
     def test_not_an_excel_file_extension(self):
         filename = 'test.txt'
@@ -91,3 +93,16 @@ class ContractTest(TestCase):
         is_excel, msg = file_is_excel_file(file)
         self.assertTrue(is_excel, msg)
 
+## Test valid headers
+
+    def test_valid_header_row_exact(self):
+        self.assertTrue(is_valid_header_row(headers=['x', 'y', 'z'],
+                                            required_headers=['x', 'z']))
+
+    def test_valid_header_row_case_sensitive(self):
+        self.assertTrue(is_valid_header_row(headers=['X', 'y', 'z'],
+                                            required_headers=['x', 'z']))
+
+    def test_invalid_header_row(self):
+        self.assertFalse(is_valid_header_row(headers=['a', 'b', 'z'],
+                                             required_headers=['x', 'z']))

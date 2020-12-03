@@ -10,6 +10,7 @@ class InterfaceCall(models.Model):
     filename = models.CharField(max_length=150, blank=True)
     status = models.CharField(max_length=15)
     type = models.CharField(max_length=15)
+    message = models.TextField(max_length=250, blank=True)
 
 class ReceivedData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
@@ -91,6 +92,7 @@ class Contract(models.Model):
     contact_person = models.CharField("Contactpersoon", max_length=50, blank=True)
     contact_person_email = models.CharField("Contactpersoon email", max_length=50, blank=True)
     contact_person_phone_nr = models.CharField("Contactpersoon telnr", max_length=20, blank=True)
+    contact_person_name = models.CharField("Contactpersoon naam", max_length=50, blank=True)
 
     manufacturer = models.CharField("Fabrikant", max_length=50, blank=True)
     manufacturer_kvk_nr = models.CharField("Fabrikant KvK nr", max_length=50, blank=True)
@@ -98,6 +100,7 @@ class Contract(models.Model):
     manufacturer_website = models.CharField("Fabrikant Website", max_length=50, blank=True)
 
     contracted_value = models.DecimalField("Gecontracteerde waarde", max_digits=10, decimal_places=2, null=True, blank=True)
+
     service_level_manager = models.CharField(max_length=50, blank=True)
     service_level_manager_email = models.CharField(max_length=50, blank=True)
     service_level_manager_phone_nr = models.CharField(max_length=20, blank=True)
@@ -105,8 +108,12 @@ class Contract(models.Model):
     service_level_manager_2_email = models.CharField(max_length=50, blank=True)
     service_level_manager_2_phone_nr = models.CharField(max_length=20, blank=True)
 
-    type = models.CharField(max_length=20, blank=True)
+    type = models.CharField("Soort Contract", max_length=50, blank=True)
+    start_date = models.DateField("Startdatum", null=True, blank=True)
     last_end_date = models.DateField("Uiterste einddatum", null=True, blank=True)
+    original_end_date = models.DateField("Oorsponkelijke einddatum", null=True, blank=True)
+    notice_period = models.CharField("Opzegtermijn", max_length=50, blank=True)
+    notice_period_available = models.CharField("Opzegtermijn aanwezig", max_length=50, blank=True)
 
     interface_call = models.ForeignKey(InterfaceCall,
                                        on_delete=models.CASCADE,
