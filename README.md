@@ -64,21 +64,49 @@ Global steps (to be refined later)
     - http://localhost:8100
     - http://localhost:8100/admin   -> log in with the user you created 
 
-9) From now on you can start and stop the application with:
-    ```
-    docker-compose up         # starts the application 
-    docker-compose up -d      # starts the application in the background
-    docker-compose up --build # rebuilds and starts the application
-    docker-compose down       # shuts down the application
-    docker-compose logs -f    # follow the logging
-    ```
-10) Database location
+9) Stop the docker images with the application and database:
+    
+    By pressing CTRL+C in the window where you started the images.
+
+## Start and stop the application
+From now on you can start and stop the application with:
+```
+docker-compose up         # starts the application with log in foreground
+docker-compose up -d      # starts the application in the background
+docker-compose up --build # rebuilds and starts the application
+docker-compose down       # shuts down the application
+docker-compose logs -f    # follow the logging
+```
+ 
+## Database location
    
-   The database is placed local on your pc. The location depends on the
-   installation of Docker, but it is something like:
-   ```
-   var/lib/docker/volumes/npo-rm_postgres_data
-   ```
+The database is placed local on your pc. The location depends on the
+installation of Docker, but it is something like:
+```
+var/lib/docker/volumes/npo-rm_postgres_data
+```
+
+## Upgrade the application
+
+Update the sources. Go to the npo-rm directory on the command line and type:
+```
+git pull
+```
+
+Start the application:
+```
+docker-compose up
+```
+
+Go to a new commandline window in the npo-rm directory and type:
+```
+docker-compose exec web python manage.py migrate
+```
+This updates the database with the latest structure changes
+
+
+
+
 #### Author
 - Eelco Aartsen
 - eelco@aesset.nl
