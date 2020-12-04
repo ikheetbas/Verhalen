@@ -11,9 +11,20 @@ Only debugging and accessing the database is harder.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
-1) install Docker, see https://www.docker.com/products/docker-desktop
+1) install Docker, see https://www.docker.com/products/docker-desktop. 
 
-    And make sure that docker is running!
+    After installation:
+
+    1.1 make sure that you have a 'docker' group and that your user account 
+    has been added to it. If not, creat the group and add your user. On linux:
+    ```
+    sudo groupadd docker
+    sudo gpasswd -a ${USER} docker
+    ```
+    For mac, see here how to setup users and groups: 
+    https://support.apple.com/guide/mac-help/set-up-other-users-on-your-mac-mtusr001/mac
+    
+    1.2 and (re)start docker
 
 2) install git, see https://git-scm.com/downloads
 3) checkout the code
@@ -69,7 +80,8 @@ Global steps (to be refined later)
     By pressing CTRL+C in the window where you started the images.
 
 ## Start and stop the application
-From now on you can start and stop the application with:
+From now on you can start and stop the application with the following 
+commands executed in the npo-rm/ directory: 
 ```
 docker-compose up         # starts the application with log in foreground
 docker-compose up -d      # starts the application in the background
