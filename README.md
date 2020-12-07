@@ -72,7 +72,7 @@ Global steps (to be refined later)
     Fill in: npo-rm-admin with password testpass123, or something else ;-)
 
 8) check the app on:
-    - http://localhost:8100
+    - http://localhost:8100/rm
     - http://localhost:8100/admin   -> log in with the user you created 
 
 9) Stop the docker images with the application and database:
