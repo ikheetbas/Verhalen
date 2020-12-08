@@ -90,6 +90,7 @@ def handle_negometrix_file(sheet: Worksheet,
     for value in sheet.iter_rows(min_row=1,
                                  min_col=1,
                                  values_only=True):
+        # TODO test on complete empty row and STOP!
         handle_negometrix_row(rownr, value, interfaceCall, field_positions)
         rownr+=1
 

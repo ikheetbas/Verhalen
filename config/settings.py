@@ -15,23 +15,24 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+ENVIRONMENT = os.environ.get('ENVIRONMENT', default='prod')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'bm5d)*t)bp95-q*gq85k3-e^=)r)+-8grp+&wu+d#^eji(enx9'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', default=False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'whitenoise.runserver_nostatic',   # disable Django’s static file handling and allow WhiteNoise to take over
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,10 +80,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 # defaults are for local use, as long as we have no environment props there
-db_name     = os.environ.get('POSTGRES_DB',       default='npo_rm_db')
-db_user     = os.environ.get('POSTGRES_USER',     default='npo_rm_user')
-db_password = os.environ.get('POSTGRES_PASSWORD', default='testpass123')
-db_host     = os.environ.get('DB_HOST',           default='localhost')
+db_name = os.environ.get('POSTGRES_DB')
+db_user = os.environ.get('POSTGRES_USER')
+db_password = os.environ.get('POSTGRES_PASSWORD')
+db_host = os.environ.get('DB_HOST')
 
 DATABASES = {
     'default': {
@@ -123,6 +125,15 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder"   # then in /<app>/static/
 ]
 
+# WhiteNoise comes with a storage backend which automatically takes care of
+# compressing your files and creating unique names for each version so they
+# can safely be cached forever. To use it, just add this to your settings.py:
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# If you want to apply compression but don’t want the caching behaviour then
+# you can use:
+#
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesSto
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
@@ -172,3 +183,15 @@ LOGGING = {
         'level': 'DEBUG',
     },
 }
+
+# production
+if ENVIRONMENT == 'prod':
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 2592000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDER_PROTO', 'https')

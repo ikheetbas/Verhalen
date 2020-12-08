@@ -1,3 +1,7 @@
+# when your secret key contains a $, escape it with another $, so $ -> $$
+# otherwise you get a:
+# ERROR: Invalid interpolation format for "environment" option in service "web"
+
 version: '3.7'
 
 services:
@@ -6,6 +10,12 @@ services:
     command: python /code/manage.py runserver 0.0.0.0:8100
     environment:
       - DB_HOST=db
+      - SECRET_KEY=bm5d)*t)bp95-q*gq85k3-e^=)r)+-8grp+&wu+d#^eji(enx9
+      - DEBUG=True
+      - ENVIRONMENT=dev-docker
+      - POSTGRES_DB=npo_rm_db
+      - POSTGRES_USER=npo_rm_user
+      - POSTGRES_PASSWORD=testpass123
     volumes:
       - .:/code
     ports:
