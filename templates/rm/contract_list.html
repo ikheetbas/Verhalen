@@ -13,15 +13,23 @@
     <thead class="thead-dark ">
     <tr>
         <th>Contract nr</th>
-        <th>Beschrijving</th>
+        <th>Status</th>
+        <th>Contract naam</th>
+        <th>Omschrijving</th>
+        <th>Categorie</th>
         <th>Eigenaar</th>
+        <th>Eigenaar email</th>
     </tr>
     </thead>
     {% for contract in contract_list %}
     <tr>
         <td>{{  contract.contract_nr }}</td>
+        <td>{{  contract.contract_status }}</td>
+        <td>{{  contract.contract_name }}</td>
         <td>{{  contract.description }}</td>
+        <td>{{  contract.category }}</td>
         <td>{{  contract.contract_owner }}</td>
+        <td>{{  contract.contract_owner_email }}</td>
     </tr>
     {% endfor %}
 </table>
