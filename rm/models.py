@@ -17,6 +17,8 @@ class ReceivedData(models.Model):
                                        on_delete=models.CASCADE,
                                        related_name='received_data')
     seq_nr = models.IntegerField()
+    status = models.CharField(max_length=20, blank=True)
+    message = models.CharField(max_length=250, blank=True, null=True)
     field_01 = models.CharField(max_length=250, blank=True)
     field_02 = models.CharField(max_length=250, blank=True)
     field_03 = models.CharField(max_length=250, blank=True)

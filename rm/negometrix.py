@@ -43,20 +43,22 @@ defined_headers = dict(
 def register_contract(rownr: int,
                       row_value: Tuple[str],
                       interfaceCall: InterfaceCall,
-                      field_positions: Dict[str, int]):
+                      field_positions: Dict[str, int]) -> str:
 
-    if rownr > 1:
-        contract = Contract(interface_call=interfaceCall,
-                            seq_nr=rownr)
+    if rownr == 1:
+        return 'Skipped header row'
 
-        for field in defined_headers:
-            attr = getattr(contract, field)
-            if isinstance(attr, str):
-                setattr(contract, field, "")
+    contract = Contract(interface_call=interfaceCall,
+                        seq_nr=rownr)
 
-        for field in field_positions:
-            position = field_positions[field]
-            value = row_value[position]
-            setattr(contract, field, value)
+    # for field in defined_headers:
+    #     attr = getattr(contract, field)
+    #     if isinstance(attr, str):
+    #         setattr(contract, field, "")
 
-        contract.save()
+    for field in field_positions:
+        position = field_positions[field]
+        value = row_value[position]
+        setattr(contract, field, value)
+
+    contract.save()

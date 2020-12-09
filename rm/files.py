@@ -7,6 +7,7 @@ from django.db.models.functions import Now
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+from rm.constants import ERROR, OK, NEW
 from rm.models import InterfaceCall, ReceivedData
 from rm.negometrix import required_headers, defined_headers, register_contract
 
@@ -106,10 +107,11 @@ def replace_none_with_blank_and_make_50_long(row_value):
 
 def register_in_recevied_data(rownr: int,
                               row_value: Tuple[str],
-                              interfaceCall: InterfaceCall):
+                              interfaceCall: InterfaceCall) -> ReceivedData:
     values = replace_none_with_blank_and_make_50_long(row_value)
-    ReceivedData.objects.create(interface_call=interfaceCall,
+    receivedData = ReceivedData.objects.create(interface_call=interfaceCall,
                                 seq_nr=rownr,
+                                status='NEW',
                                 field_01=values[0],
                                 field_02=values[1],
                                 field_03=values[2],
@@ -161,6 +163,7 @@ def register_in_recevied_data(rownr: int,
                                 field_49=values[48],
                                 field_50=values[49],
                                 )
+    return receivedData
 
 
 
@@ -170,8 +173,17 @@ def handle_negometrix_row(rownr: int,
                           field_positions: Dict[str, int]):
     logger.debug(f"register ReceivedData {rownr} - {row_value}")
 
-    register_in_recevied_data(rownr, row_value, interfaceCall)
-    register_contract(rownr, row_value, interfaceCall, field_positions)
+    receivedData = register_in_recevied_data(rownr, row_value, interfaceCall)
+    try:
+        register_contract(rownr, row_value, interfaceCall, field_positions)
+    except Exception as ex:
+        receivedData.status = ERROR
+        receivedData.message = str(ex)
+    else:
+        receivedData.status = OK
+    receivedData.save()
+
+
 
 
 class InterfaceFile(object):
@@ -182,7 +194,7 @@ class InterfaceFile(object):
     def process(self):
         # register file in InterfaceCall
         interfaceCall = InterfaceCall.objects.create(filename=self.file.name,
-                                                     status='New',
+                                                     status=NEW,
                                                      date_time_creation=Now(),
                                                      type="FILE-UPLOAD")
         try:
@@ -195,14 +207,14 @@ class InterfaceFile(object):
                 raise Exception(message)
 
             handle_uploaded_excel_file(self.file, interfaceCall)
-            interfaceCall.status = 'Ready'
+            interfaceCall.status = OK
         except Exception as ex:
-            interfaceCall.status = 'Error'
+            interfaceCall.status = ERROR
             interfaceCall.message = f'Reason: {ex.__str__()}'
 
         interfaceCall.save()
 
-        if  not interfaceCall.status == "Ready":
+        if  not interfaceCall.status == OK:
             raise Exception(interfaceCall.message)
 
 class NegometrixFile(InterfaceFile):
