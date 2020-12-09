@@ -23,7 +23,7 @@ class ContractTest(TestCase):
                                                     contract_name='Test contract naam')
 
     def test_homepage(self):
-        response = self.client.get("/rm/")
+        response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
     def test_contract(self):
@@ -31,7 +31,7 @@ class ContractTest(TestCase):
         self.assertEqual(self.conctract_1.__str__(),expected)
 
     def test_one_contract_on_page(self):
-        response = self.client.get('/rm/')
+        response = self.client.get('/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester')
@@ -42,7 +42,7 @@ class ContractTest(TestCase):
                                 description='Test Contract 2',
                                 contract_owner='T. Ester',
                                 interface_call=self.interfaceCall)
-        response = self.client.get('/rm/')
+        response = self.client.get('/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester', count=2)
