@@ -12,6 +12,7 @@ class InterfaceCall(models.Model):
     type = models.CharField(max_length=15)
     message = models.TextField(max_length=250, blank=True)
 
+
 class ReceivedData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
                                        on_delete=models.CASCADE,
@@ -122,4 +123,4 @@ class Contract(models.Model):
                                        related_name='contracten')
 
     def __str__(self):
-        return str(self.contract_nr) + ": " + self.contract_name
+        return "Leeg" if not self.contract_nr else str(self.contract_nr) + ": " + self.contract_name

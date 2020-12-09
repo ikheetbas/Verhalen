@@ -1,5 +1,10 @@
 from django.contrib import admin
-from rm.models import Contract, InterfaceCall
+from rm.models import Contract, InterfaceCall, ReceivedData
+
+class ReceivedDataAdmin(admin.ModelAdmin):
+    list_display = ["interface_call", "seq_nr", "field_01", "field_02"]
+
+admin.site.register(ReceivedData, ReceivedDataAdmin)
 
 # -------------------------------------------------------------------
 # ADMIN Interface page with Contracts
@@ -7,11 +12,14 @@ from rm.models import Contract, InterfaceCall
 class ContractInline(admin.TabularInline):
     model = Contract
 
+class ReceivedDataInline(admin.TabularInline):
+    model = ReceivedData
+
 class InterfaceCallAdmin(admin.ModelAdmin):
     """
     Change the way the list of interface calls looks
     """
-    inlines = [ContractInline, ]
+    inlines = [ContractInline, ReceivedDataInline]
     list_display = ["date_time_creation", "status", "filename"]
 
 admin.site.register(InterfaceCall, InterfaceCallAdmin)

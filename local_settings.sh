@@ -7,7 +7,7 @@
 DEBUG=True
 export DEBUG
 
-# shellcheck disable=SC2125
+# ')' has been escaped by '\'
 SECRET_KEY=bm5d\)*t\)bp95-q*gq85k3-e^=\)r\)+-8grp+\&wu+d#^eji\(enx9
 export SECRET_KEY
 
