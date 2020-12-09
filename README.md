@@ -11,22 +11,23 @@ Only debugging and accessing the database is harder.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
-1) install Docker, see https://www.docker.com/products/docker-desktop. 
+1) install Docker, see <a href="https://www.docker.com/products/docker-desktop" target="_blank">docker.com</a>. 
 
     After installation:
 
     1.1 make sure that you have a 'docker' group and that your user account 
-    has been added to it. If not, creat the group and add your user. On linux:
+    has been added to it. If not, create the group and add your user. On linux:
     ```
     sudo groupadd docker
     sudo gpasswd -a ${USER} docker
     ```
     For mac, see here how to setup users and groups: 
-    https://support.apple.com/guide/mac-help/set-up-other-users-on-your-mac-mtusr001/mac
+    <a href="https://support.apple.com/guide/mac-help/set-up-other-users-on-your-mac-mtusr001/mac" 
+    target="_blank">support.apple.com</a>
     
     1.2 and (re)start docker
 
-2) install git, see https://git-scm.com/downloads
+2) install git, see <a href="https://git-scm.com/downloads" target="_blank">git-scm.com</a>
 3) checkout the code
 
     On the command line, go to the location where the project directory has to be
