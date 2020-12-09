@@ -157,7 +157,7 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# LOGGING 123
+# LOGGING 123456
 
 LOGGING = {
     'version': 1,
