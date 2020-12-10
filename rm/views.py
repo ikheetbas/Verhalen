@@ -11,7 +11,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from rm.forms import UploadFileForm
 from rm.models import Contract, InterfaceCall
-from rm.negometrix import required_headers
+from rm.negometrix import mandatory_headers
 
 from rm.files import create
 
