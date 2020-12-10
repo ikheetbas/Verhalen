@@ -28,6 +28,7 @@ Global steps (to be refined later)
     1.2 and (re)start docker
 
 2) install git, see <a href="https://git-scm.com/downloads" target="_blank">git-scm.com</a>
+   
 3) checkout the code
 
     On the command line, go to the location where the project directory has to be

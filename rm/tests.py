@@ -1,4 +1,3 @@
-from django.core.files import File
 from django.db.models.functions import Now
 from django.test import TestCase
 from openpyxl import Workbook, load_workbook
