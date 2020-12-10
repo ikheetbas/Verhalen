@@ -11,7 +11,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from rm.forms import UploadFileForm
 from rm.models import Contract, InterfaceCall
-from rm.negometrix import required_headers
+from rm.negometrix import mandatory_headers
 
 from rm.files import create
 
@@ -30,14 +30,14 @@ def upload_file(request):
                 interfaceFile.process()
             except Exception as ex:
                 form.add_error("file", ex.__str__())
-                return render(request, 'rm/upload.html', {'form': form})
-            return HttpResponseRedirect('/rm/')
+                return render(request, 'upload.html', {'form': form})
+            return HttpResponseRedirect('/')
     else:
         form = UploadFileForm()
-    return render(request, 'rm/upload.html', {'form': form})
+    return render(request, 'upload.html', {'form': form})
 
 
 class ContractListView(ListView):
     model = Contract
     context_object_name = 'contract_list'
-    template_name = 'rm/contract_list.html'
+    template_name = 'contract_list.html'

@@ -1,7 +1,6 @@
 from django.db import models
 
 
-
 class InterfaceCall(models.Model):
     """
     Call of interface (or file upload)
@@ -18,6 +17,8 @@ class ReceivedData(models.Model):
                                        on_delete=models.CASCADE,
                                        related_name='received_data')
     seq_nr = models.IntegerField()
+    status = models.CharField(max_length=20, blank=True)
+    message = models.CharField(max_length=250, blank=True, null=True)
     field_01 = models.CharField(max_length=250, blank=True)
     field_02 = models.CharField(max_length=250, blank=True)
     field_03 = models.CharField(max_length=250, blank=True)
@@ -102,7 +103,8 @@ class Contract(models.Model):
     manufacturer_address = models.CharField("Fabrikant Adres", max_length=250, blank=True, null=True)
     manufacturer_website = models.CharField("Fabrikant Website", max_length=50, blank=True, null=True)
 
-    contracted_value = models.DecimalField("Gecontracteerde waarde", max_digits=10, decimal_places=2, null=True, blank=True)
+    contracted_value = models.DecimalField("Gecontracteerde waarde", max_digits=10, decimal_places=2, null=True,
+                                           blank=True)
 
     service_level_manager = models.CharField(max_length=50, blank=True, null=True)
     service_level_manager_email = models.CharField(max_length=50, blank=True, null=True)

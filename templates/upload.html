@@ -3,7 +3,7 @@
 {% block title %}NPO-RM - File upload{% endblock title %}
 {% block content %}
 <br>
-<form action="/rm/upload/" method="post" enctype="multipart/form-data">
+<form action="/upload/" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form }}
     <input type="submit" value="Submit">
