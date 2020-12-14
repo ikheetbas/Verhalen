@@ -3,12 +3,13 @@ from django.test import TestCase
 from openpyxl import Workbook, load_workbook
 
 from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR
+from .interface_file_factory import interfaceFileFactory
 from .models import Contract, InterfaceCall
 from django.db.utils import IntegrityError
 
-from .files import file_is_excel_file, file_has_excel_extension, is_valid_header_row, handle_uploaded_excel_file, \
-    get_field_positions, get_mandatory_field_positions, get_headers
-from .negometrix import mandatory_fields_present, register_contract
+from .interface_file import file_is_excel_file, file_has_excel_extension, is_valid_header_row, \
+    get_mandatory_field_positions, get_headers_from_sheet, get_fields_with_their_position, mandatory_fields_present
+from .negometrix import register_contract
 
 
 class ContractTest(TestCase):
@@ -121,9 +122,9 @@ class ExcelTests(TestCase):
                                                          status='TestStatus',
                                                          filename='valid_excel_without_headers.xlsx')
             file = "rm/test/resources/valid_excel_without_headers.xlsx"
-            handle_uploaded_excel_file(file, interfaceCall)
+            interfaceFileFactory(file, interfaceCall)
         except Exception as ex:
-            self.assertTrue("header" in ex.__str__(),
+            self.assertTrue("File can not be recognized" in ex.__str__(),
                             f"We got another exception than expected, received: {ex.__str__()}")
         else:
             self.assertTrue(False, "No Exception, while expected because file has no headers")
@@ -138,7 +139,7 @@ class ExcelTests(TestCase):
             zomaarwat="something",
             header_x="Header x",
         )
-        field_positions = get_field_positions(available_headers,
+        field_positions = get_fields_with_their_position(available_headers,
                                               defined_headers)
 
         expected_field_opsitions = dict(
@@ -187,7 +188,7 @@ class ExcelTests(TestCase):
         file = open("rm/test/resources/test_get_headers.xlsx", "rb")
         workbook: Workbook = load_workbook(file)
         sheet = workbook.active
-        headers = get_headers(sheet)
+        headers = get_headers_from_sheet(sheet)
         expected = ("HEADER 1", "HEADER 2", None, "HEADER 4")
         self.assertEqual(headers, expected)
 
@@ -217,13 +218,14 @@ class ExcelTests(TestCase):
                                      )
 
         mandatory_field_positions = (1,2)
+        mandatory_fields = ('a_field', 'another_field')
 
         status, msg = register_contract(row_nr,
                                         values_row_4,
                                         interfaceCall,
                                         fields_with_position,
-                                        mandatory_field_positions
-                                        )
+                                        mandatory_field_positions,
+                                        mandatory_fields)
 
         expected_status = ERROR
 

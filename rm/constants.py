@@ -19,3 +19,4 @@ INTERFACE_TYPE_API = "API"
 #
 ERROR_MSG_FILE_DEFINITION_ERROR = "File definition error, fields have been declared " \
                                   "mandatory, but the corresponding header not!"
+ERROR_MSG_FILE_CAN_NOT_BE_RECOGNISED = "File can not be recognized"

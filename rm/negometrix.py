@@ -1,10 +1,12 @@
-from typing import List, Tuple, Dict
+import logging
+from typing import Tuple, Dict
 
 from rm.constants import SKIPPED, OK, ERROR
+from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
+    register_in_received_data, mandatory_fields_present
 from rm.models import InterfaceCall, Contract
 
-mandatory_headers = ('Contract nr.', 'Contract status')
-mandatory_fields = ('contract_nr', 'contract_status')
+logger = logging.getLogger(__name__)
 
 defined_headers = dict(
     database_nr="Database nr.",
@@ -42,30 +44,12 @@ defined_headers = dict(
 )
 
 
-def row_is_empty(row_values: Tuple[str]) -> bool:
-    return row_values.count(None) == len(row_values)
-
-
-def mandatory_fields_present(mandatory_field_positions: Tuple[int],
-                             row_values: Tuple[str]) -> bool:
-    """
-    Checks in the mandatory fields in the row have a value. If a mandatory field contains
-    a None or "" a False is returned.
-    """
-    for position in mandatory_field_positions:
-        value_to_be_checked = row_values[position]
-        if not value_to_be_checked:
-            return False
-        if row_values[position] == "":
-            return False
-    return True
-
-
 def register_contract(row_nr: int,
                       row_values: Tuple[str],
                       interfaceCall: InterfaceCall,
                       fields_with_position: Dict[str, int],
-                      mandatory_field_positions: Tuple[int]) -> Tuple[str, str]:
+                      mandatory_field_positions: Tuple[int],
+                      mandatory_fields: Tuple[str]) -> Tuple[str, str]:
     if row_nr == 1:
         return OK, 'Valid Header'
 
@@ -88,3 +72,44 @@ def register_contract(row_nr: int,
     contract.save()
 
     return OK, "Valid Contract"
+
+
+class NegometrixInterfaceFile(ExcelInterfaceFile):
+    mandatory_headers = ('Contract nr.', 'Contract status')
+    mandatory_fields = ('contract_nr', 'contract_status')
+
+    def __init__(self, file, interfaceCall: InterfaceCall):
+        super.__init__(file, interfaceCall)
+
+    def get_fields_with_their_position(self, available_headers: Tuple[str]) \
+            -> Dict[str, int]:
+        return get_fields_with_their_position(available_headers, defined_headers)
+
+    def handle_row(self,
+                   row_nr: int,
+                   row_values: Tuple[str],
+                   interfaceCall: InterfaceCall,
+                   field_positions: Dict[str, int],
+                   mandatory_field_positions: Tuple[int]):
+        logger.debug(f"register ReceivedData {row_nr} - {row_values}")
+
+        receivedData = register_in_received_data(row_nr,
+                                                 row_values,
+                                                 interfaceCall)
+        try:
+            status, message = register_contract(row_nr,
+                                                row_values,
+                                                interfaceCall,
+                                                field_positions,
+                                                mandatory_field_positions,
+                                                self.mandatory_fields)
+        except Exception as ex:
+            receivedData.status = ERROR
+            receivedData.message = str(ex)
+        else:
+            receivedData.status = status
+            receivedData.message = message
+        receivedData.save()
+
+    def get_mandatory_fields(self):
+        return self.mandatory_fields

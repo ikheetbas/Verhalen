@@ -1,15 +1,14 @@
 import logging
 import pathlib
+from abc import ABC, abstractmethod
 from typing import Tuple, Dict
 
 from django.core.files.uploadedfile import UploadedFile
-from django.db.models.functions import Now
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from rm.constants import ERROR, OK, NEW, ERROR_MSG_FILE_DEFINITION_ERROR, INTERFACE_TYPE_FILE
+from rm.constants import ERROR, OK, ERROR_MSG_FILE_DEFINITION_ERROR
 from rm.models import InterfaceCall, ReceivedData
-from rm.negometrix import mandatory_headers, defined_headers, register_contract, mandatory_fields
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ def file_is_excel_file(file: UploadedFile) -> [bool, str]:
     return [True, "OK"]
 
 
-def get_headers(sheet: Worksheet) -> Tuple[str]:
+def get_headers_from_sheet(sheet: Worksheet) -> Tuple[str]:
     """
     Returns a Tuple with the cell content of the 1st row, empty cells have a
     None value. Example: ("Contract nr.", "Contract Status", None, "Eigenaar")
@@ -43,6 +42,13 @@ def get_headers(sheet: Worksheet) -> Tuple[str]:
                                  values_only=True):
         headers.append(value)
     return headers[0]
+
+
+def get_headers_from_file(file) -> Tuple[str]:
+    workbook = load_workbook(filename=file)
+    sheet = workbook.active
+    available_headers = get_headers_from_sheet(sheet)
+    return available_headers
 
 
 def to_upper_none_proof(x):
@@ -56,41 +62,6 @@ def is_valid_header_row(headers: Tuple[str], required_headers: Tuple[str]) -> bo
     required_headers_upper = [x.upper() for x in required_headers]
     valid = all(item in headers_upper for item in required_headers_upper)
     return valid
-
-
-def get_field_positions(available_headers: Tuple[str],
-                        defined_headers: Dict[str, int]) \
-        -> Dict[str, int]:
-    """
-    Returns the positions, as defined in the defined_headers, of the available headers
-    as found in the file. First position has index: 0
-    """
-    field_positions = dict()
-
-    for fieldname in defined_headers:
-        defined_header = defined_headers[fieldname]
-        if defined_header in available_headers:
-            position = available_headers.index(defined_header)
-            field_positions[fieldname] = position
-
-    return field_positions
-
-
-def handle_uploaded_excel_file(excelfile, interfaceCall: InterfaceCall):
-    workbook = load_workbook(filename=excelfile)
-    sheet = workbook.active
-    available_headers = get_headers(sheet)
-    if not is_valid_header_row(available_headers, mandatory_headers):
-        if hasattr(excelfile, "name"):  # when testing, name attribute is NA
-            name = excelfile.name
-        else:
-            name = excelfile
-        raise Exception(f"File '{name}' has no (valid) header row, "
-                        f"missing one of {mandatory_headers}")
-
-    field_positions = get_field_positions(available_headers, defined_headers)
-
-    handle_negometrix_file(sheet, interfaceCall, field_positions)
 
 
 def get_mandatory_field_positions(mandatory_fields: Tuple[str],
@@ -110,26 +81,6 @@ def get_mandatory_field_positions(mandatory_fields: Tuple[str],
     return positions
 
 
-def handle_negometrix_file(sheet: Worksheet,
-                           interfaceCall: InterfaceCall,
-                           field_positions: Dict[str, int]):
-    mandatory_field_positions: Tuple[int] = \
-        get_mandatory_field_positions(mandatory_fields,
-                                      field_positions)
-
-    row_nr = 1
-    for row_values in sheet.iter_rows(min_row=1,
-                                      min_col=1,
-                                      values_only=True):
-        # TODO test on complete empty row and STOP!
-        handle_negometrix_row(row_nr,
-                              row_values,
-                              interfaceCall,
-                              field_positions,
-                              mandatory_field_positions)
-        row_nr += 1
-
-
 def replace_none_with_blank_and_make_50_long(row_value):
     values = []
     for cell_value in row_value:
@@ -139,12 +90,46 @@ def replace_none_with_blank_and_make_50_long(row_value):
     return values
 
 
-def register_in_recevied_data(rownr: int,
+def row_is_empty(row_values: Tuple[str]) -> bool:
+    return row_values.count(None) == len(row_values)
+
+def get_fields_with_their_position(available_headers, defined_headers):
+    """
+    Returns the positions, as defined in the defined_headers, of the available headers
+    as found in the file. First position has index: 0
+    """
+    field_positions = dict()
+
+    for fieldname in defined_headers:
+        defined_header = defined_headers[fieldname]
+        if defined_header in available_headers:
+            position = available_headers.index(defined_header)
+            field_positions[fieldname] = position
+
+    return field_positions
+
+
+def mandatory_fields_present(mandatory_field_positions: Tuple[int],
+                             row_values: Tuple[str]) -> bool:
+    """
+    Checks in the mandatory fields in the row have a value. If a mandatory field contains
+    a None or "" a False is returned.
+    """
+    for position in mandatory_field_positions:
+        value_to_be_checked = row_values[position]
+        if not value_to_be_checked:
+            return False
+        if row_values[position] == "":
+            return False
+    return True
+
+
+def register_in_received_data(row_nr: int,
                               row_value: Tuple[str],
                               interfaceCall: InterfaceCall) -> ReceivedData:
     values = replace_none_with_blank_and_make_50_long(row_value)
     receivedData = ReceivedData.objects.create(interface_call=interfaceCall,
-                                               seq_nr=rownr,
+                                               seq_nr=row_nr,
                                                status='NEW',
                                                field_01=values[0],
                                                field_02=values[1],
@@ -200,66 +185,89 @@ def register_in_recevied_data(rownr: int,
     return receivedData
 
 
-def handle_negometrix_row(row_nr: int,
-                          row_values: Tuple[str],
-                          interfaceCall: InterfaceCall,
-                          field_positions: Dict[str, int],
-                          mandatory_field_positions: Tuple[int]):
-    logger.debug(f"register ReceivedData {row_nr} - {row_values}")
+class ExcelInterfaceFile(ABC):
+    """
+    Base class containing all non-specific logic for uploading an Excel file
+    with data.
+    TODO Make it an abstract class the Python way
+    """
 
-    receivedData = register_in_recevied_data(row_nr,
-                                             row_values,
-                                             interfaceCall)
-    try:
-        status, message = register_contract(row_nr,
-                                            row_values,
-                                            interfaceCall,
-                                            field_positions,
-                                            mandatory_field_positions)
-    except Exception as ex:
-        receivedData.status = ERROR
-        receivedData.message = str(ex)
-    else:
-        receivedData.status = status
-        receivedData.message = message
-    receivedData.save()
-
-
-class InterfaceFile(object):
-
-    def __init__(self, file):
+    def __init__(self,
+                 file,
+                 interfaceCall: InterfaceCall):
         self.file = file
+        self.interfaceCall = interfaceCall
 
     def process(self):
-        # register file in InterfaceCall
-        interfaceCall = InterfaceCall.objects.create(filename=self.file.name,
-                                                     status=NEW,
-                                                     date_time_creation=Now(),
-                                                     type=INTERFACE_TYPE_FILE)
+
         try:
-            has_excel_extension, msg = file_has_excel_extension(self.file.name)
-            if not has_excel_extension:
-                raise Exception(msg)
+            available_headers = get_headers_from_sheet(self.file)
 
-            is_excel, message = file_is_excel_file(self.file)
-            if not is_excel:
-                raise Exception(message)
+            fields_with_their_position = self.get_fields_with_their_position(available_headers)
 
-            handle_uploaded_excel_file(self.file, interfaceCall)
-            interfaceCall.status = OK
+            self.handle_file(self.file,
+                             self.interfaceCall,
+                             fields_with_their_position)
+
+            self.interfaceCall.status = OK
+
         except Exception as ex:
-            interfaceCall.status = ERROR
-            interfaceCall.message = f'Reason: {ex.__str__()}'
+            self.interfaceCall.status = ERROR
+            self.interfaceCall.message = f'Reason: {ex.__str__()}'
 
-        interfaceCall.save()
+        self.interfaceCall.save()
 
-        if not interfaceCall.status == OK:
-            raise Exception(interfaceCall.message)
+        if not self.interfaceCall.status == OK:
+            raise Exception(self.interfaceCall.message)
 
+    @abstractmethod
+    def get_fields_with_their_position(self, available_headers: Tuple[str]) \
+            -> Dict[str, int]:
+        """
+        With the headers out of the file, determine (with the help of the
+        definitions of fieldnames and their headers) on which position on the row
+        we can find which field. For example:
+        - available_headers: "Contract nr." and "Contract owner"
+        - in the file definition:
+            contract_nr = "Contract nr."
+            contract_owner = "Contract owner"
+        - we return: (contract_nr = 0, contract_owner = 1)
+        """
+        raise Exception("Must be overridden, programming error")
 
-class NegometrixFile(InterfaceFile):
-    pass
+    def handle_file(self,
+                    file,
+                    interfaceCall: InterfaceCall,
+                    field_positions: Dict[str, int]):
 
+        mandatory_field_positions: Tuple[int] = \
+            get_mandatory_field_positions(self.get_mandatory_fields(),
+                                          field_positions)
 
-def create(file):
-    return NegometrixFile(file)
+        workbook = load_workbook(filename=file)
+        sheet = workbook.active
+
+        row_nr = 1
+        for row_values in sheet.iter_rows(min_row=1,
+                                          min_col=1,
+                                          values_only=True):
+            # TODO test on number of complete empty rows and STOP!
+            self.handle_row(row_nr,
+                            row_values,
+                            interfaceCall,
+                            field_positions,
+                            mandatory_field_positions)
+            row_nr += 1
+
+    @abstractmethod
+    def handle_row(self,
+                   row_nr,
+                   row_values,
+                   interfaceCall,
+                   field_positions,
+                   mandatory_field_positions):
+        raise Exception("Must be overridden, programming error")
+
+    @abstractmethod
+    def get_mandatory_fields(self):
+        raise Exception("Must be overridden, programming error")
