@@ -2,14 +2,14 @@ from django.db.models.functions import Now
 from django.test import TestCase
 from openpyxl import Workbook, load_workbook
 
-from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR
+from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK
 from .interface_file_factory import check_file_and_interface_type
 from .models import Contract, InterfaceCall
 from django.db.utils import IntegrityError
 
 from .interface_file import check_file_is_excel_file, check_file_has_excel_extension, is_valid_header_row, \
     get_mandatory_field_positions, get_headers_from_sheet, get_fields_with_their_position, mandatory_fields_present
-from .negometrix import register_contract
+from .negometrix import register_contract, NegometrixInterfaceFile
 
 
 class ContractTest(TestCase):
@@ -122,7 +122,7 @@ class ExcelTests(TestCase):
 
     # Test handle uploaded excel file
 
-    def test_upload_excel_file_invalid_headers(self):
+    def test_check_excel_file_invalid_headers(self):
         try:
             interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                          status='TestStatus',
@@ -135,6 +135,63 @@ class ExcelTests(TestCase):
         else:
             self.assertTrue(False, "No Exception, while expected because file has no headers")
 
+    def test_check_valid_negometrix_excel_file(self):
+        interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                     status='TestStatus',
+                                                     filename='test_register_contract.xlsx')
+        file = "rm/test/resources/test_register_contract.xlsx"
+        excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+        self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
+
+    def test_upload_valid_negometrix_excel_file_2_valid_rows(self):
+        interfaceCall = InterfaceCall.objects.create(
+            date_time_creation=Now(),
+            status='TestStatus',
+            filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx')
+        file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
+        excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+        self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
+
+        excelInterfaceFile.process()
+
+        contracten = interfaceCall.contracten.all()
+        self.assertEqual(len(contracten),2)
+
+        contract1 = contracten[0]
+        self.assertEqual(contract1.contract_nr, '44335')
+        contract2 = contracten[1]
+        self.assertEqual(contract2.contract_nr, '44336')
+
+        received_data = interfaceCall.received_data.all()
+        self.assertEqual(len(received_data),3)
+
+
+    def test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row(self):
+        interfaceCall = InterfaceCall.objects.create(
+            date_time_creation=Now(),
+            status='TestStatus',
+            filename='test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx')
+        file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx"
+        excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+        self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
+
+        excelInterfaceFile.process()
+
+        contracten = interfaceCall.contracten.all()
+        self.assertEqual(len(contracten),2)
+
+        contract1 = contracten[0]
+        self.assertEqual(contract1.contract_nr, '44335')
+        contract2 = contracten[1]
+        self.assertEqual(contract2.contract_nr, '44337')
+
+        received_data = interfaceCall.received_data.all()
+        self.assertEqual(len(received_data),4)
+        self.assertEqual(received_data[0].status, OK)
+        self.assertEqual(received_data[1].status, OK)
+        self.assertEqual(received_data[2].status, ERROR)
+        self.assertEqual(received_data[3].status, OK)
+
     #  Test generic database functions
 
     def test_get_field_positions(self):
@@ -146,7 +203,7 @@ class ExcelTests(TestCase):
             header_x="Header x",
         )
         field_positions = get_fields_with_their_position(available_headers,
-                                              defined_headers)
+                                                         defined_headers)
 
         expected_field_opsitions = dict(
             header_01=0,
@@ -155,7 +212,7 @@ class ExcelTests(TestCase):
         self.assertEqual(len(field_positions), 2)
         self.assertEqual(field_positions, expected_field_opsitions)
 
-    def test_get_mandatory_field_postions_valid_situation(self):
+    def test_get_mandatory_field_positions_valid_situation(self):
         mandatory_fields = ("x", "z")
         field_positions = {"x": 1, "y": 2, "z": 4}
         positions = get_mandatory_field_positions(mandatory_fields,
@@ -185,7 +242,7 @@ class ExcelTests(TestCase):
                                                   row_values))
 
     def test_mandatory_fields_not_present_1_ok_1_not(self):
-        mandatory_field_positions = [2,3]
+        mandatory_field_positions = [2, 3]
         row_values = ["nul", "een", "twee", None, "vier"]
         self.assertFalse(mandatory_fields_present(mandatory_field_positions,
                                                   row_values))
@@ -211,19 +268,19 @@ class ExcelTests(TestCase):
             if count == 4:
                 values_row_4 = row_values
                 break
-            count+=1
+            count += 1
 
         interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                      status='TestStatus',
                                                      filename='test_register_contract.xlsx')
 
-        fields_with_position = dict( database_nr = 0,
-                                     contract_nr = 1,
-                                     contract_status = 2,
-                                     description = 3,
-                                     )
+        fields_with_position = dict(database_nr=0,
+                                    contract_nr=1,
+                                    contract_status=2,
+                                    description=3,
+                                    )
 
-        mandatory_field_positions = (1,2)
+        mandatory_field_positions = (1, 2)
         mandatory_fields = ('a_field', 'another_field')
 
         status, msg = register_contract(row_nr, values_row_4, interfaceCall, fields_with_position,
