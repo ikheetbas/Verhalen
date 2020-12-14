@@ -13,22 +13,21 @@ from rm.models import InterfaceCall, ReceivedData
 logger = logging.getLogger(__name__)
 
 
-def file_has_excel_extension(filename: str) -> [bool, str]:
+def check_file_has_excel_extension(filename: str) -> bool:
     extension = pathlib.Path(filename).suffix.upper()
-    if not extension in ['.XLS', '.XLSX']:
-        return [False,
-                f"Bestand heeft geen excel extensie maar: '{extension}'"]
+    if extension in ['.XLS', '.XLSX']:
+        return True
     else:
-        return [True, "OK"]
+        raise Exception(f"Bestand heeft geen excel extensie maar: '{extension}'")
 
 
-def file_is_excel_file(file: UploadedFile) -> [bool, str]:
+def check_file_is_excel_file(file: UploadedFile) -> bool:
     try:
         load_workbook(filename=file)
+        return True
     except Exception as ex:
-        return [False, f"Het openen van dit bestand als excel bestand"
-                       f" geeft een foutmelding: {ex.__str__()}"]
-    return [True, "OK"]
+        raise Exception(f"Het openen van dit bestand als excel bestand"
+                        f" geeft een foutmelding: {ex.__str__()}")
 
 
 def get_headers_from_sheet(sheet: Worksheet) -> Tuple[str]:
@@ -92,6 +91,7 @@ def replace_none_with_blank_and_make_50_long(row_value):
 
 def row_is_empty(row_values: Tuple[str]) -> bool:
     return row_values.count(None) == len(row_values)
+
 
 def get_fields_with_their_position(available_headers, defined_headers):
     """
@@ -189,7 +189,6 @@ class ExcelInterfaceFile(ABC):
     """
     Base class containing all non-specific logic for uploading an Excel file
     with data.
-    TODO Make it an abstract class the Python way
     """
 
     def __init__(self,

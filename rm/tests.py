@@ -3,11 +3,11 @@ from django.test import TestCase
 from openpyxl import Workbook, load_workbook
 
 from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR
-from .interface_file_factory import interfaceFileFactory
+from .interface_file_factory import check_file_and_interface_type
 from .models import Contract, InterfaceCall
 from django.db.utils import IntegrityError
 
-from .interface_file import file_is_excel_file, file_has_excel_extension, is_valid_header_row, \
+from .interface_file import check_file_is_excel_file, check_file_has_excel_extension, is_valid_header_row, \
     get_mandatory_field_positions, get_headers_from_sheet, get_fields_with_their_position, mandatory_fields_present
 from .negometrix import register_contract
 
@@ -68,37 +68,43 @@ class ExcelTests(TestCase):
 
     def test_not_an_excel_file_extension(self):
         filename = 'test.txt'
-        self.assertFalse(file_has_excel_extension(filename)[0])
+        try:
+            check_file_has_excel_extension(filename)
+        except Exception as ex:
+            self.assertTrue("Bestand heeft geen excel extensie" in ex.__str__())
 
     def test_an_excel_file_extension_xls(self):
         filename = 'test.xls'
-        self.assertTrue(file_has_excel_extension(filename)[0])
+        self.assertTrue(check_file_has_excel_extension(filename))
 
     def test_an_excel_file_extension_XLS(self):
         filename = 'test.XLS'
-        self.assertTrue(file_has_excel_extension(filename)[0])
+        self.assertTrue(check_file_has_excel_extension(filename))
 
     def test_an_excel_file_extension_xlsx(self):
         filename = 'test.xlsx'
-        self.assertTrue(file_has_excel_extension(filename)[0])
+        self.assertTrue(check_file_has_excel_extension(filename))
 
     def test_an_excel_file_extension_XLSX(self):
         filename = 'test.XLSX'
-        self.assertTrue(file_has_excel_extension(filename)[0])
+        self.assertTrue(check_file_has_excel_extension(filename))
 
     # Test on really being an Excel file, so can it be read as Workbook?
 
     def test_not_an_excelfile(self):
         file = open("rm/test/resources/aPdfWithExcelExtension.xls", "rb")
         print(f'type of file: {type(file)}')
-        is_excel, msg = file_is_excel_file(file)
-        self.assertFalse(is_excel, msg)
+        try:
+            is_excel = check_file_is_excel_file(file)
+        except Exception as ex:
+            self.assertTrue("Het openen van dit bestand als excel bestand"
+                            " geeft een foutmelding" in ex.__str__())
 
     def test_an_excelfile_xlsx(self):
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
         print(f'type of file: {type(file)}')
-        is_excel, msg = file_is_excel_file(file)
-        self.assertTrue(is_excel, msg)
+        is_excel = check_file_is_excel_file(file)
+        self.assertTrue(is_excel)
 
     # Test valid headers
 
@@ -122,7 +128,7 @@ class ExcelTests(TestCase):
                                                          status='TestStatus',
                                                          filename='valid_excel_without_headers.xlsx')
             file = "rm/test/resources/valid_excel_without_headers.xlsx"
-            interfaceFileFactory(file, interfaceCall)
+            check_file_and_interface_type(file, interfaceCall)
         except Exception as ex:
             self.assertTrue("File can not be recognized" in ex.__str__(),
                             f"We got another exception than expected, received: {ex.__str__()}")
