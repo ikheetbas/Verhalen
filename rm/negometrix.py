@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple, Dict
 
-from rm.constants import SKIPPED, OK, ERROR
+from rm.constants import SKIPPED, OK, ERROR, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     register_in_received_data, mandatory_fields_present
 from rm.models import InterfaceCall, Contract
@@ -48,8 +48,7 @@ def register_contract(row_nr: int,
                       row_values: Tuple[str],
                       interfaceCall: InterfaceCall,
                       fields_with_position: Dict[str, int],
-                      mandatory_field_positions: Tuple[int],
-                      mandatory_fields: Tuple[str]) -> Tuple[str, str]:
+                      mandatory_field_positions: Tuple[int]) -> Tuple[str, str]:
     if row_nr == 1:
         return OK, 'Valid Header'
 
@@ -58,8 +57,7 @@ def register_contract(row_nr: int,
 
     if not mandatory_fields_present(mandatory_field_positions,
                                     row_values):
-        return (ERROR, f'Missing one or more mandatory fields: '
-                       f'{mandatory_fields}')
+        return (ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS)
 
     contract = Contract(interface_call=interfaceCall,
                         seq_nr=row_nr)
@@ -75,15 +73,19 @@ def register_contract(row_nr: int,
 
 
 class NegometrixInterfaceFile(ExcelInterfaceFile):
+
     mandatory_headers = ('Contract nr.', 'Contract status')
     mandatory_fields = ('contract_nr', 'contract_status')
 
     def __init__(self, file, interfaceCall: InterfaceCall):
-        super.__init__(file, interfaceCall)
+        super().__init__(file, interfaceCall)
 
     def get_fields_with_their_position(self, available_headers: Tuple[str]) \
             -> Dict[str, int]:
         return get_fields_with_their_position(available_headers, defined_headers)
+
+    def get_interface_system(self):
+        return NEGOMETRIX
 
     def handle_row(self,
                    row_nr: int,
@@ -97,12 +99,8 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
                                                  row_values,
                                                  interfaceCall)
         try:
-            status, message = register_contract(row_nr,
-                                                row_values,
-                                                interfaceCall,
-                                                field_positions,
-                                                mandatory_field_positions,
-                                                self.mandatory_fields)
+            status, message = register_contract(row_nr, row_values, interfaceCall, field_positions,
+                                                mandatory_field_positions)
         except Exception as ex:
             receivedData.status = ERROR
             receivedData.message = str(ex)

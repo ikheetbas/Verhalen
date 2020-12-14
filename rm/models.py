@@ -1,6 +1,11 @@
 from django.db import models
 
 
+# class System(models.Model):
+#     name = models.CharField(max_length=30, blank=True)
+
+
+
 class InterfaceCall(models.Model):
     """
     Call of interface (or file upload)
@@ -10,6 +15,7 @@ class InterfaceCall(models.Model):
     status = models.CharField(max_length=15)
     type = models.CharField(max_length=15)
     message = models.TextField(max_length=250, blank=True)
+    system = models.CharField(max_length=30, blank=True)
 
 
 class ReceivedData(models.Model):

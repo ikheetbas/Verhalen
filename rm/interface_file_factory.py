@@ -15,7 +15,7 @@ def interfaceFileFactory(file, interfaceCall: InterfaceCall) -> ExcelInterfaceFi
     - NegometrixFile
     -
     """
-
+    # TODO clean this up
     has_excel_extension, message = file_has_excel_extension(file if type(file) == str else file.name)
     if not has_excel_extension:
         raise Exception(message)

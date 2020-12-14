@@ -201,7 +201,7 @@ class ExcelInterfaceFile(ABC):
     def process(self):
 
         try:
-            available_headers = get_headers_from_sheet(self.file)
+            available_headers = get_headers_from_file(self.file)
 
             fields_with_their_position = self.get_fields_with_their_position(available_headers)
 
@@ -219,6 +219,10 @@ class ExcelInterfaceFile(ABC):
 
         if not self.interfaceCall.status == OK:
             raise Exception(self.interfaceCall.message)
+
+    @abstractmethod
+    def get_interface_system(self):
+        raise Exception("Must be overridden, programming error")
 
     @abstractmethod
     def get_fields_with_their_position(self, available_headers: Tuple[str]) \

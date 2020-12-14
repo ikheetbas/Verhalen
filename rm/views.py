@@ -28,7 +28,13 @@ def upload_file(request):
                 logger.debug(f"Type of file {type(file)}")
                 interfaceFile = interfaceFileFactory(file, interfaceCall)
                 logger.debug(f"Type of rm.file {type(interfaceFile)}")
+
+                system = interfaceFile.get_interface_system()
+                interfaceCall.system = system
+                interfaceCall.save()
+
                 interfaceFile.process()
+
             except Exception as ex:
                 form.add_error("file", ex.__str__())
                 return render(request, 'upload.html', {'form': form})

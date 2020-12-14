@@ -220,12 +220,8 @@ class ExcelTests(TestCase):
         mandatory_field_positions = (1,2)
         mandatory_fields = ('a_field', 'another_field')
 
-        status, msg = register_contract(row_nr,
-                                        values_row_4,
-                                        interfaceCall,
-                                        fields_with_position,
-                                        mandatory_field_positions,
-                                        mandatory_fields)
+        status, msg = register_contract(row_nr, values_row_4, interfaceCall, fields_with_position,
+                                        mandatory_field_positions)
 
         expected_status = ERROR
 
