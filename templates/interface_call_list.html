@@ -1,0 +1,32 @@
+{% extends '_base.html' %}
+
+{% block title %}NPO-RM - Contracts{% endblock title %}
+{% block content %}
+<br>
+<a href="upload"
+   class="btn btn-primary btn-lg active"
+   role="button"
+   aria-pressed="true">Upload file</a>
+<br>
+<br>
+<table class="table table-sm table-hover table-striped table-bordered">
+    <thead class="thead-dark ">
+    <tr>
+        <th>Datum/Tijd</th>
+        <th>Systeem</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Melding</th>
+    </tr>
+    </thead>
+    {% for interface_call in interface_call_list %}
+    <tr>
+        <td>{{  interface_call.date_time_creation }}</td>
+        <td>{{  interface_call.system }}</td>
+        <td>{{  interface_call.type }}</td>
+        <td>{{  interface_call.status }}</td>
+        <td>{{  interface_call.message }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock content %}}

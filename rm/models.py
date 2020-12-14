@@ -5,7 +5,6 @@ from django.db import models
 #     name = models.CharField(max_length=30, blank=True)
 
 
-
 class InterfaceCall(models.Model):
     """
     Call of interface (or file upload)

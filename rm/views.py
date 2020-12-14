@@ -54,3 +54,10 @@ class ContractListView(ListView):
     model = Contract
     context_object_name = 'contract_list'
     template_name = 'contract_list.html'
+
+class InterfaceCallListView(ListView):
+    model = InterfaceCall
+    context_object_name = 'interface_call_list'
+    template_name = 'interface_call_list.html'
+    ordering = ['-date_time_creation']
+
