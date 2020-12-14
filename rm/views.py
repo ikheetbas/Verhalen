@@ -8,7 +8,7 @@ from django.views.generic import ListView
 from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR
 from rm.forms import UploadFileForm
 from rm.models import Contract, InterfaceCall
-from rm.interface_file_factory import check_file_and_interface_type
+from rm.interface_file_util import check_file_and_interface_type
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +25,15 @@ def upload_file(request):
                                                          type=INTERFACE_TYPE_FILE,
                                                          system=UNKNOWN)
             try:
+                # check the file and try to find out what type it is
                 interfaceFile = check_file_and_interface_type(file, interfaceCall)
 
+                # register found system in the interfaceFile registration
                 system = interfaceFile.get_interface_system()
                 interfaceCall.system = system
                 interfaceCall.save()
 
+                # process the file!
                 interfaceFile.process()
 
             except Exception as ex:

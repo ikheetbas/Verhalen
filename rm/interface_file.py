@@ -255,6 +255,9 @@ class ExcelInterfaceFile(ABC):
                     file,
                     interfaceCall: InterfaceCall,
                     field_positions: Dict[str, int]):
+        """
+        Generic handling of the file.
+        """
 
         mandatory_field_positions: Tuple[int] = \
             get_mandatory_field_positions(self.get_mandatory_fields(),
@@ -286,4 +289,7 @@ class ExcelInterfaceFile(ABC):
 
     @abstractmethod
     def get_mandatory_fields(self):
+        """
+        Each subclass has its own mandatory fields.
+        """
         raise Exception("Must be overridden, programming error")

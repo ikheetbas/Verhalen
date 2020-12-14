@@ -11,7 +11,7 @@ from rm.negometrix import NegometrixInterfaceFile
 def check_file_and_interface_type(file, interfaceCall: InterfaceCall) -> ExcelInterfaceFile:
     """
     Checks what type of Interface the file is, performs checks and returns
-    the right subtype of InterfaceFile:
+    the right subclass of ExcelInterfaceFile:
     - NegometrixFile
     -
     """

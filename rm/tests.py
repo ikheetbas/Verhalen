@@ -3,7 +3,7 @@ from django.test import TestCase
 from openpyxl import Workbook, load_workbook
 
 from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK
-from .interface_file_factory import check_file_and_interface_type
+from .interface_file_util import check_file_and_interface_type
 from .models import Contract, InterfaceCall
 from django.db.utils import IntegrityError
 

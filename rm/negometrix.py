@@ -57,7 +57,7 @@ def register_contract(row_nr: int,
 
     if not mandatory_fields_present(mandatory_field_positions,
                                     row_values):
-        return (ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS)
+        return ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
 
     contract = Contract(interface_call=interfaceCall,
                         seq_nr=row_nr)
@@ -99,7 +99,10 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
                                                  row_values,
                                                  interfaceCall)
         try:
-            status, message = register_contract(row_nr, row_values, interfaceCall, field_positions,
+            status, message = register_contract(row_nr,
+                                                row_values,
+                                                interfaceCall,
+                                                field_positions,
                                                 mandatory_field_positions)
         except Exception as ex:
             receivedData.status = ERROR
