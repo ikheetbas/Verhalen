@@ -109,16 +109,16 @@ class ExcelTests(TestCase):
     # Test valid headers
 
     def test_valid_header_row_exact(self):
-        self.assertTrue(is_valid_header_row(headers=('x', 'y', 'z'),
-                                            required_headers=('x', 'z')))
+        self.assertTrue(is_valid_header_row(found_headers=('x', 'y', 'z'),
+                                            mandatory_headers=('x', 'z')))
 
     def test_valid_header_row_case_sensitive(self):
-        self.assertTrue(is_valid_header_row(headers=('X', 'y', 'z'),
-                                            required_headers=('x', 'z')))
+        self.assertTrue(is_valid_header_row(found_headers=('X', 'y', 'z'),
+                                            mandatory_headers=('x', 'z')))
 
     def test_invalid_header_row(self):
-        self.assertFalse(is_valid_header_row(headers=('a', 'b', 'z'),
-                                             required_headers=('x', 'z')))
+        self.assertFalse(is_valid_header_row(found_headers=('a', 'b', 'z'),
+                                             mandatory_headers=('x', 'z')))
 
     # Test handle uploaded excel file
 

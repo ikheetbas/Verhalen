@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def check_file_has_excel_extension(filename: str) -> bool:
+    """
+    Returns True if file has an Excel extension, if not, an exception is thrown.
+    """
     extension = pathlib.Path(filename).suffix.upper()
     if extension in ['.XLS', '.XLSX']:
         return True
@@ -22,6 +25,9 @@ def check_file_has_excel_extension(filename: str) -> bool:
 
 
 def check_file_is_excel_file(file: UploadedFile) -> bool:
+    """
+    Returns True if the file is a valid Excel File. If not, an exception is thrown.
+    """
     try:
         load_workbook(filename=file)
         return True
@@ -56,15 +62,22 @@ def to_upper_none_proof(x):
     return x
 
 
-def is_valid_header_row(headers: Tuple[str], required_headers: Tuple[str]) -> bool:
-    headers_upper = [to_upper_none_proof(x) for x in headers]
-    required_headers_upper = [x.upper() for x in required_headers]
+def is_valid_header_row(found_headers: Tuple[str],
+                        mandatory_headers: Tuple[str]) -> bool:
+    """
+    Checks if the found headers contain all mandatory headers.
+    """
+    headers_upper = [to_upper_none_proof(x) for x in found_headers]
+    required_headers_upper = [x.upper() for x in mandatory_headers]
     valid = all(item in headers_upper for item in required_headers_upper)
     return valid
 
 
 def get_mandatory_field_positions(mandatory_fields: Tuple[str],
                                   field_positions: Dict[str, int]) -> Tuple[int]:
+    """
+    Returns the position in the row that must have a value.
+    """
     positions = []
 
     for fieldname in mandatory_fields:
