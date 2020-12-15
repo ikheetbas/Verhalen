@@ -14,3 +14,10 @@ h1{
 body{
     font-size: small;
 }
+
+/*
+Change the curcor in a hand when on a clickable row
+ */
+.clickable-row{
+    cursor: pointer;
+}

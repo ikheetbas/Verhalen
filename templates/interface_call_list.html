@@ -12,7 +12,9 @@
 <table class="table table-sm table-hover table-striped table-bordered">
     <thead class="thead-dark ">
     <tr>
-        <th>Datum/Tijd</th>
+        <th>#</th>
+        <th>Datum</th>
+        <th>Tijd</th>
         <th>Systeem</th>
         <th>Type</th>
         <th>Status</th>
@@ -20,8 +22,10 @@
     </tr>
     </thead>
     {% for interface_call in interface_call_list %}
-    <tr>
-        <td>{{  interface_call.date_time_creation }}</td>
+    <tr class='clickable-row' data-url='/interfacecall/{{ interface_call.pk }}'>
+        <td>{{  interface_call.pk }}</td>
+        <td>{{  interface_call.date_time_creation |date:'Y-m-d' }}</td>
+        <td>{{  interface_call.date_time_creation |date:'H:i' }}</td>
         <td>{{  interface_call.system }}</td>
         <td>{{  interface_call.type }}</td>
         <td>{{  interface_call.status }}</td>
@@ -29,4 +33,5 @@
     </tr>
     {% endfor %}
 </table>
+
 {% endblock content %}}

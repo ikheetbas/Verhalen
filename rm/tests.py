@@ -17,13 +17,14 @@ class ContractTest(TestCase):
     def setUp(self):
         self.interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                           status='TestStatus',
-                                                          filename='Text.xls')
-        self.conctract_1 = Contract.objects.create(contract_nr='NL-123',
-                                                   seq_nr=0,
-                                                   description='Test Contract',
-                                                   contract_owner='T. Ester',
-                                                   interface_call=self.interfaceCall,
-                                                   contract_name='Test contract naam')
+                                                          filename='Text.xls',
+                                                          system='TestSysteem')
+        self.contract_1 = Contract.objects.create(contract_nr='NL-123',
+                                                  seq_nr=0,
+                                                  description='Test Contract',
+                                                  contract_owner='T. Ester',
+                                                  interface_call=self.interfaceCall,
+                                                  contract_name='Test contract naam')
 
     def test_homepage(self):
         response = self.client.get("/")
@@ -31,21 +32,26 @@ class ContractTest(TestCase):
 
     def test_contract(self):
         expected = 'NL-123: Test contract naam'
-        self.assertEqual(self.conctract_1.__str__(), expected)
+        self.assertEqual(self.contract_1.__str__(), expected)
 
-    def test_one_contract_on_page(self):
+    def test_one_interface_call_on_page(self):
         response = self.client.get('/')
+        self.assertContains(response, 'TestStatus')
+        self.assertContains(response, 'TestSysteem')
+
+    def test_one_contract_on_interface_call_page(self):
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester')
 
-    def test_two_contracts_on_page(self):
+    def test_two_contract_on_interface_call_page(self):
         Contract.objects.create(contract_nr='NL-345',
                                 seq_nr=1,
                                 description='Test Contract 2',
                                 contract_owner='T. Ester',
                                 interface_call=self.interfaceCall)
-        response = self.client.get('/')
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester', count=2)

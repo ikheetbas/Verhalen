@@ -1,8 +1,9 @@
 import logging
 
 from django.db.models.functions import Now
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
+from django.template import loader
 from django.views.generic import ListView
 
 from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR
@@ -61,3 +62,17 @@ class InterfaceCallListView(ListView):
     template_name = 'interface_call_list.html'
     ordering = ['-date_time_creation']
 
+
+def interface_call_details(request, pk: int):
+    logger.debug(f"interface_call_details: pk: {pk}")
+    interfaceCall = InterfaceCall.objects.get(pk=pk)
+    logger.debug("interfaceCall: " + interfaceCall.__str__())
+    contracts = interfaceCall.contracten.all()
+    received_data = interfaceCall.received_data.all()
+    context = {
+        'interface_call': interfaceCall,
+        'contract_list': contracts,
+        'received_data': received_data,
+    }
+    template = loader.get_template('interface_call_details.html')
+    return HttpResponse(template.render(context, request))
