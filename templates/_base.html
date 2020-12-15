@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 <body>
-    <h1><img class="logo" src="{% static "images/npo.png" %}" height="50" >NPO Resource Manager</h1>
-    <div class="container">
+    <h1><a href="/"><img class="logo" src="{% static "images/npo.png" %}" height="50" ></a>NPO Resource Manager</h1>
+    <div class="container-fluid pl-3">
     {% block content %}
     {% endblock content %}
     </div>

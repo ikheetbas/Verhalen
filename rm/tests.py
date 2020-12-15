@@ -40,7 +40,7 @@ class ContractTest(TestCase):
         self.assertContains(response, 'TestSysteem')
 
     def test_one_contract_on_interface_call_page(self):
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/contracts/')
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester')
@@ -51,7 +51,7 @@ class ContractTest(TestCase):
                                 description='Test Contract 2',
                                 contract_owner='T. Ester',
                                 interface_call=self.interfaceCall)
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/contracts/')
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester', count=2)

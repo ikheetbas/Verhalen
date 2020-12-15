@@ -22,7 +22,7 @@
     </tr>
     </thead>
     {% for interface_call in interface_call_list %}
-    <tr class='clickable-row' data-url='/interfacecall/{{ interface_call.pk }}/contracts/'>
+    <tr class='clickable-row' data-url='/interfacecall/{{ interface_call.pk }}'>
         <td>{{  interface_call.pk }}</td>
         <td>{{  interface_call.date_time_creation |date:'Y-m-d' }}</td>
         <td>{{  interface_call.date_time_creation |date:'H:i' }}</td>

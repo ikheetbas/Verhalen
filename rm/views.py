@@ -63,14 +63,16 @@ class InterfaceCallListView(ListView):
     ordering = ['-date_time_creation']
 
 
-def interface_call_contracts(request, pk: int):
-    logger.debug(f"interface_call_contracts: pk: {pk}")
+def interface_call_details(request, pk: int):
+    logger.debug(f"interface_call_details: pk: {pk}")
     interfaceCall = InterfaceCall.objects.get(pk=pk)
     logger.debug("interfaceCall: " + interfaceCall.__str__())
     contracts = interfaceCall.contracten.all()
+    received_data = interfaceCall.received_data.all()
     context = {
         'interface_call': interfaceCall,
-        'contract_list': contracts
+        'contract_list': contracts,
+        'received_data': received_data,
     }
-    template = loader.get_template('interface_call_contract_list.html')
+    template = loader.get_template('interface_call_details.html')
     return HttpResponse(template.render(context, request))
