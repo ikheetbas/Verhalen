@@ -16,6 +16,9 @@ class InterfaceCall(models.Model):
     message = models.TextField(max_length=250, blank=True)
     system = models.CharField(max_length=30, blank=True)
 
+    def __str__(self):
+        return f"File {self.filename} - {self.status} - {self.system}"
+
 
 class ReceivedData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
