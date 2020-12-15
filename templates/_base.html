@@ -10,6 +10,10 @@
 </head>
 <body>
     <h1><a href="/"><img class="logo" src="{% static "images/npo.png" %}" height="50" ></a>NPO Resource Manager</h1>
+    <div id="version_number" >
+        version: {{ APP_VERSION_NUMBER }}<br>
+        env: {{ ENVIRONMENT }}
+    </div>
     <div class="container-fluid pl-3">
     {% block content %}
     {% endblock content %}

@@ -21,3 +21,9 @@ Change the curcor in a hand when on a clickable row
 .clickable-row{
     cursor: pointer;
 }
+
+#version_number{
+    float: right;
+    color: #666666;
+    margin-right: 20px;
+}

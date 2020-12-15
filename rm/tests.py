@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models.functions import Now
 from django.test import TestCase
 from openpyxl import Workbook, load_workbook
