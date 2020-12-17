@@ -52,8 +52,8 @@ def get_headers_from_sheet(sheet: Worksheet) -> Tuple[str]:
 def get_headers_from_file(file) -> Tuple[str]:
     workbook = load_workbook(filename=file)
     sheet = workbook.active
-    available_headers = get_headers_from_sheet(sheet)
-    return available_headers
+    found_headers = get_headers_from_sheet(sheet)
+    return found_headers
 
 
 def to_upper_none_proof(x):
@@ -106,7 +106,7 @@ def row_is_empty(row_values: Tuple[str]) -> bool:
     return row_values.count(None) == len(row_values)
 
 
-def get_fields_with_their_position(available_headers, defined_headers):
+def get_fields_with_their_position(found_headers, defined_headers):
     """
     Returns the positions, as defined in the defined_headers, of the available headers
     as found in the file. First position has index: 0
@@ -115,8 +115,8 @@ def get_fields_with_their_position(available_headers, defined_headers):
 
     for fieldname in defined_headers:
         defined_header = defined_headers[fieldname]
-        if defined_header in available_headers:
-            position = available_headers.index(defined_header)
+        if defined_header in found_headers:
+            position = found_headers.index(defined_header)
             field_positions[fieldname] = position
 
     return field_positions
@@ -213,9 +213,9 @@ class ExcelInterfaceFile(ABC):
     def process(self):
 
         try:
-            available_headers = get_headers_from_file(self.file)
+            found_headers = get_headers_from_file(self.file)
 
-            fields_with_their_position = self.get_fields_with_their_position(available_headers)
+            fields_with_their_position = self.get_fields_with_their_position(found_headers)
 
             self.handle_file(self.file,
                              self.interfaceCall,
@@ -237,13 +237,13 @@ class ExcelInterfaceFile(ABC):
         raise Exception("Must be overridden, programming error")
 
     @abstractmethod
-    def get_fields_with_their_position(self, available_headers: Tuple[str]) \
+    def get_fields_with_their_position(self, found_headers: Tuple[str]) \
             -> Dict[str, int]:
         """
         With the headers out of the file, determine (with the help of the
         definitions of fieldnames and their headers) on which position on the row
         we can find which field. For example:
-        - available_headers: "Contract nr." and "Contract owner"
+        - found_headers: "Contract nr." and "Contract owner"
         - in the file definition:
             contract_nr = "Contract nr."
             contract_owner = "Contract owner"

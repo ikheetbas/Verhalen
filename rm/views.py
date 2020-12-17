@@ -39,8 +39,8 @@ def upload_file(request):
 
             except Exception as ex:
 
-                interfaceCall.status=ERROR
-                interfaceCall.message=ex.__str__()
+                interfaceCall.status = ERROR
+                interfaceCall.message = ex.__str__()
                 interfaceCall.save()
 
                 form.add_error("file", ex.__str__())
@@ -55,6 +55,7 @@ class ContractListView(ListView):
     model = Contract
     context_object_name = 'contract_list'
     template_name = 'contract_list.html'
+
 
 class InterfaceCallListView(ListView):
     model = InterfaceCall
