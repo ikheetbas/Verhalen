@@ -23,6 +23,9 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    # Third Party
+    path('accounts/', include('allauth.urls')),
+
     # Local apps
     path('', include('rm.urls'))
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
