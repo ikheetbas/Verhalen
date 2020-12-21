@@ -118,8 +118,36 @@ docker-compose exec web python manage.py migrate
 ```
 This updates the database with the latest structure changes
 
+## Reinialize the database
 
+Want to start all over? Easy! The database is a 'volume' defined in the 
+docker-compose. By removing that volume and restart the containers the
+database is recreated. After that you run the migrates and create the 
+superuser again:
 
+Check the volumes: 
+```
+$ docker volume ls
+DRIVER    VOLUME NAME
+local     npo-rm_postgres_data      <-- this is the one
+```
+If you want to get more info about it:
+```
+$ docker volume inspect npo<tab> <-- press tab for auto completion
+```
+Then to remove:
+```
+$ docker volume rm npo<tab>
+```
+Start the containers, create the tables and create superuser:
+```
+$ docker-compose up -d
+$ docker-compose exec web python manage.py migrate
+$ docker-compose exec web python manage.py createsuperuser
+```
+Fill in: npo-rm-admin with password testpass123, or something else ;-)
+
+And you're back in business!
 
 #### Author
 - Eelco Aartsen
