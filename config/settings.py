@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
 
     # third party
+    'crispy_forms',
     # 'allauth',
     # 'allauth.account',
 
@@ -224,3 +225,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
