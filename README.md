@@ -118,7 +118,7 @@ docker-compose exec web python manage.py migrate
 ```
 This updates the database with the latest structure changes
 
-## Reinialize the database
+# Reinitialize the database
 
 Want to start all over? Easy! The database is a 'volume' defined in the 
 docker-compose. By removing that volume and restart the containers the
