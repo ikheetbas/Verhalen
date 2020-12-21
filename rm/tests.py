@@ -36,7 +36,7 @@ class ContractTest(TestCase):
         self.assertEqual(self.contract_1.__str__(), expected)
 
     def test_one_interface_call_on_page(self):
-        response = self.client.get('/')
+        response = self.client.get('/interfacecalls')
         self.assertContains(response, 'TestStatus')
         self.assertContains(response, 'TestSysteem')
 

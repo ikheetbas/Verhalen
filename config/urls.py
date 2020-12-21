@@ -23,9 +23,12 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Third Party
-    path('accounts/', include('allauth.urls')),
+    # # Third Party
+    # path('accounts/', include('allauth.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
+
 
     # Local apps
     path('', include('rm.urls'))
+
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

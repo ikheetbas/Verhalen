@@ -45,8 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.sites',
 
     # third party
-    'allauth',
-    'allauth.account',
+    # 'allauth',
+    # 'allauth.account',
 
     # local apps
     'rm.apps.RmConfig',
@@ -221,3 +221,6 @@ AUTHENTICATION_BACKENDS = [
 
 # temporary send email to console
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'

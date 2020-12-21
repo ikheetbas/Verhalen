@@ -4,7 +4,7 @@ from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
-from django.views.generic import ListView
+from django.views.generic import ListView, TemplateView
 
 from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR
 from rm.forms import UploadFileForm
@@ -13,6 +13,8 @@ from rm.interface_file_util import check_file_and_interface_type
 
 logger = logging.getLogger(__name__)
 
+class HomePageView(TemplateView):
+    template_name = 'home.html'
 
 def upload_file(request):
     if request.method == 'POST':
@@ -44,11 +46,11 @@ def upload_file(request):
                 interfaceCall.save()
 
                 form.add_error("file", ex.__str__())
-                return render(request, 'upload.html', {'form': form})
-            return HttpResponseRedirect('/')
+                return render(request, 'rm/upload.html', {'form': form})
+            return HttpResponseRedirect('/interfacecalls')
     else:
         form = UploadFileForm()
-    return render(request, 'upload.html', {'form': form})
+    return render(request, 'rm/upload.html', {'form': form})
 
 
 class ContractListView(ListView):
@@ -60,7 +62,7 @@ class ContractListView(ListView):
 class InterfaceCallListView(ListView):
     model = InterfaceCall
     context_object_name = 'interface_call_list'
-    template_name = 'interface_call_list.html'
+    template_name = 'rm/interface_call_list.html'
     ordering = ['-date_time_creation']
 
 
@@ -75,5 +77,5 @@ def interface_call_details(request, pk: int):
         'contract_list': contracts,
         'received_data': received_data,
     }
-    template = loader.get_template('interface_call_details.html')
+    template = loader.get_template('rm/interface_call_details.html')
     return HttpResponse(template.render(context, request))
