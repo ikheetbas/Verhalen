@@ -1,5 +1,7 @@
 import logging
 
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
@@ -13,9 +15,10 @@ from rm.interface_file_util import check_file_and_interface_type
 
 logger = logging.getLogger(__name__)
 
-class HomePageView(TemplateView):
+class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
 
+@login_required
 def upload_file(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
@@ -53,19 +56,18 @@ def upload_file(request):
     return render(request, 'rm/upload.html', {'form': form})
 
 
-class ContractListView(ListView):
+class ContractListView(LoginRequiredMixin, ListView):
     model = Contract
     context_object_name = 'contract_list'
     template_name = 'contract_list.html'
 
-
-class InterfaceCallListView(ListView):
+class InterfaceCallListView(LoginRequiredMixin, ListView):
     model = InterfaceCall
     context_object_name = 'interface_call_list'
     template_name = 'rm/interface_call_list.html'
     ordering = ['-date_time_creation']
 
-
+@login_required
 def interface_call_details(request, pk: int):
     logger.debug(f"interface_call_details: pk: {pk}")
     interfaceCall = InterfaceCall.objects.get(pk=pk)
