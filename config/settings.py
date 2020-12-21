@@ -46,8 +46,8 @@ INSTALLED_APPS = [
 
     # third party
     'crispy_forms',
-    # 'allauth',
-    # 'allauth.account',
+    'allauth',
+    'allauth.account',
 
     # local apps
     'rm.apps.RmConfig',
@@ -209,7 +209,11 @@ if ENVIRONMENT == 'prod':
     SECURE_REFERRER_POLICY = 'same-origin'
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDER_PROTO', 'https')
 
-# Django allauth
+# Django allauth config
+LOGIN_REDIRECT_URL = 'home'
+ACCOUNT_LOGOUT_REDIRECT = 'home'
+ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
+
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
@@ -223,7 +227,5 @@ AUTHENTICATION_BACKENDS = [
 # temporary send email to console
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'

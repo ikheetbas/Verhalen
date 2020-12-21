@@ -1,11 +1,12 @@
 {% extends '_base.html' %}
+{% load crispy_forms_tags %}
 
 {% block title %}NPO-RM - File upload{% endblock title %}
 {% block content %}
 <br>
 <form action="/upload/" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form }}
+    {{ form|crispy }}
     <input type="submit" value="Submit">
 </form>
 {% endblock content %}}
