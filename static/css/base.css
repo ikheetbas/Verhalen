@@ -21,3 +21,21 @@ Change the curcor in a hand when on a clickable row
 .clickable-row{
     cursor: pointer;
 }
+
+#version_number{
+    float: right;
+    color: #666666;
+    margin-right: 20px;
+}
+
+#app-title{
+    margin-left: 80px;
+    margin-top: -50px;
+}
+
+@media screen and (max-width: 550px) {
+  #app-title{
+    font-size: 30px;
+    margin-top: -45px;
+  }
+}

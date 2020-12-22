@@ -1,0 +1,17 @@
+{% extends '_base.html' %}
+
+{% block title %}Thuis{% endblock title %}
+
+{% block content %}
+
+    <br>
+    {% if user.is_authenticated %}
+      Hi {{user.email}}!
+      <p><a href="{% url 'interface_call_list' %}">Interface Calls</a></p>
+      <p><a href="{% url 'account_logout' %}">Log Out</a></p>
+    {% else %}
+      <p>You are not logged in </p>
+      <a href="{% url 'account_login' %}">Log In</a>
+    {% endif %}
+
+{% endblock content %}

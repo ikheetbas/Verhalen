@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models.functions import Now
 from django.test import TestCase
 from openpyxl import Workbook, load_workbook
@@ -35,7 +36,7 @@ class ContractTest(TestCase):
         self.assertEqual(self.contract_1.__str__(), expected)
 
     def test_one_interface_call_on_page(self):
-        response = self.client.get('/')
+        response = self.client.get('/interfacecalls')
         self.assertContains(response, 'TestStatus')
         self.assertContains(response, 'TestSysteem')
 
@@ -202,13 +203,13 @@ class ExcelTests(TestCase):
 
     def test_get_field_positions(self):
 
-        available_headers = ['Header 1', "just a field", 'Header x', 'and another']
+        found_headers = ['Header 1', "just a field", 'Header x', 'and another']
         defined_headers = dict(
             header_01="Header 1",
             zomaarwat="something",
             header_x="Header x",
         )
-        field_positions = get_fields_with_their_position(available_headers,
+        field_positions = get_fields_with_their_position(found_headers,
                                                          defined_headers)
 
         expected_field_opsitions = dict(

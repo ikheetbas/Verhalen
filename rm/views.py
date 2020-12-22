@@ -1,10 +1,12 @@
 import logging
 
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
-from django.views.generic import ListView
+from django.views.generic import ListView, TemplateView
 
 from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR
 from rm.forms import UploadFileForm
@@ -13,7 +15,10 @@ from rm.interface_file_util import check_file_and_interface_type
 
 logger = logging.getLogger(__name__)
 
+class HomePageView(LoginRequiredMixin, TemplateView):
+    template_name = 'home.html'
 
+@login_required
 def upload_file(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
@@ -39,30 +44,30 @@ def upload_file(request):
 
             except Exception as ex:
 
-                interfaceCall.status=ERROR
-                interfaceCall.message=ex.__str__()
+                interfaceCall.status = ERROR
+                interfaceCall.message = ex.__str__()
                 interfaceCall.save()
 
                 form.add_error("file", ex.__str__())
-                return render(request, 'upload.html', {'form': form})
-            return HttpResponseRedirect('/')
+                return render(request, 'rm/upload.html', {'form': form})
+            return HttpResponseRedirect('/interfacecalls')
     else:
         form = UploadFileForm()
-    return render(request, 'upload.html', {'form': form})
+    return render(request, 'rm/upload.html', {'form': form})
 
 
-class ContractListView(ListView):
+class ContractListView(LoginRequiredMixin, ListView):
     model = Contract
     context_object_name = 'contract_list'
     template_name = 'contract_list.html'
 
-class InterfaceCallListView(ListView):
+class InterfaceCallListView(LoginRequiredMixin, ListView):
     model = InterfaceCall
     context_object_name = 'interface_call_list'
-    template_name = 'interface_call_list.html'
+    template_name = 'rm/interface_call_list.html'
     ordering = ['-date_time_creation']
 
-
+@login_required
 def interface_call_details(request, pk: int):
     logger.debug(f"interface_call_details: pk: {pk}")
     interfaceCall = InterfaceCall.objects.get(pk=pk)
@@ -74,5 +79,5 @@ def interface_call_details(request, pk: int):
         'contract_list': contracts,
         'received_data': received_data,
     }
-    template = loader.get_template('interface_call_details.html')
+    template = loader.get_template('rm/interface_call_details.html')
     return HttpResponse(template.render(context, request))

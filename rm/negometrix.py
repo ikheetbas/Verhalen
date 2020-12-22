@@ -80,9 +80,9 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
     def __init__(self, file, interfaceCall: InterfaceCall):
         super().__init__(file, interfaceCall)
 
-    def get_fields_with_their_position(self, available_headers: Tuple[str]) \
+    def get_fields_with_their_position(self, found_headers: Tuple[str]) \
             -> Dict[str, int]:
-        return get_fields_with_their_position(available_headers, defined_headers)
+        return get_fields_with_their_position(found_headers, defined_headers)
 
     def get_interface_system(self):
         return NEGOMETRIX

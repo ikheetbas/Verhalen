@@ -152,4 +152,4 @@ cython_debug/
 # Local app
 users.txt
 .~lock*
-/secrets/
+/secrets
