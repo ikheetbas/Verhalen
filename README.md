@@ -102,14 +102,14 @@ var/lib/docker/volumes/npo-rm_postgres_data
 
 ## Upgrade the application
 
-Update the sources. Go to the npo-rm directory on the command line and type:
+Update the sources: go to the npo-rm directory on the command line and type:
 ```
 git pull
 ```
 
-Start the application:
+Start the application, with the build option, maybe not needed, but sometimes it is:
 ```
-docker-compose up
+docker-compose up --build
 ```
 
 Go to a new commandline window in the npo-rm directory and type:
