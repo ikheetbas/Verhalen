@@ -1,7 +1,9 @@
 
 # Deployment to does
+# TODO Infra: Install nginx proxyserver
+# TODO Infra: Install a OAuth server?
 # TODO collectstatic
-# TODO andere server dan runserver
+# TODO change config of gunicorn?
 # TODO version number acceptatie
 # TODO HPTTS ipv HTTP
 # TODO Run current tests
