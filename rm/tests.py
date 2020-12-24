@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.db.models.functions import Now
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+
 from openpyxl import Workbook, load_workbook
 
 from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK
@@ -16,6 +19,7 @@ from .negometrix import register_contract, NegometrixInterfaceFile
 class ContractTest(TestCase):
 
     def setUp(self):
+        self._create_user_and_login()
         self.interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                           status='TestStatus',
                                                           filename='Text.xls',
@@ -27,8 +31,26 @@ class ContractTest(TestCase):
                                                   interface_call=self.interfaceCall,
                                                   contract_name='Test contract naam')
 
+    def _create_user(self, username="john", password="doe", **kwargs):
+        user = get_user_model().objects.create(
+            username=username, is_active=True, **kwargs
+        )
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save()
+        return user
+
+    def _create_user_and_login(self, usable_password=True):
+        password = "doe" if usable_password else False
+        user = self._create_user(password=password)
+        self.client.force_login(user)
+        return user
+
     def test_homepage(self):
-        response = self.client.get("/")
+        c = self.client
+        response = c.get("/")
         self.assertEqual(response.status_code, 200)
 
     def test_contract(self):
@@ -296,3 +318,13 @@ class ExcelTests(TestCase):
         expected_status = ERROR
 
         self.assertEqual(status, expected_status)
+
+class LoginRequiredTests(TestCase):
+
+    def test_login_required_home_page(self):
+        response = self.client.get(reverse("home"))
+        self.assertRedirects(response, reverse('account_login')+ "?next=/")
+
+    def test_login_required_upload_page(self):
+        response = self.client.get(reverse("upload"))
+        self.assertRedirects(response, reverse('account_login') + "?next=/upload/")
