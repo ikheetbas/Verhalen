@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.RequireLoginMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -229,3 +230,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+LOGIN_REQUIRED_URLS = (
+    r'/(.*)$',
+)
+LOGIN_REQUIRED_URLS_EXCEPTIONS = (
+    r'/accounts/login/(.*)$',
+    r'/accounts/login/?next=/(.*)$',
+    r'/accounts/logout/(.*)$',
+)
