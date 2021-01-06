@@ -149,6 +149,18 @@ Fill in: npo-rm-admin with password testpass123, or something else ;-)
 
 And you're back in business!
 
+## Run tests
+```
+$ python mangage.py test
+```
+to see the coverage:
+```
+$ coverage run --source='.' manage.py test
+$ coverate html
+```
+And open htmlcov/index.html
+
+
 #### Author
 - Eelco Aartsen
 - eelco@aesset.nl
