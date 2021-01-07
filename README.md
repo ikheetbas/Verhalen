@@ -160,6 +160,8 @@ $ coverate html
 ```
 And open htmlcov/index.html
 
+## Jira
+Also on aesset.atlassian.net.
 
 #### Author
 - Eelco Aartsen
