@@ -1,4 +1,4 @@
-from django.conf import settings
+from django.contrib.auth.models import Group, Permission
 from django.db.models.functions import Now
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -16,37 +16,69 @@ from .interface_file import check_file_is_excel_file, check_file_has_excel_exten
 from .negometrix import register_contract, NegometrixInterfaceFile
 
 
+def setUpUserWithInterfaceCallAndContract(self, superuser=True, group_name=None):
+    """
+    When called without parameters, you get a superuser
+    """
+    if superuser:
+        self.user = _create_superuser()
+    else:
+        self.user = _create_user(group_name=group_name)
+
+    self.client.force_login(self.user)
+
+    self.interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                      status='TestStatus',
+                                                      filename='Text.xls',
+                                                      system='TestSysteem')
+    self.contract_1 = Contract.objects.create(contract_nr='NL-123',
+                                              seq_nr=0,
+                                              description='Test Contract',
+                                              contract_owner='T. Ester',
+                                              interface_call=self.interfaceCall,
+                                              contract_name='Test contract naam')
+
+
+def _create_superuser(username="john", password="doe", **kwargs):
+    user = get_user_model().objects.create(username=username,
+                                           is_superuser=True,
+                                           is_active=True,
+                                           **kwargs
+                                           )
+    if password:
+        user.set_password(password)
+    else:
+        user.set_unusable_password()
+    user.save()
+    return user
+
+def _create_user(username="john", password="doe", group_name=None, **kwargs):
+    user = get_user_model().objects.create(username=username,
+                                           is_active=True,
+                                           **kwargs
+                                           )
+    if password:
+        user.set_password(password)
+    else:
+        user.set_unusable_password()
+
+    if group_name:
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            message = f"Group {group_name} can not be found"
+            raise Exception(message)
+        user.groups.add(group)
+
+    user.save()
+
+    return user
+
+
 class ContractTest(TestCase):
 
     def setUp(self):
-        self._create_user_and_login()
-        self.interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                          status='TestStatus',
-                                                          filename='Text.xls',
-                                                          system='TestSysteem')
-        self.contract_1 = Contract.objects.create(contract_nr='NL-123',
-                                                  seq_nr=0,
-                                                  description='Test Contract',
-                                                  contract_owner='T. Ester',
-                                                  interface_call=self.interfaceCall,
-                                                  contract_name='Test contract naam')
-
-    def _create_user(self, username="john", password="doe", **kwargs):
-        user = get_user_model().objects.create(
-            username=username, is_active=True, **kwargs
-        )
-        if password:
-            user.set_password(password)
-        else:
-            user.set_unusable_password()
-        user.save()
-        return user
-
-    def _create_user_and_login(self, usable_password=True):
-        password = "doe" if usable_password else False
-        user = self._create_user(password=password)
-        self.client.force_login(user)
-        return user
+        setUpUserWithInterfaceCallAndContract(self)
 
     def test_homepage(self):
         c = self.client
@@ -320,6 +352,9 @@ class ExcelTests(TestCase):
         self.assertEqual(status, expected_status)
 
 class LoginRequiredTests(TestCase):
+    """
+    All pages require login, except the login page
+    """
 
     def test_login_required_home_page(self):
         response = self.client.get(reverse("home"))
@@ -328,3 +363,106 @@ class LoginRequiredTests(TestCase):
     def test_login_required_upload_page(self):
         response = self.client.get(reverse("upload"))
         self.assertRedirects(response, reverse('account_login') + "?next=/upload/")
+
+
+
+class RoleBasedAuthorizationSuperuserTests(TestCase):
+
+    def setUp(self):
+        setUpUserWithInterfaceCallAndContract(self)
+
+    def test_superuser_sees_upload_button(self):
+        response = self.client.get(reverse("interface_call_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload file')
+
+    def test_superuser_can_access_upload_form(self):
+        response = self.client.get(reverse("upload"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_superuser_sees_contracts_of_interfaceCall(self):
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'NL-123')
+        self.assertContains(response, 'Test Contract')
+        self.assertContains(response, 'T. Ester', count=1)
+
+
+def print_permissions_and_groups():
+    all_permissions = Permission.objects.all()
+    print("--------------------------------------")
+    print("           PERMISSIONS")
+    print("--------------------------------------")
+    for permission in all_permissions:
+        print(f"Found permission: {permission.codename}")
+    print("--------------------------------------")
+
+    all_groups = Group.objects.all()
+    print("--------------------------------------")
+    print("           GROUPS")
+    print("--------------------------------------")
+    for group in all_groups:
+        print(f"Found group: {group.name}")
+        permissions = group.permissions.all()
+        if len(permissions) == 0:
+            print("- has no permissions")
+        for permission in permissions:
+            print(f"- has permission: {permission.codename}")
+    print("--------------------------------------")
+
+
+class RoleBasedAuthorizationClusterLeadTests(TestCase):
+
+    def setUp(self):
+        setUpUserWithInterfaceCallAndContract(self, superuser=False, group_name="Cluster Lead")
+        #print_permissions_and_groups()
+
+    def test_cluster_lead_sees_no_upload_button(self):
+        response = self.client.get(reverse("interface_call_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Upload file')
+
+    def test_cluster_lead_can_not_access_upload_form(self):
+        response = self.client.get(reverse("upload"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_cluster_lead_has_view_contract_permissions(self):
+        permissions = self.user.user_permissions.all()
+        self.assertTrue(self.user.has_perm('rm.view_contract'))
+
+    def test_cluster_lead_sees_contracts_of_interfaceCall(self):
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'NL-123')
+        self.assertContains(response, 'Test Contract')
+        self.assertContains(response, 'T. Ester', count=1)
+
+class RoleBasedAuthorizationBuyerTests(TestCase):
+
+
+    def setUp(self):
+        setUpUserWithInterfaceCallAndContract(self, superuser=False, group_name="Buyer")
+
+    def test_buyer_sees_upload_button(self):
+        response = self.client.get(reverse("interface_call_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload file')
+
+    def test_buyer_can_access_upload_form(self):
+        response = self.client.get(reverse("upload"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_buyer_has_the_right_permissions(self):
+        permissions = self.user.user_permissions.all()
+        self.assertTrue(self.user.has_perm('rm.view_contract'))
+        self.assertTrue(self.user.has_perm('rm.upload_contract_file'))
+        self.assertTrue(self.user.has_perm('rm.call_contract_interface'))
+
+    def test_buyer_sees_contracts_of_interfaceCall(self):
+        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'NL-123')
+        self.assertContains(response, 'Test Contract')
+        self.assertContains(response, 'T. Ester', count=1)
+
+

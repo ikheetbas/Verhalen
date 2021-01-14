@@ -1,14 +1,14 @@
 import logging
 
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
 from django.views.generic import ListView, TemplateView
 
-from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR
+from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR, NO_PERMISSION_TO_UPLOAD_CONTRACT_FILE
 from rm.forms import UploadFileForm
 from rm.models import Contract, InterfaceCall
 from rm.interface_file_util import check_file_and_interface_type
@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
 
+
+@permission_required('rm.upload_contract_file', raise_exception=True)
 def upload_file(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
@@ -66,6 +68,7 @@ class InterfaceCallListView(ListView):
     template_name = 'rm/interface_call_list.html'
     ordering = ['-date_time_creation']
 
+@permission_required('rm.view_contract', raise_exception=True)
 def interface_call_details(request, pk: int):
     logger.debug(f"interface_call_details: pk: {pk}")
     interfaceCall = InterfaceCall.objects.get(pk=pk)

@@ -120,7 +120,7 @@ This updates the database with the latest structure changes
 
 # Reinitialize the database
 
-Want to start all over? Easy! The database is a 'volume' defined in the 
+Want to start with a new empty database? Easy! The database is a 'volume' defined in the 
 docker-compose. By removing that volume and restart the containers the
 database is recreated. After that you run the migrates and create the 
 superuser again:

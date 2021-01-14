@@ -9,6 +9,11 @@ class InterfaceCall(models.Model):
     """
     Call of interface (or file upload)
     """
+    class Meta:
+        permissions = [
+            ("upload_contract_file",         "Can upload file with contracts"),
+            ("call_contract_interface", "Can call the (negometrix) contract-interface"),
+        ]
     date_time_creation = models.DateTimeField(auto_now=False)
     filename = models.CharField(max_length=150, blank=True)
     status = models.CharField(max_length=15)

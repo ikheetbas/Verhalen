@@ -4,6 +4,10 @@
 # to activate: 'source local_settings.sh' on command line
 # -----------------------------------------------------------------------
 
+# or to past it in the env settings of your IDE:
+# DEBUG=True;SECRET_KEY=bm5d\)*t\)bp95-q*gq85k3-e^=\)r\)+-8grp+\&wu+d#^eji\(enx9;ENVIRONMENT=dev-local;POSTGRES_DB=npo_rm_db;POSTGRES_USER=npo_rm_user;POSTGRES_PASSWORD=testpass123;DB_HOST=localhost
+# use 'echo $DEBUG' to check if it works
+
 DEBUG=True
 export DEBUG
 
