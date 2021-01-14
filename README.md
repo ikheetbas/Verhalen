@@ -35,13 +35,23 @@ Global steps (to be refined later)
     placed, e.g. /python/django. Clone the repository which will create a subdirectory
     'npo-rm' in there. Type:
     ```
-    git clone https://github.com/EelcoA/npo-rm.git
+    git clone https://github.com/aesset/npo-rm
     ```
 4) go into the newly created directory:
     ```
     cd npo-rm
     ```
-5) start app:
+5) Choose  the right branche to work with
+   Available branches:
+    - master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
+    - acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
+    - dev: development 
+    
+   Default you're in ```master```, if you want to change:
+   ```
+   git checkout <branch>
+   ```
+6) start app:
     ```
     docker-compose up --build 
     ```
@@ -60,24 +70,24 @@ Global steps (to be refined later)
     web_1  | Quit the server with CONTROL-C.
     ```
 
-6) Create the database tables
+7) Create the database tables
 
     Open a new command line window for the next steps:
     ```
     docker-compose exec web python manage.py migrate
     ```
 
-7) Create the admin user
+8) Create the admin user
     ```
     docker-compose exec web python manage.py createsuperuser
     ```
     Fill in: npo-rm-admin with password testpass123, or something else ;-)
 
-8) check the app on:
+9) check the app on:
     - http://localhost:8100
     - http://localhost:8100/admin   -> log in with the user you created 
 
-9) Stop the docker images with the application and database:
+10) Stop the docker images with the application and database:
     
     By pressing CTRL+C in the window where you started the images.
 
