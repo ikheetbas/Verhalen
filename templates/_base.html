@@ -17,9 +17,38 @@
         <div id="app-title">NPO Resource Manager</div>
     </h1>
     <div id="version_number" >
-        version: {{ APP_VERSION_NUMBER }}<br>
-        env: {{ ENVIRONMENT }}
+        <table>
+            <tr>
+                <td>version: </td><td><strong>{{ APP_VERSION_NUMBER }}</strong></td>
+            </tr>
+            <tr>
+                <td>env: </td><td><strong>{{ ENVIRONMENT }}</strong></td>
+            </tr>
+            {% if user.is_authenticated %}
+                <tr>
+                    <td>user: </td><td><strong>{{user.username}} ({{ user.groups.all|join:", " }})</strong></td>
+                </tr>
+            {% endif %}
+        </table>
     </div>
+    <br>
+
+    {% if user.is_authenticated %}
+        <div class="container-fluid pl-3">
+            <ul class="menu-nav">
+                <li><a href="/">Home</a></li>
+                <li><a href="{% url 'interface_call_list' %}">Upload files</a></li>
+                <li><a href="{% url 'contract_list' %}">Contracten</a></li>
+                {% if user.is_superuser %}
+                    <li><a href="/admin">Admin</a></li>
+                {%  else %}
+                    <li><a href="/admin" style="pointer-events: none">Admin</a></li>
+                {% endif %}
+                <li><a href="{% url 'account_logout' %}">Log Out</a></li>
+            </ul>
+        </div>
+    {% endif %}
+
     <div class="container-fluid pl-3">
     {% block content %}
     {% endblock content %}

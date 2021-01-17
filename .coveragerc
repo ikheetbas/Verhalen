@@ -5,3 +5,5 @@ omit =
     # omit not changed config files
     config/asgi.py
     config/wsgi.py
+    config/settings_pycharm.py
+    users/management/*

@@ -16,14 +16,21 @@ from .interface_file import check_file_is_excel_file, check_file_has_excel_exten
 from .negometrix import register_contract, NegometrixInterfaceFile
 
 
-def setUpUserWithInterfaceCallAndContract(self, superuser=True, group_name=None):
+def setUpUserWithInterfaceCallAndContract(self,
+                                          superuser=True,
+                                          group_name=None,
+                                          username="John",
+                                          name_in_negometrix="John"):
     """
     When called without parameters, you get a superuser
     """
     if superuser:
         self.user = _create_superuser()
     else:
-        self.user = _create_user(group_name=group_name)
+        self.user = _create_user(group_name=group_name,
+                                 username=username,
+                                 name_in_negometrix=name_in_negometrix,
+                                 )
 
     self.client.force_login(self.user)
 
@@ -33,7 +40,7 @@ def setUpUserWithInterfaceCallAndContract(self, superuser=True, group_name=None)
                                                       system='TestSysteem')
     self.contract_1 = Contract.objects.create(contract_nr='NL-123',
                                               seq_nr=0,
-                                              description='Test Contract',
+                                              description='Test Contract 1',
                                               contract_owner='T. Ester',
                                               interface_call=self.interfaceCall,
                                               contract_name='Test contract naam')
@@ -52,11 +59,18 @@ def _create_superuser(username="john", password="doe", **kwargs):
     user.save()
     return user
 
-def _create_user(username="john", password="doe", group_name=None, **kwargs):
+def _create_user(username="john",
+                 password="doe",
+                 group_name=None,
+                 name_in_negometrix="J. Doe",
+                 **kwargs):
+
     user = get_user_model().objects.create(username=username,
                                            is_active=True,
                                            **kwargs
                                            )
+
+    user.name_in_negometrix = name_in_negometrix
     if password:
         user.set_password(password)
     else:
@@ -420,7 +434,7 @@ class RoleBasedAuthorizationClusterLeadTests(TestCase):
     def test_cluster_lead_sees_no_upload_button(self):
         response = self.client.get(reverse("interface_call_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Upload file')
+        self.assertNotContains(response, 'Upload file</a>')
 
     def test_cluster_lead_can_not_access_upload_form(self):
         response = self.client.get(reverse("upload"))
@@ -438,7 +452,6 @@ class RoleBasedAuthorizationClusterLeadTests(TestCase):
         self.assertContains(response, 'T. Ester', count=1)
 
 class RoleBasedAuthorizationBuyerTests(TestCase):
-
 
     def setUp(self):
         setUpUserWithInterfaceCallAndContract(self, superuser=False, group_name="Buyer")
@@ -462,7 +475,28 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'NL-123')
-        self.assertContains(response, 'Test Contract')
+        self.assertContains(response, 'Test Contract 1')
         self.assertContains(response, 'T. Ester', count=1)
 
 
+class RestrictedContractView(TestCase):
+
+    def test_buyer_should_see_his_own_contract(self):
+        setUpUserWithInterfaceCallAndContract(self,
+                                              superuser=False,
+                                              group_name="Buyer",
+                                              name_in_negometrix="T. Ester")
+
+        response = self.client.get(reverse("contract_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Contract 1')
+
+    def test_buyer_should_not_see_others_contract(self):
+        setUpUserWithInterfaceCallAndContract(self,
+                                              superuser=False,
+                                              group_name="Buyer",
+                                              name_in_negometrix="Bart")
+
+        response = self.client.get(reverse("contract_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Test Contract 1')

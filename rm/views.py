@@ -57,10 +57,20 @@ def upload_file(request):
     return render(request, 'rm/upload.html', {'form': form})
 
 
-class ContractListView(ListView):
+class ContractListView(PermissionRequiredMixin, ListView):
+    permission_required = 'rm.view_contract'
+    raise_exception = True
+
     model = Contract
     context_object_name = 'contract_list'
     template_name = 'contract_list.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Contract.objects.all()
+        else:
+            return Contract.objects.filter(contract_owner=user.name_in_negometrix)
 
 class InterfaceCallListView(ListView):
     model = InterfaceCall

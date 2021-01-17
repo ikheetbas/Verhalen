@@ -21,7 +21,7 @@ from django.urls import path, include
 # TODO Change the default admin url
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls, name="admin"),
 
     # # Third Party
     # path('accounts/', include('allauth.urls')),

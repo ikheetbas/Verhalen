@@ -4,6 +4,8 @@ from django.db import models
 
 class Department(models.Model):
     name = models.CharField("Naam", max_length=50)
+    def __str__(self):
+        return f"Department: {self.name}"
 
 
 class Cluster(models.Model):
@@ -19,7 +21,7 @@ class Team(models.Model):
     cluster = models.ForeignKey(Cluster,on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Cluster: {self.name}"
+        return f"Team: {self.name}"
 
 
 class CustomUser(AbstractUser):
