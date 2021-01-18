@@ -7,7 +7,9 @@ For local deployment you can run it in 2 ways:
 
 The preferred way is to deploy it in Docker, since all dependencies (python, 
 libraries and postgres database) are included in the Docker images. 
-Only debugging and accessing the database is harder. This README only shows the Docker version.
+Only debugging and accessing the database is harder. 
+
+This README only shows the Docker version.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
@@ -39,32 +41,33 @@ After installation:
 1. (re)start Docker
 
 #### Install Git
-see [git-scm.com](https://git-scm.com/downloads)
+See [git-scm.com](https://git-scm.com/downloads)
    
 #### Check out the code
-
 On the command line, go to the location where the project directory has to be
 placed, e.g. /python/django. Clone the repository which will create a subdirectory
-'npo-rm' in there. Type:
+'npo-rm' in there.
+
 ```
 git clone https://github.com/aesset/npo-rm
 ```
-1. go into the newly created directory:
+
+1. Go into the newly created directory:
     ```
     cd npo-rm
     ```
 1. Choose  the right branch to work with
+   
    Available branches:
     * master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
     * acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
     * dev: development 
     
-   Default you're in ```master```, if you want to change:
+   Default you're in ```master```. Change branch is done with this command:
    ```
    git checkout <branch>
    ```
 #### Start app
-
 ```
 docker-compose up --build 
 ```
@@ -86,14 +89,12 @@ web_1  | Quit the server with CONTROL-C.
 ```
 
 #### Create the database tables
-
 Open a new command line window for the next steps:
 ```
 docker-compose exec web python manage.py migrate
 ```
 
 #### Create the admin user
-
 ```
 docker-compose exec web python manage.py createsuperuser
 ```
@@ -106,13 +107,16 @@ e-mail address:  your@name.com
 password:        secretsSecrets
 ```
 
-#### Start the app:
-    * http://localhost:8100
-    * http://localhost:8100/admin   -> log in with the user you created 
+#### Start the app
+```
+* http://localhost:8100
+* http://localhost:8100/admin   -> log in with the user you created 
+```
 
-#### Stop the docker images with the application and database:
-    
-    By pressing CTRL+C in the window where you started the images.
+#### Stop the Docker images with the application and database
+```    
+By pressing CTRL+C in the window where you started the images.
+```
 
 ## Start and stop the application
 From now on you can start and stop the application with the following 
@@ -127,15 +131,14 @@ docker-compose logs -f    # follow the logging
 ```
  
 ## Database location
-   
 The database is placed local on your pc. The location depends on the
 installation of Docker, but it is something like:
+
 ```bash
 var/lib/docker/volumes/npo-rm_postgres_data
 ```
 
 ## Upgrade the application
-
 Update the sources: go to the npo-rm directory on the command line and type:
 ```bash
 git pull
@@ -153,7 +156,6 @@ docker-compose exec web python manage.py migrate
 This updates the database with the latest structure changes
 
 # Reinitialize the database
-
 Want to start with a new empty database? Easy! The database is a 'volume' defined in the 
 docker-compose. By removing that volume and restart the containers the
 database is recreated. After that you run the migrates and create the 
@@ -165,7 +167,7 @@ docker volume ls
 DRIVER    VOLUME NAME
 local     npo-rm_postgres_data      <-- this is the one
 ```
-If you want to get more info about it:
+If you want to get more info about the volumes:
 ```bash
 docker volume inspect npo<tab> <-- press tab for auto completion
 ```
@@ -173,6 +175,7 @@ Then to remove:
 ```bash
 docker volume rm npo<tab>
 ```
+
 Start the containers, create the tables and create superuser:
 ```bash
 docker-compose up -d
@@ -187,7 +190,9 @@ And you're back in business!
 ```bash
 python mangage.py test
 ```
+
 to see the coverage:
+
 ```bash
 coverage run --source='.' manage.py test
 coverate html
