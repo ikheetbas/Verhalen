@@ -12,7 +12,7 @@ Only debugging and accessing the database is harder. This README only shows the 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
 
-####Install Docker, see [docker.com](https://www.docker.com/products/docker-desktop). 
+#### Install Docker, see [docker.com](https://www.docker.com/products/docker-desktop). 
 After installation:
 
 1. Check Docker installation
@@ -43,9 +43,9 @@ see [git-scm.com](https://git-scm.com/downloads)
 On the command line, go to the location where the project directory has to be
 placed, e.g. /python/django. Clone the repository which will create a subdirectory
 'npo-rm' in there. Type:
-    ```
-    git clone https://github.com/aesset/npo-rm
-    ```
+```
+git clone https://github.com/aesset/npo-rm
+```
 1. go into the newly created directory:
     ```
     cd npo-rm
@@ -60,10 +60,10 @@ placed, e.g. /python/django. Clone the repository which will create a subdirecto
    ```
    git checkout <branch>
    ```
-#### Start app:
+#### Start app
 
 ```
-    docker-compose up --build 
+docker-compose up --build 
 ```
 
 This first time it will take a while since the base images for Python and 
@@ -71,28 +71,28 @@ Postgres have to be downloaded. If all goes well it should end with something
 like:
 
 ```
-    web_1  | [30/Nov/2020 16:46:36] "GET /admin/jsi18n/ HTTP/1.1" 200 3187
-    web_1  | Watching for file changes with StatReloader
-    web_1  | Performing system checks...
-    web_1  | 
-    web_1  | System check identified no issues (0 silenced).
-    web_1  | December 01, 2020 - 08:49:29
-    web_1  | Django version 3.1.3, using settings 'config.settings'
-    web_1  | Starting development server at http://0.0.0.0:8100/
-    web_1  | Quit the server with CONTROL-C.
+web_1  | [30/Nov/2020 16:46:36] "GET /admin/jsi18n/ HTTP/1.1" 200 3187
+web_1  | Watching for file changes with StatReloader
+web_1  | Performing system checks...
+web_1  | 
+web_1  | System check identified no issues (0 silenced).
+web_1  | December 01, 2020 - 08:49:29
+web_1  | Django version 3.1.3, using settings 'config.settings'
+web_1  | Starting development server at http://0.0.0.0:8100/
+web_1  | Quit the server with CONTROL-C.
 ```
 
 #### Create the database tables
 
-    Open a new command line window for the next steps:
-    ```
-    docker-compose exec web python manage.py migrate
-    ```
+Open a new command line window for the next steps:
+```
+docker-compose exec web python manage.py migrate
+```
 
 #### Create the admin user
 
 ```
-    docker-compose exec web python manage.py createsuperuser
+docker-compose exec web python manage.py createsuperuser
 ```
 
 Fill in (these are examples you can change this to something you like)
