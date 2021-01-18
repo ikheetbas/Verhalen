@@ -2,63 +2,75 @@
 
 ## Installation instructions
 For local deployment you can run it in 2 ways: 
-- in Docker on your pc
-- local on your pc
+* in Docker on your pc
+* local on your pc
 
 The preferred way is to deploy it in Docker, since all dependencies (python, 
 libraries and postgres database) are included in the Docker images. 
-Only debugging and accessing the database is harder.
+Only debugging and accessing the database is harder. This README only shows the Docker version.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
-1) install Docker, see <a href="https://www.docker.com/products/docker-desktop" target="_blank">docker.com</a>. 
 
-    After installation:
+####Install Docker, see [docker.com](https://www.docker.com/products/docker-desktop). 
+After installation:
 
-    1.1 make sure that you have a 'docker' group and that your user account 
-    has been added to it. If not, create the group and add your user. On linux:
+1. Check Docker installation
+   Make sure that Docker is installed correctly. 
+    ```bash
+    docker -D run hello-world
     ```
+   
+1. Create Docker group and add your (computer) user to this group
+    If you don't want to run Docker as root you have to give access to your user. 
+    This is done by making a Docker group and adding your computer user to this group.
+    
+    On linux:
+    ```bash
     sudo groupadd docker
     sudo gpasswd -a ${USER} docker
     ```
-    For mac, see here how to setup users and groups: 
-    <a href="https://support.apple.com/guide/mac-help/set-up-other-users-on-your-mac-mtusr001/mac" 
-    target="_blank">support.apple.com</a>
-    
-    1.2 and (re)start docker
+    For Mac, see here how to set up users and groups: 
+    [support.apple.com](https://support.apple.com/guide/mac-help/set-up-other-users-on-your-mac-mtusr001/mac)
 
-2) install git, see <a href="https://git-scm.com/downloads" target="_blank">git-scm.com</a>
+1. (re)start Docker
+
+#### Install Git
+see [git-scm.com](https://git-scm.com/downloads)
    
-3) checkout the code
+#### Check out the code
 
-    On the command line, go to the location where the project directory has to be
-    placed, e.g. /python/django. Clone the repository which will create a subdirectory
-    'npo-rm' in there. Type:
+On the command line, go to the location where the project directory has to be
+placed, e.g. /python/django. Clone the repository which will create a subdirectory
+'npo-rm' in there. Type:
     ```
     git clone https://github.com/aesset/npo-rm
     ```
-4) go into the newly created directory:
+1. go into the newly created directory:
     ```
     cd npo-rm
     ```
-5) Choose  the right branche to work with
+1. Choose  the right branch to work with
    Available branches:
-    - master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
-    - acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
-    - dev: development 
+    * master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
+    * acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
+    * dev: development 
     
    Default you're in ```master```, if you want to change:
    ```
    git checkout <branch>
    ```
-6) start app:
-    ```
+#### Start app:
+
+```
     docker-compose up --build 
-    ```
-    This first time it will take a while since the base images for Python and 
-    Postgres have to be downloaded. If all goes well it should end with something 
-    like:
-    ```
+```
+
+This first time it will take a while since the base images for Python and 
+Postgres have to be downloaded. If all goes well it should end with something 
+like:
+
+```
     web_1  | [30/Nov/2020 16:46:36] "GET /admin/jsi18n/ HTTP/1.1" 200 3187
     web_1  | Watching for file changes with StatReloader
     web_1  | Performing system checks...
@@ -68,32 +80,41 @@ Global steps (to be refined later)
     web_1  | Django version 3.1.3, using settings 'config.settings'
     web_1  | Starting development server at http://0.0.0.0:8100/
     web_1  | Quit the server with CONTROL-C.
-    ```
+```
 
-7) Create the database tables
+#### Create the database tables
 
     Open a new command line window for the next steps:
     ```
     docker-compose exec web python manage.py migrate
     ```
 
-8) Create the admin user
-    ```
+#### Create the admin user
+
+```
     docker-compose exec web python manage.py createsuperuser
-    ```
-    Fill in: npo-rm-admin with password testpass123, or something else ;-)
+```
 
-9) check the app on:
-    - http://localhost:8100
-    - http://localhost:8100/admin   -> log in with the user you created 
+Fill in (these are examples you can change this to something you like)
 
-10) Stop the docker images with the application and database:
+```
+user:            npo-rm-admin
+e-mail address:  your@name.com  
+password:        secretsSecrets
+```
+
+#### Start the app:
+    * http://localhost:8100
+    * http://localhost:8100/admin   -> log in with the user you created 
+
+#### Stop the docker images with the application and database:
     
     By pressing CTRL+C in the window where you started the images.
 
 ## Start and stop the application
 From now on you can start and stop the application with the following 
 commands executed in the npo-rm/ directory: 
+
 ```
 docker-compose up         # starts the application with log in foreground
 docker-compose up -d      # starts the application in the background
@@ -106,24 +127,24 @@ docker-compose logs -f    # follow the logging
    
 The database is placed local on your pc. The location depends on the
 installation of Docker, but it is something like:
-```
+```bash
 var/lib/docker/volumes/npo-rm_postgres_data
 ```
 
 ## Upgrade the application
 
 Update the sources: go to the npo-rm directory on the command line and type:
-```
+```bash
 git pull
 ```
 
 Start the application, with the build option, maybe not needed, but sometimes it is:
-```
+```bash
 docker-compose up --build
 ```
 
 Go to a new commandline window in the npo-rm directory and type:
-```
+```bash
 docker-compose exec web python manage.py migrate
 ```
 This updates the database with the latest structure changes
@@ -136,47 +157,47 @@ database is recreated. After that you run the migrates and create the
 superuser again:
 
 Check the volumes: 
-```
-$ docker volume ls
+```bash
+docker volume ls
 DRIVER    VOLUME NAME
 local     npo-rm_postgres_data      <-- this is the one
 ```
 If you want to get more info about it:
-```
-$ docker volume inspect npo<tab> <-- press tab for auto completion
+```bash
+docker volume inspect npo<tab> <-- press tab for auto completion
 ```
 Then to remove:
-```
-$ docker volume rm npo<tab>
+```bash
+docker volume rm npo<tab>
 ```
 Start the containers, create the tables and create superuser:
+```bash
+docker-compose up -d
+docker-compose exec web python manage.py migrate
+docker-compose exec web python manage.py createsuperuser
 ```
-$ docker-compose up -d
-$ docker-compose exec web python manage.py migrate
-$ docker-compose exec web python manage.py createsuperuser
-```
-Fill in: npo-rm-admin with password testpass123, or something else ;-)
+Fill in: your admin user credentials npo-rm-admin with password secretSecrets, or something else ;-)
 
 And you're back in business!
 
 ## Run tests
-```
-$ python mangage.py test
+```bash
+python mangage.py test
 ```
 to see the coverage:
-```
-$ coverage run --source='.' manage.py test
-$ coverate html
+```bash
+coverage run --source='.' manage.py test
+coverate html
 ```
 And open htmlcov/index.html
 
 ## Jira
-Also on aesset.atlassian.net.
+Also on [aesset.atlassian.net](https://aesset.atlassian.net).
 
 #### Author
 - Eelco Aartsen
-- eelco@aesset.nl
+- [eelco@aesset.nl](mailto:eelco@aesset.nl)
 - AESSET IT - The Netherlands
-- www.aesset.nl
+- [www.aesset.nl](https://www.aesset.nl)
 
 
