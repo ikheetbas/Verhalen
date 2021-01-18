@@ -16,13 +16,16 @@ Global steps (to be refined later)
 After installation:
 
 1. Check Docker installation
+   
    Make sure that Docker is installed correctly. 
     ```bash
     docker -D run hello-world
     ```
    
 1. Create Docker group and add your (computer) user to this group
+    
     If you don't want to run Docker as root you have to give access to your user. 
+    
     This is done by making a Docker group and adding your computer user to this group.
     
     On linux:
