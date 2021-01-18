@@ -14,7 +14,7 @@ This README shows how to install the Docker version.
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
 
-#### Install Docker
+#### 1. Install Docker
 See [docker.com](https://www.docker.com/products/docker-desktop)
 
 1. Check Docker is installed correctly
@@ -42,10 +42,10 @@ See [docker.com](https://www.docker.com/products/docker-desktop)
 
 1. (re)start Docker
 
-#### Install Git
+#### 2. Install Git
 See [git-scm.com](https://git-scm.com/downloads)
    
-#### Get the code from GitHub
+#### 3. Get the code from GitHub
 On the command line, go to the location where the project directory has to be
 placed, e.g. /python/django. Clone the repository which will create a subdirectory
 'npo-rm' in there.
@@ -59,7 +59,7 @@ Go into the newly created directory:
 cd npo-rm
 ```
 
-#### Choose  the right branch
+#### 4. Choose the right branch
 Available branches:
 * master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
 * acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
@@ -69,7 +69,7 @@ Available branches:
    ```
    git checkout <branch>
    ```
-#### Start app
+#### 5. Start app
 ```
 docker-compose up --build 
 ```
@@ -90,13 +90,13 @@ web_1  | Starting development server at http://0.0.0.0:8100/
 web_1  | Quit the server with CONTROL-C.
 ```
 
-#### Create the database tables
+#### 6. Create the database tables
 Open a new Terminal window for the next steps:
 ```
 docker-compose exec web python manage.py migrate
 ```
 
-#### Create the admin user
+#### 7. Create the admin user
 ```
 docker-compose exec web python manage.py createsuperuser
 ```
@@ -109,13 +109,13 @@ e-mail address:  your@name.com
 password:        secretsSecrets
 ```
 
-#### Start the app
+#### 8. Start the app
 ```
 * http://localhost:8100
 * http://localhost:8100/admin   -> log in with the user you created 
 ```
 
-#### Stop the Docker images with the application and database
+#### 9. Stop the Docker images with the application and database
 ```    
 By pressing CTRL+C in the window where you started the images.
 ```
