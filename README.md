@@ -14,12 +14,11 @@ This README only shows the Docker version.
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
 
-#### Install Docker, see [docker.com](https://www.docker.com/products/docker-desktop). 
-After installation:
+#### Install Docker
+See [docker.com](https://www.docker.com/products/docker-desktop)
 
-1. Check Docker installation
-   
-   Make sure that Docker is installed correctly. 
+1. Check Docker is installed correctly
+
     ```bash
     docker -D run hello-world
     ```
@@ -43,7 +42,7 @@ After installation:
 #### Install Git
 See [git-scm.com](https://git-scm.com/downloads)
    
-#### Check out the code
+#### Get the code from GitHub
 On the command line, go to the location where the project directory has to be
 placed, e.g. /python/django. Clone the repository which will create a subdirectory
 'npo-rm' in there.
@@ -155,7 +154,7 @@ docker-compose exec web python manage.py migrate
 ```
 This updates the database with the latest structure changes
 
-# Reinitialize the database
+## Reinitialize the database
 Want to start with a new empty database? Easy! The database is a 'volume' defined in the 
 docker-compose. By removing that volume and restart the containers the
 database is recreated. After that you run the migrates and create the 
