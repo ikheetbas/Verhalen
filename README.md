@@ -201,8 +201,10 @@ coverate html
 ```
 And open htmlcov/index.html
 
-## Jira
-Also on [aesset.atlassian.net](https://aesset.atlassian.net).
+## Jira and Confluence
+Curious where the team is working on? Or interested in the documentation? This can be found  on:
+
+[aesset.atlassian.net](https://aesset.atlassian.net).
 
 #### Author
 - Eelco Aartsen
