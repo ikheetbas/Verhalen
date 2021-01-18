@@ -49,16 +49,16 @@ placed, e.g. /python/django. Clone the repository which will create a subdirecto
 git clone https://github.com/aesset/npo-rm
 ```
 
-1. Go into the newly created directory:
-    ```
-    cd npo-rm
-    ```
+Go into the newly created directory:
+```
+cd npo-rm
+```
+
 #### Choose  the right branch
-   
-   Available branches:
-    * master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
-    * acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
-    * dev: development 
+Available branches:
+* master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
+* acc: at the moment the latest version, directly deployed to http://npo-rm-acc-npo-resource-manager-acc.apps.cluster.chp4.io/
+* dev: development 
     
    Default you're in ```master```. Change branch is done with this command:
    ```
