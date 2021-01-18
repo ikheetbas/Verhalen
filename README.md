@@ -12,7 +12,7 @@ Only debugging and accessing the database is harder.
 This README shows how to install the Docker version.
 
 ### Installation in Docker on your desktop
-Global steps (to be refined later)
+Global steps (to be refined later.)
 
 #### 1. Install Docker
 See [docker.com](https://www.docker.com/products/docker-desktop)
@@ -202,7 +202,7 @@ coverate html
 And open htmlcov/index.html
 
 ## Jira and Confluence
-Curious where the team is working on? Or interested in the documentation? This can be found  on:
+Curious where the team is working on? Interested in the documentation? This can be found on:
 
 [aesset.atlassian.net](https://aesset.atlassian.net).
 
