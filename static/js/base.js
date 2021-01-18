@@ -17,4 +17,9 @@ jQuery(document).ready(function($) {
         $(".act span").text(x);
         $(".prev span").text(y);
     });
+
+    $('#sidebarCollapse').on('click', function () {
+        $('#sidebar').toggleClass('active');
+    });
 });
+

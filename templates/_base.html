@@ -3,11 +3,32 @@
 {%  load static %}
 <head>
     <meta charset="utf-8">
-    <title>{% block title %}NPO Resource Manager{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>{% block title %}NPO Resource Manager{% endblock title %}</title>
+
     <link rel="shortcut icon" type="image/png" href="{% static 'images/npo.ico' %}"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+          integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2"
+          crossorigin="anonymous">
+    <!-- Our Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+    <!-- Font Awesome JS -->
+    <script defer
+            src="https://use.fontawesome.com/releases/v5.0.13/js/solid.js"
+            integrity="sha384-tzzSw1/Vo+0N5UhStP3bvwWPq+uvzCMfrN1fEFe+xBmv1C/AtVX5K0uZtmcHitFZ"
+            crossorigin="anonymous"></script>
+    <script defer
+            src="https://use.fontawesome.com/releases/v5.0.13/js/fontawesome.js"
+            integrity="sha384-6OIrr52G08NpOFSZdxxz1xdNSndlD4vdcf/q2myIUVO0VsqaGHJsB0RaBE01VTOY"
+            crossorigin="anonymous"></script>
+
+
 </head>
 <body>
     <h1>
@@ -16,7 +37,7 @@
         </a>
         <div id="app-title">NPO Resource Manager</div>
     </h1>
-    <div id="version_number" >
+    <div id="system_info" >
         <table>
             <tr>
                 <td>version: </td><td><strong>{{ APP_VERSION_NUMBER }}</strong></td>
@@ -33,26 +54,96 @@
     </div>
     <br>
 
-    {% if user.is_authenticated %}
-        <div class="container-fluid pl-3">
-            <ul class="menu-nav">
-                <li><a href="/">Home</a></li>
-                <li><a href="{% url 'interface_call_list' %}">Upload files</a></li>
-                <li><a href="{% url 'contract_list' %}">Contracten</a></li>
-                {% if user.is_superuser %}
-                    <li><a href="/admin">Admin</a></li>
-                {%  else %}
-                    <li><a href="/admin" style="pointer-events: none">Admin</a></li>
-                {% endif %}
-                <li><a href="{% url 'account_logout' %}">Log Out</a></li>
-            </ul>
+<div class="wrapper">
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h3>{{ user.username }}</h3>
         </div>
-    {% endif %}
 
-    <div class="container-fluid pl-3">
-    {% block content %}
-    {% endblock content %}
+        <ul class="list-unstyled components">
+{#            <p>Extra text, whatever</p>#}
+            <li class="active">
+                <a href="#homeSubmenu"
+                   data-toggle="collapse"
+                   aria-expanded="false"
+                   class="dropdown-toggle">Home</a>
+                <ul class="collapse list-unstyled" id="homeSubmenu">
+                    <li>
+                        <a href="#">Home 1</a>
+                    </li>
+                    <li>
+                        <a href="#">Home 2</a>
+                    </li>
+                    <li>
+                        <a href="#">Home 3</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#">About</a>
+            </li>
+            <li>
+                <a href="#pageSubmenu"
+                   data-toggle="collapse"
+                   aria-expanded="false"
+                   class="dropdown-toggle">Pages</a>
+                <ul class="collapse list-unstyled" id="pageSubmenu">
+                    <li>
+                        <a href="#">Page 1</a>
+                    </li>
+                    <li>
+                        <a href="#">Page 2</a>
+                    </li>
+                    <li>
+                        <a href="#">Page 3</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#">Portfolio</a>
+            </li>
+            <li>
+                <a href="#">Contact</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div id="content">
+
+            <!-- Sidebar toggle Button -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="container-fluid" >
+
+                    <button type="button" id="sidebarCollapse" class="btn btn-info">
+                        <i class="fas fa-align-right"></i>
+                        <span> Sidebar</span>
+                    </button>
+                    {% if user.is_authenticated %}
+                        <ul class="menu-nav">
+                            <li><a href="/">Home</a></li>
+                            <li><a href="{% url 'interface_call_list' %}">Upload files</a></li>
+                            <li><a href="{% url 'contract_list' %}">Contracten</a></li>
+                            {% if user.is_superuser %}
+                                <li><a href="/admin">Admin</a></li>
+                            {%  else %}
+                                <li><a href="/admin" style="pointer-events: none">Admin</a></li>
+                            {% endif %}
+                            <li><a href="{% url 'account_logout' %}">Log Out</a></li>
+                        </ul>
+                    {% endif %}
+                </div>
+            </nav>
+
+        <div class="container-fluid" >
+
+            {% block content %}
+            {% endblock content %}
+        </div>
+
     </div>
+
+</div>
     <!-- JavaScript -->
     <!-- First jQuery, Popper.js, and Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
