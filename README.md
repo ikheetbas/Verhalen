@@ -23,6 +23,11 @@ See [docker.com](https://www.docker.com/products/docker-desktop)
     docker -D run hello-world
     ```
    
+1. Check Docker permissions
+   
+   Docker needs access to the folder where the Resource Manager will be installed. This is easiest done by opening
+   the Docker desktop application and accept permission request for the (parent) folder where the Resource Manager 
+   application will be installed.
 1. Create Docker group and add your (computer) user to this group
     
     With adding your computer user to the docker group you don't have to run Docker as root.
@@ -86,7 +91,7 @@ web_1  | Quit the server with CONTROL-C.
 ```
 
 #### Create the database tables
-Open a new command line window for the next steps:
+Open a new Terminal window for the next steps:
 ```
 docker-compose exec web python manage.py migrate
 ```
