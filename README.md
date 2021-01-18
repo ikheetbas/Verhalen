@@ -9,7 +9,7 @@ The preferred way is to deploy it in Docker, since all dependencies (python,
 libraries and postgres database) are included in the Docker images. 
 Only debugging and accessing the database is harder. 
 
-This README only shows the Docker version.
+This README shows how to install the Docker version.
 
 ### Installation in Docker on your desktop
 Global steps (to be refined later)
@@ -25,11 +25,9 @@ See [docker.com](https://www.docker.com/products/docker-desktop)
    
 1. Create Docker group and add your (computer) user to this group
     
-    If you don't want to run Docker as root you have to give access to your user. 
+    With adding your computer user to the docker group you don't have to run Docker as root.
     
-    This is done by making a Docker group and adding your computer user to this group.
-    
-    On linux:
+    On Linux:
     ```bash
     sudo groupadd docker
     sudo gpasswd -a ${USER} docker
@@ -55,7 +53,7 @@ git clone https://github.com/aesset/npo-rm
     ```
     cd npo-rm
     ```
-1. Choose  the right branch to work with
+#### Choose  the right branch
    
    Available branches:
     * master: will be th PROD version, but currently there is no prod, so this is outdated at the moment
