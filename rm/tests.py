@@ -383,7 +383,7 @@ class LoginRequiredTests(TestCase):
 class RoleBasedAuthorizationSuperuserTests(TestCase):
 
     def setUp(self):
-        setUpUserWithInterfaceCallAndContract(self)
+        setUpUserWithInterfaceCallAndContract(self, superuser=True)
 
     def test_superuser_sees_upload_button(self):
         response = self.client.get(reverse("interface_call_list"))
@@ -477,26 +477,3 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract 1')
         self.assertContains(response, 'T. Ester', count=1)
-
-
-class RestrictedContractView(TestCase):
-
-    def test_buyer_should_see_his_own_contract(self):
-        setUpUserWithInterfaceCallAndContract(self,
-                                              superuser=False,
-                                              group_name="Buyer",
-                                              name_in_negometrix="T. Ester")
-
-        response = self.client.get(reverse("contract_list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Contract 1')
-
-    def test_buyer_should_not_see_others_contract(self):
-        setUpUserWithInterfaceCallAndContract(self,
-                                              superuser=False,
-                                              group_name="Buyer",
-                                              name_in_negometrix="Bart")
-
-        response = self.client.get(reverse("contract_list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Test Contract 1')

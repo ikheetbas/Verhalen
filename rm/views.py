@@ -67,16 +67,16 @@ class ContractListView(PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            return Contract.objects.all()
-        else:
-            return Contract.objects.filter(contract_owner=user.name_in_negometrix)
+        # if user.is_superuser:
+        return Contract.objects.all()
+        # else:
+        #     return Contract.objects.filter(contract_owner=user.name_in_negometrix)
 
 class InterfaceCallListView(ListView):
     model = InterfaceCall
     context_object_name = 'interface_call_list'
     template_name = 'rm/interface_call_list.html'
-    ordering = ['-date_time_creation']
+    # ordering = ['-date_time_creation'] is done through DataTables in JavaScript (see custom.css)
 
 @permission_required('rm.view_contract', raise_exception=True)
 def interface_call_details(request, pk: int):
