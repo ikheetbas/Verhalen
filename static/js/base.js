@@ -23,3 +23,8 @@ jQuery(document).ready(function($) {
     });
 });
 
+$(document).ready( function () {
+    $('#contract_table').DataTable();
+    $('#interface_call_table').DataTable();
+} );
+

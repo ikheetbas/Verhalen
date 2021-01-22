@@ -1,154 +1,216 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 {%  load static %}
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <title>{% block title %}NPO Resource Manager{% endblock title %}</title>
+    <head>
+        <meta charset="utf-8">
+        <!-- Bootstrap is mobile first, this sets width of hte page to follow the screen-width -->
+        <!-- and the initial zoom level when the page is first loaded by the browser. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <link rel="shortcut icon" type="image/png" href="{% static 'images/npo.ico' %}"/>
+        <title>{% block title %}NPO-RM{% endblock title %}</title>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
-          integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2"
-          crossorigin="anonymous">
-    <!-- Our Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+        <link rel="shortcut icon" type="image/png" href="{% static 'images/npo.ico' %}"/>
 
-    <!-- Font Awesome JS -->
-    <script defer
-            src="https://use.fontawesome.com/releases/v5.0.13/js/solid.js"
-            integrity="sha384-tzzSw1/Vo+0N5UhStP3bvwWPq+uvzCMfrN1fEFe+xBmv1C/AtVX5K0uZtmcHitFZ"
-            crossorigin="anonymous"></script>
-    <script defer
-            src="https://use.fontawesome.com/releases/v5.0.13/js/fontawesome.js"
-            integrity="sha384-6OIrr52G08NpOFSZdxxz1xdNSndlD4vdcf/q2myIUVO0VsqaGHJsB0RaBE01VTOY"
-            crossorigin="anonymous"></script>
+        <!-- Bootstrap template CSS -->
+        <link rel="stylesheet" href="{% static 'css/bootstrap_template_styles.css' %}" />
+        <link rel="stylesheet"
+              type="text/css"
+              href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.css">
+        <!-- Font Awesome CSS-->
+        <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
+        <!-- Google fonts - Poppins -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,700">
 
 
-</head>
-<body>
-    <h1>
-        <a href="/">
-            <img class="logo" src="{% static "images/npo.png" %}" height="50" >
-        </a>
-        <div id="app-title">NPO Resource Manager</div>
-    </h1>
-    <div id="system_info" >
-        <table>
-            <tr>
-                <td>version: </td><td><strong>{{ APP_VERSION_NUMBER }}</strong></td>
-            </tr>
-            <tr>
-                <td>env: </td><td><strong>{{ ENVIRONMENT }}</strong></td>
-            </tr>
+        <!-- Font Awesome JS -->
+        <script  crossorigin="anonymous"
+                 src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js">
+        </script>
+        <!-- Our Custom CSS -->
+        <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    </head>
+
+
+    <body class="sb-nav-fixed">
+
+        <!-- HEADER -->
+
+        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+
+            <a href="/">
+               <img class="logo" src="{% static "images/npo.png" %}">
+            </a>
+
+            <a class="navbar-brand" href="index.html">NPO Resource Manager</a>
+
             {% if user.is_authenticated %}
-                <tr>
-                    <td>user: </td><td><strong>{{user.username}} ({{ user.groups.all|join:", " }})</strong></td>
-                </tr>
+
+                <!-- sidebar toggle -->
+                <button class="btn btn-link btn-sm ml-5 order-1 order-lg-0"
+                        id="sidebarToggle"
+                        href="#">
+                    <i class="fas fa-bars"></i>
+                </button>
+
             {% endif %}
-        </table>
-    </div>
-    <br>
 
-<div class="wrapper">
-    <!-- Sidebar -->
-    <nav id="sidebar">
-        <div class="sidebar-header">
-            <h3>{{ user.username }}</h3>
-        </div>
+        </nav>
 
-        <ul class="list-unstyled components">
-{#            <p>Extra text, whatever</p>#}
-            <li class="active">
-                <a href="#homeSubmenu"
-                   data-toggle="collapse"
-                   aria-expanded="false"
-                   class="dropdown-toggle">Home</a>
-                <ul class="collapse list-unstyled" id="homeSubmenu">
-                    <li>
-                        <a href="#">Home 1</a>
-                    </li>
-                    <li>
-                        <a href="#">Home 2</a>
-                    </li>
-                    <li>
-                        <a href="#">Home 3</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <a href="#">About</a>
-            </li>
-            <li>
-                <a href="#pageSubmenu"
-                   data-toggle="collapse"
-                   aria-expanded="false"
-                   class="dropdown-toggle">Pages</a>
-                <ul class="collapse list-unstyled" id="pageSubmenu">
-                    <li>
-                        <a href="#">Page 1</a>
-                    </li>
-                    <li>
-                        <a href="#">Page 2</a>
-                    </li>
-                    <li>
-                        <a href="#">Page 3</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <a href="#">Portfolio</a>
-            </li>
-            <li>
-                <a href="#">Contact</a>
-            </li>
-        </ul>
-    </nav>
+        <div id="layoutSidenav">
 
-    <div id="content">
+            <!-- SIDEBAR -->
 
-            <!-- Sidebar toggle Button -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                <div class="container-fluid" >
+            {% if user.is_authenticated %}
 
-                    <button type="button" id="sidebarCollapse" class="btn btn-info">
-                        <i class="fas fa-align-right"></i>
-                        <span> Sidebar</span>
-                    </button>
-                    {% if user.is_authenticated %}
-                        <ul class="menu-nav">
-                            <li><a href="/">Home</a></li>
-                            <li><a href="{% url 'interface_call_list' %}">Upload files</a></li>
-                            <li><a href="{% url 'contract_list' %}">Contracten</a></li>
-                            {% if user.is_superuser %}
-                                <li><a href="/admin">Admin</a></li>
-                            {%  else %}
-                                <li><a href="/admin" style="pointer-events: none">Admin</a></li>
-                            {% endif %}
-                            <li><a href="{% url 'account_logout' %}">Log Out</a></li>
-                        </ul>
-                    {% endif %}
+                <div id="layoutSidenav_nav">
+                    <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                        <div class="sb-sidenav-menu">
+                            <div class="nav">
+                                <div class="sb-sidenav-menu-heading">Bijwerken</div>
+                                <a class="nav-link" href="{% url 'interface_call_list' %}">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                    Data verversen
+                                </a>
+                                <div class="sb-sidenav-menu-heading">
+                                    Bekijken
+                                </div>
+                                <a class="nav-link collapsed"
+                                    href="#"
+                                    data-toggle="collapse"
+                                    data-target="#collapseLayouts"
+                                    aria-expanded="false"
+                                    aria-controls="collapseLayouts">
+                                    <div class="sb-nav-link-icon">
+                                        <i class="fas fa-columns"></i>
+                                    </div>
+                                    Datasets
+                                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                                </a>
+                                    <div class="collapse"
+                                         id="collapseLayouts"
+                                         aria-labelledby="headingOne"
+                                         data-parent="#sidenavAccordion">
+                                         <nav class="sb-sidenav-menu-nested nav">
+                                             <a class="nav-link" href="{% url 'contract_list' %}">
+                                                 Contracten
+                                             </a>
+                                         </nav>
+                                    </div>
+                                {% if user.is_superuser %}
+                                    <div class="sb-sidenav-menu-heading">
+                                        Super User Only
+                                    </div>
+                                    <a class="nav-link" href="/admin">
+                                    <div class="sb-nav-link-icon">
+                                        <i class="fas fa-table"></i>
+                                    </div>
+                                        Admin
+                                    </a>
+                                {% endif %}
+
+                                <div class="sb-sidenav-menu-heading">
+                                    <hr class="sb-sidenav-menu-divider">
+                                </div>
+                                <a class="nav-link" href="{% url 'account_logout' %}">
+                                    <div class="sb-nav-link-icon">
+                                        <i class="fas fa-table"></i>
+                                    </div>
+                                    Log out
+                                </a>
+
+                              </div>
+                        </div>
+
+                        <!-- SIDEBAR FOOTER -->
+
+                        <div class="sb-sidenav-footer">
+                            <div id="system_info" class="small">
+                              <table>
+                                  <tr>
+                                    <td>version: </td><td>{{ APP_VERSION_NUMBER }}</td>
+                                  </tr>
+                                  <tr>
+                                    <td>env: </td><td>{{ ENVIRONMENT }}</td>
+                                  </tr>
+                                  {% if user.is_authenticated %}
+                                      <tr>
+                                          <td>user: </td><td>{{user.username}} ({{ user.groups.all|join:", " }})</td>
+                                      </tr>
+                                  {% endif %}
+                                </table>
+                            </div>
+
+                        </div>
+                    </nav>
                 </div>
-            </nav>
 
-        <div class="container-fluid" >
+            {% endif %}
 
-            {% block content %}
-            {% endblock content %}
+            <!-- CONTENT -->
+
+            <div id="layoutSidenav_content">
+
+                {% if user.is_authenticated %}
+
+                    <main>
+                            <div class="container-fluid">
+
+                                <!-- CONTENT HEADER -->
+
+
+                                <!-- Breadcrumbs -->
+
+{#                                <ol class="breadcrumb mb-4">#}
+{#                                    <li class="breadcrumb-item active">... / ...</li>#}
+{#                                </ol>#}
+
+                                <!-- CONTENT-->
+
+                {% endif %}
+
+                                <div class="container-fluid" id="npo-rm-block-content">
+                                    {% block content %}
+                                    {% endblock content %}
+                                </div>
+
+                {% if user.is_authenticated %}
+
+                            </div>
+                        </main>
+
+                {% endif %}
+
+                <!-- FOOTER -->
+
+                <footer class="py-4 bg-light mt-auto">
+                    <div class="container-fluid">
+                        <div class="d-flex align-items-center justify-content-between small">
+                            <div class="text-muted">NPO Resource Manager 2021</div>
+                            <!-- <div>
+                                <a href="#">Privacy Policy</a>
+                                &middot;
+                                <a href="#">Terms &amp; Conditions</a>
+                            </div> -->
+                        </div>
+                    </div>
+                </footer>
+            </div>
         </div>
 
-    </div>
+
+
 
 </div>
     <!-- JavaScript -->
     <!-- First jQuery, Popper.js, and Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="{% static 'js/bootstrap_template_scripts.js' %}"></script>
     <script src="{% static 'js/base.js' %}" ></script>
+
+    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.10.23/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
 </body>
 </html>

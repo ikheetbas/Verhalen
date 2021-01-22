@@ -3,7 +3,7 @@
 {% block title %}Log In{% endblock title %}
 
 {% block content %}
-<h2>Log In</h2>
+<h1 class="mt-4">Inlogen</h1>
 <form method="post">
   {% csrf_token %}
   {{ form|crispy }}

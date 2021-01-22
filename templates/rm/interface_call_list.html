@@ -2,6 +2,8 @@
 
 {% block title %}NPO-RM - Contracts{% endblock title %}
 {% block content %}
+<h1 class="mt-4">Data verversen overzicht</h1>
+
 <br>
 
     {%  if perms.rm.upload_contract_file %}
@@ -13,7 +15,7 @@
     {% endif %}
 
 <br>
-<table class="table table-sm table-hover table-striped table-bordered">
+<table class="table table-sm table-hover table-striped table-bordered" id="interface_call_table">
     <thead class="thead-dark ">
     <tr>
         <th>#</th>
