@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- [RM-120](https://aesset.atlassian.net/browse/RM-120) Automate release process: add release=no to zest.releaser config
 
 
 0.2.2 (2021-01-24)
