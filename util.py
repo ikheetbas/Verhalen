@@ -23,5 +23,8 @@ def convert_changelog_to_html(data):
         f.write("\n</div>\n")
         f.write("{% endblock content %}\n")
 
-    execute_command(["git", "add", "."])
-    execute_command(["git", "commit", "-a", "-m", "new CHANGELOG.html"])
+    logger.info('execute_command(["git", "add", "."]):')
+    logger.info(execute_command(["git", "add", "."]))
+    logger.info('execute_command(["git", "commit", "-a", "-m", "new CHANGELOG.html"])')
+    logger.info(execute_command(["git", "commit", "-a", "-m", "new CHANGELOG.html"]))
+
