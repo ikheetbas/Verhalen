@@ -1,8 +1,8 @@
 NPO Resouce Manager Changelog 
 =============================
 
-0.1.4 (unreleased)
-------------------
+0.1.4- (2021-01-24)
+-------------------
 
 - [RM-120](https://aesset.atlassian.net/browse/RM-120) Automate release process with Zest.Releaser
 
