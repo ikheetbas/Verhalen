@@ -1,4 +1,6 @@
 import markdown
+from zest.releaser.utils import execute_command
+
 
 def convert_changelog_to_html(data):
     with open('CHANGELOG.md', 'r') as f:
@@ -16,3 +18,5 @@ def convert_changelog_to_html(data):
         f.write(html)
         f.write("\n</div>\n")
         f.write("{% endblock content %}\n")
+
+    execute_command(["git", "add", "."])
