@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- [RM-120](https://aesset.atlassian.net/browse/RM-120) Automate release process: commit the generated CHANGELOG.html
 
 
 0.1.5 (2021-01-24)
