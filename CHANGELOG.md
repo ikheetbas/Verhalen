@@ -1,7 +1,7 @@
 NPO Resource Manager Changelog 
 =============================
 
-0.2.2 (unreleased)
+0.2.2 (2021-01-24)
 ------------------
 
 - [RM-120](https://aesset.atlassian.net/browse/RM-120) Automate release process: add MANIFEST.in and log git commands
