@@ -11,10 +11,12 @@ whitenoise = "==5.2.0"
 django-allauth = "==0.44.0"
 django-crispy-forms = "==1.10.0"
 gunicorn = "==20.0.4"
+markdown = "*"
 
 [dev-packages]
 coverage = "*"
 "zest.releaser" = "*"
+markdown = "*"
 
 [requires]
 python_version = "3.8.5"

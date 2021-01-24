@@ -127,7 +127,11 @@
                             <div id="system_info" class="small">
                               <table>
                                   <tr>
-                                    <td>version: </td><td>{{ APP_VERSION_NUMBER }}</td>
+                                      <td>version: </td>
+                                      <td>
+                                            <a href="{% url 'changelog' %}">{{ APP_VERSION_NUMBER }}
+                                            </a>
+                                      </td>
                                   </tr>
                                   <tr>
                                     <td>env: </td><td>{{ ENVIRONMENT }}</td>
