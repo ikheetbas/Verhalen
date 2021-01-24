@@ -1,6 +1,12 @@
 NPO Resource Manager Changelog 
 =============================
 
+0.2.4 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
 0.2.3 (2021-01-24)
 ------------------
 
