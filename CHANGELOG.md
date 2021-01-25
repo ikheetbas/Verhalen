@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- [RM-107](https://aesset.atlassian.net/browse/RM-107) Organisatie gegevens Technologie dep. in de database
 
 
 0.2.3 (2021-01-24)
