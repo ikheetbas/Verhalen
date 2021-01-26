@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.5 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- [RM-109](https://aesset.atlassian.net/browse/RM-109) Nieuwe tabel OrganizationalUnit
 
 
 0.2.4 (2021-01-25)
