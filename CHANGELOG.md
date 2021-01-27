@@ -1,7 +1,7 @@
 NPO Resource Manager Changelog 
 =============================
 
-0.2.5 (unreleased)
+0.2.5 (2021-01-27)
 ------------------
 
 - [RM-109](https://aesset.atlassian.net/browse/RM-109) Adapted Admin screens for new tables for RM-10 Data_verversen
