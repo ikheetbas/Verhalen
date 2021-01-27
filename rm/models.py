@@ -1,9 +1,72 @@
 from django.db import models
 
+# STATIC MODELS ################################################################
+from users.models import OrganizationalUnit
 
-# class System(models.Model):
-#     name = models.CharField(max_length=30, blank=True)
 
+class DataSetType(models.Model):
+    """
+    A data set (or dataset) is a collection of data. In the case of tabular data,
+    a data set corresponds to one or more database tables,
+
+    This is the data that is delivered by systems.
+    """
+    name = models.CharField("Naam", max_length=20, unique=True)
+    description = models.CharField("Omschrijving", max_length=50, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class System(models.Model):
+    """
+    The systems that deliver the data
+    """
+    name = models.CharField("Naam", max_length=20, unique=True)
+    description = models.CharField("Omschrijving", max_length=50, blank=True)
+    dataset_types = models.ManyToManyField(DataSetType,
+                                           through='InterfaceDefinition',
+                                           through_fields=('system', 'dataset_type'))
+    org_units = models.ManyToManyField(OrganizationalUnit,
+                                       through='Mapping',
+                                       through_fields=('system', 'org_unit'))
+
+    def __str__(self):
+        return self.name
+
+class InterfaceDefinition(models.Model):
+    """
+    This defines the Interface through which a System delivers data of type
+    DataSetType.
+    """
+    API = "API"
+    UPLOAD = "UPL"
+    INTERFACE_TYPE = (
+        (API, "API"),
+        (UPLOAD, "Upload")
+    )
+    name = models.CharField("Naam", max_length=20, unique=True)
+    description = models.CharField("Omschrijving", max_length=50, blank=True)
+    interface_type = models.CharField(max_length=3, choices=INTERFACE_TYPE)
+    url = models.URLField(blank=True)
+    system = models.ForeignKey(System, on_delete=models.CASCADE)
+    dataset_type = models.ForeignKey(DataSetType, on_delete=models.CASCADE)
+
+
+class Mapping(models.Model):
+    """
+    Mapping contains the 'names' of the OrganizationalUnits in the Systems.
+    For example, it defines how the 'Team IAAS' is called in Negometrix, or the
+    'kostenplaats' as defined in Oracle. The downloads contains these values and
+    have to be converted into a Department, Cluster or Team. That is done with
+    this class.
+    """
+    name = models.CharField("Naam/Code/Sleutel", max_length=50, unique=True)
+    system = models.ForeignKey(System, on_delete=models.CASCADE)
+    org_unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
+
+
+# PROCESS MODELS ###############################################################
 
 class InterfaceCall(models.Model):
     """
@@ -11,7 +74,7 @@ class InterfaceCall(models.Model):
     """
     class Meta:
         permissions = [
-            ("upload_contract_file",         "Can upload file with contracts"),
+            ("upload_contract_file", "Can upload file with contracts"),
             ("call_contract_interface", "Can call the (negometrix) contract-interface"),
         ]
     date_time_creation = models.DateTimeField(auto_now=False)
@@ -19,13 +82,17 @@ class InterfaceCall(models.Model):
     status = models.CharField(max_length=15)
     type = models.CharField(max_length=15)
     message = models.TextField(max_length=250, blank=True)
-    system = models.CharField(max_length=30, blank=True)
+
+    interface_definition = models.ForeignKey(InterfaceDefinition,
+                                             on_delete=models.CASCADE,
+                                             related_name='interface_calls')
+
 
     def __str__(self):
         return f"File {self.filename} - {self.status} - {self.system}"
 
 
-class ReceivedData(models.Model):
+class RawData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
                                        on_delete=models.CASCADE,
                                        related_name='received_data')
@@ -84,6 +151,23 @@ class ReceivedData(models.Model):
     field_50 = models.CharField(max_length=250, blank=True)
 
 
+class DataSetPerOrgUnit(models.Model):
+    """
+    The data from the interface is transformed into business objects. They always
+    have a relation with a Organizational Unit. Per interfacecall that can be multiple
+    Organizational Units. This class gives a handle to that grouping per OrgUnit.
+    We need that for example to see the latest refresh moment of data for certain
+    OrgUnits
+    """
+    interface_call = models.ForeignKey(InterfaceCall, on_delete=models.CASCADE)
+    org_unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
+    number_of_data_rows_ok = models.IntegerField("Dataregels goed")
+    number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing")
+
+
+
+# BUSINESS MODELS #########################################################################
+
 class Contract(models.Model):
     """
     Contract with almost no constraints.
@@ -129,13 +213,15 @@ class Contract(models.Model):
     type = models.CharField("Soort Contract", max_length=50, blank=True, null=True)
     start_date = models.DateField("Startdatum", null=True, blank=True)
     last_end_date = models.DateField("Uiterste einddatum", null=True, blank=True)
-    original_end_date = models.DateField("Oorsponkelijke einddatum", null=True, blank=True)
+    original_end_date = models.DateField("Oorspronkelijke einddatum", null=True, blank=True)
     notice_period = models.CharField("Opzegtermijn", max_length=50, blank=True, null=True)
     notice_period_available = models.CharField("Opzegtermijn aanwezig", max_length=50, blank=True, null=True)
 
-    interface_call = models.ForeignKey(InterfaceCall,
-                                       on_delete=models.CASCADE,
-                                       related_name='contracten')
+    data_per_org_unit = models.ForeignKey(DataSetPerOrgUnit,
+                                          on_delete=models.CASCADE,
+                                          related_name='contracten')
+
+    raw_data = models.OneToOneField(RawData, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return "Leeg" if not self.contract_nr else str(self.contract_nr) + ": " + self.contract_name

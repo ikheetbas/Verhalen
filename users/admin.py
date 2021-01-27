@@ -3,20 +3,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 
 from users.forms import CustomUserCreationForm, CustomUserChangeForm
-from users.models import Department, Cluster, Team, OrganizationalUnit
+from users.models import OrganizationalUnit
 
 # - CustomUser page ------------------------------------------------
 
 CustomUser = get_user_model()
-
-class DepartmentPerUserInline(admin.TabularInline):
-    model = CustomUser.departments.through
-
-class ClusterPerUserInline(admin.TabularInline):
-    model = CustomUser.clusters.through
-
-class TeamPerUserInline(admin.TabularInline):
-    model = CustomUser.teams.through
 
 class OrgUnitPerUserInline(admin.TabularInline):
     model = CustomUser.org_units.through
@@ -43,47 +34,10 @@ class CustomUserAdmin(UserAdmin):
         additional_fields,
         *second_part_of_org_user_screen,  # original form fieldsets, expanded
     )
-    inlines = [DepartmentPerUserInline,
-               ClusterPerUserInline,
-               TeamPerUserInline,
-               OrgUnitPerUserInline]
+    inlines = [OrgUnitPerUserInline]
 
 admin.site.register(CustomUser, CustomUserAdmin)
 
-
-# - Department page -------------------------
-
-class ClusterInline(admin.TabularInline):
-    show_change_link = True
-    model = Cluster
-
-class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ["name"]
-    inlines = [ClusterInline, ]
-
-admin.site.register(Department, DepartmentAdmin)
-
-
-# - Cluster Page -----------------------------
-
-class TeamInline(admin.TabularInline):
-    show_change_link = True
-    model = Team
-
-
-class ClusterAdmin(admin.ModelAdmin):
-    list_display = ["name"]
-    inlines = [TeamInline, ]
-
-admin.site.register(Cluster, ClusterAdmin)
-
-
-# - Team Page -----------------------------
-
-class TeamAdmin(admin.ModelAdmin):
-    list_display = ["name"]
-
-admin.site.register(Team, TeamAdmin)
 
 
 # - Organizational Unit Page --------------------------------

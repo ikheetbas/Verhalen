@@ -24,18 +24,18 @@ def migrate_tech_organization(apps, schema_editor):
     OrganizationalUnit.objects.all().delete()
     for department in Department.objects.all():
         org_dep = OrganizationalUnit.objects.create(name=department.name,
-                                                    type=OrganizationalUnit.AFDELING)
+                                                    type="AFD")
         for user in department.customuser_set.all():
             user.org_units.add(org_dep)
         for cluster in department.cluster_set.all():
             org_clu = OrganizationalUnit.objects.create(name=cluster.name,
-                                                        type=OrganizationalUnit.CLUSTER,
+                                                        type="CLU",
                                                         parent_org_unit=org_dep)
             for user in cluster.customuser_set.all():
                 user.org_units.add(org_clu)
             for team in cluster.team_set.all():
                 org_tea = OrganizationalUnit.objects.create(name=team.name,
-                                                            type=OrganizationalUnit.TEAM,
+                                                            type="TEA",
                                                             parent_org_unit=org_clu)
                 for user in team.customuser_set.all():
                     user.org_units.add(org_tea)
