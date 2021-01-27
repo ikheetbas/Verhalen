@@ -5,8 +5,12 @@ from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, Int
 # -------------------------------------------------------------------
 # System page with InterfaceDefinition
 # -------------------------------------------------------------------
+class InterfaceDefinitionInline(admin.TabularInline):
+    show_change_link = True
+    model = InterfaceDefinition
 
 class SystemAdmin(admin.ModelAdmin):
+    inlines = [InterfaceDefinitionInline]
     list_display = ["name", "description"]
 
 admin.site.register(System, SystemAdmin)
@@ -17,6 +21,7 @@ admin.site.register(System, SystemAdmin)
 # -------------------------------------------------------------------
 
 class DataSetTypeAdmin(admin.ModelAdmin):
+    inlines = [InterfaceDefinitionInline]
     list_display = ["name", "description"]
 
 admin.site.register(DataSetType, DataSetTypeAdmin)
@@ -26,7 +31,12 @@ admin.site.register(DataSetType, DataSetTypeAdmin)
 # InterfaceDefinition
 # -------------------------------------------------------------------
 
+class InterfaceCallInline(admin.TabularInline):
+    show_change_link = True
+    model = InterfaceCall
+
 class InterfaceDefinitionAdmin(admin.ModelAdmin):
+    inlines = [InterfaceCallInline]
     list_display = ["name", "description", "interface_type"]
 
 admin.site.register(InterfaceDefinition, InterfaceDefinitionAdmin)

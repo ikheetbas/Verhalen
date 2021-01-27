@@ -52,6 +52,9 @@ class InterfaceDefinition(models.Model):
     system = models.ForeignKey(System, on_delete=models.CASCADE)
     dataset_type = models.ForeignKey(DataSetType, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.name
+
 
 class Mapping(models.Model):
     """
@@ -80,7 +83,6 @@ class InterfaceCall(models.Model):
     date_time_creation = models.DateTimeField(auto_now=False)
     filename = models.CharField(max_length=150, blank=True)
     status = models.CharField(max_length=15)
-    type = models.CharField(max_length=15)
     message = models.TextField(max_length=250, blank=True)
 
     interface_definition = models.ForeignKey(InterfaceDefinition,
