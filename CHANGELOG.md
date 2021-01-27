@@ -4,6 +4,8 @@ NPO Resource Manager Changelog
 0.2.5 (unreleased)
 ------------------
 
+- [RM-109](https://aesset.atlassian.net/browse/RM-109) Ready with new tables for RM-10 Data_verversen
+
 - [RM-109](https://aesset.atlassian.net/browse/RM-109) Nieuwe tabel OrganizationalUnit
 
 
