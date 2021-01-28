@@ -6,13 +6,15 @@ from django.contrib.auth import get_user_model
 
 from openpyxl import Workbook, load_workbook
 
+from users.models import OrganizationalUnit
 from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK
 from .interface_file_util import check_file_and_interface_type
-from .models import Contract, InterfaceCall
+from .models import Contract, InterfaceCall, System, DataSetType, InterfaceDefinition, DataPerOrgUnit, Mapping
 from django.db.utils import IntegrityError
 
 from .interface_file import check_file_is_excel_file, check_file_has_excel_extension, is_valid_header_row, \
-    get_mandatory_field_positions, get_headers_from_sheet, get_fields_with_their_position, mandatory_fields_present
+    get_mandatory_field_positions, get_headers_from_sheet, get_fields_with_their_position, mandatory_fields_present, \
+    get_org_unit
 from .negometrix import register_contract, NegometrixInterfaceFile
 
 
@@ -34,16 +36,31 @@ def setUpUserWithInterfaceCallAndContract(self,
 
     self.client.force_login(self.user)
 
-    self.interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                      status='TestStatus',
-                                                      filename='Text.xls',
-                                                      system='TestSysteem')
+    # Set up static data
+    self.system_a = System.objects.create(name="SYSTEM_A")
+    self.system = System.objects.create(name="Negometrix")
+    self.dataset_type = DataSetType.objects.create(name="contracten")
+    self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+                                                                   dataset_type=self.dataset_type,
+                                                                   interface_type=InterfaceDefinition.UPLOAD)
+    self.org_unit = OrganizationalUnit.objects.create(name="MyTeam",
+                                                      type=OrganizationalUnit.TEAM)
+
+    # Set up process data
+    self.interface_call = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                       status='TestStatus',
+                                                       filename='Text.xls',
+                                                       interface_definition=self.interface_definition)
+
+    self.data_per_org_unit = DataPerOrgUnit.objects.create(interface_call=self.interface_call,
+                                                           org_unit=self.org_unit)
+
     self.contract_1 = Contract.objects.create(contract_nr='NL-123',
                                               seq_nr=0,
                                               description='Test Contract 1',
                                               contract_owner='T. Ester',
-                                              interface_call=self.interfaceCall,
-                                              contract_name='Test contract naam')
+                                              contract_name='Test contract naam',
+                                              data_per_org_unit=self.data_per_org_unit)
 
 
 def _create_superuser(username="john", password="doe", **kwargs):
@@ -59,12 +76,12 @@ def _create_superuser(username="john", password="doe", **kwargs):
     user.save()
     return user
 
+
 def _create_user(username="john",
                  password="doe",
                  group_name=None,
                  name_in_negometrix="J. Doe",
                  **kwargs):
-
     user = get_user_model().objects.create(username=username,
                                            is_active=True,
                                            **kwargs
@@ -89,6 +106,26 @@ def _create_user(username="john",
     return user
 
 
+class DataModelTest(TestCase):
+
+    def setUp(self):
+        setUpUserWithInterfaceCallAndContract(self)
+
+    def testContractsOfInterfaceCall_one_contract(self):
+        contracts = self.interface_call.contracts()
+        self.assertEqual(len(contracts), 1)
+
+    def testContractsOfInterfaceCall_two_contracts(self):
+        self.contract_2 = Contract.objects.create(contract_nr='NL-123',
+                                                  seq_nr=0,
+                                                  description='Test Contract 2',
+                                                  contract_owner='T. Ester',
+                                                  contract_name='Test contract naam',
+                                                  data_per_org_unit=self.data_per_org_unit)
+
+        contracts = self.interface_call.contracts()
+        self.assertEqual(len(contracts), 2)
+
 class ContractTest(TestCase):
 
     def setUp(self):
@@ -106,10 +143,9 @@ class ContractTest(TestCase):
     def test_one_interface_call_on_page(self):
         response = self.client.get('/interfacecalls')
         self.assertContains(response, 'TestStatus')
-        self.assertContains(response, 'TestSysteem')
 
     def test_one_contract_on_interface_call_page(self):
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        response = self.client.get(f'/interfacecall/{self.interface_call.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester')
@@ -119,8 +155,8 @@ class ContractTest(TestCase):
                                 seq_nr=1,
                                 description='Test Contract 2',
                                 contract_owner='T. Ester',
-                                interface_call=self.interfaceCall)
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+                                data_per_org_unit=self.data_per_org_unit)
+        response = self.client.get(f'/interfacecall/{self.interface_call.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester', count=2)
@@ -130,16 +166,18 @@ class ContractTest(TestCase):
 
     def test_create_contract_without_parent(self):
         try:
-            Contract.objects.create(contract_nr="NL-123")
+            Contract.objects.create(seq_nr=0, contract_nr="NL-123", data_per_org_unit=self.data_per_org_unit)
         except IntegrityError as exception:
             expected = "null value in column \"interface_call_id\" " \
                        "violates not-null constraint"
             self.assertTrue(expected in exception.__str__())
 
-
 class ExcelTests(TestCase):
 
     # Excel file extension
+
+    def setUp(self):
+        setUpUserWithInterfaceCallAndContract(self)
 
     def test_not_an_excel_file_extension(self):
         filename = 'test.txt'
@@ -201,7 +239,8 @@ class ExcelTests(TestCase):
         try:
             interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                          status='TestStatus',
-                                                         filename='valid_excel_without_headers.xlsx')
+                                                         filename='valid_excel_without_headers.xlsx',
+                                                         interface_definition=self.interface_definition)
             file = "rm/test/resources/valid_excel_without_headers.xlsx"
             check_file_and_interface_type(file, interfaceCall)
         except Exception as ex:
@@ -213,59 +252,78 @@ class ExcelTests(TestCase):
     def test_check_valid_negometrix_excel_file(self):
         interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                      status='TestStatus',
-                                                     filename='test_register_contract.xlsx')
+                                                     filename='test_register_contract.xlsx',
+                                                     interface_definition=self.interface_definition)
         file = "rm/test/resources/test_register_contract.xlsx"
         excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
         self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
 
     def test_upload_valid_negometrix_excel_file_2_valid_rows(self):
+
+        categorie = "NPO/Technology/IAAS"
+        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name=categorie)
+
         interfaceCall = InterfaceCall.objects.create(
-            date_time_creation=Now(),
-            status='TestStatus',
-            filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx')
+                        date_time_creation=Now(),
+                        status='TestStatus',
+                        filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx',
+                        interface_definition=self.interface_definition)
+
         file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
         excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+
         self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
 
         excelInterfaceFile.process()
 
-        contracten = interfaceCall.contracten.all()
-        self.assertEqual(len(contracten),2)
+        raw_data_set = interfaceCall.rawdata_set.all()
+        self.assertEqual(len(raw_data_set), 3)
+        errors = 0
+        for raw_data in raw_data_set:
+            if raw_data.status == ERROR:
+                errors += 1
+        self.assertEqual(errors, 0)
+
+        #TODO make this work, InterfaceCall.number_of_rows etc
+        # self.assertEqual(interfaceCall.number_of_rows_received, 3)
+
+        contracten = interfaceCall.contracts()
+        self.assertEqual(len(contracten), 2)
 
         contract1 = contracten[0]
         self.assertEqual(contract1.contract_nr, '44335')
         contract2 = contracten[1]
         self.assertEqual(contract2.contract_nr, '44336')
 
-        received_data = interfaceCall.received_data.all()
-        self.assertEqual(len(received_data),3)
-
 
     def test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row(self):
-        interfaceCall = InterfaceCall.objects.create(
-            date_time_creation=Now(),
-            status='TestStatus',
-            filename='test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx')
+        categorie = "NPO/Technology/IAAS"
+        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name=categorie)
+
+        interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                     status='TestStatus',
+                                                     filename='test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx',
+                                                     interface_definition=self.interface_definition)
         file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx"
         excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
         self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
 
         excelInterfaceFile.process()
 
-        contracten = interfaceCall.contracten.all()
-        self.assertEqual(len(contracten),2)
+        contracten = interfaceCall.contracts()
+        self.assertEqual(len(contracten), 2)
 
         contract1 = contracten[0]
         self.assertEqual(contract1.contract_nr, '44335')
         contract2 = contracten[1]
         self.assertEqual(contract2.contract_nr, '44337')
 
-        received_data = interfaceCall.received_data.all()
-        self.assertEqual(len(received_data),4)
-        self.assertEqual(received_data[0].status, OK)
-        self.assertEqual(received_data[1].status, OK)
-        self.assertEqual(received_data[2].status, ERROR)
-        self.assertEqual(received_data[3].status, OK)
+        rawdata = interfaceCall.rawdata_set.all()
+        self.assertEqual(len(rawdata), 4)
+        self.assertEqual(rawdata[0].status, OK)
+        self.assertEqual(rawdata[1].status, OK)
+        self.assertEqual(rawdata[2].status, ERROR)
+        self.assertEqual(rawdata[3].status, OK)
 
     #  Test generic database functions
 
@@ -347,7 +405,8 @@ class ExcelTests(TestCase):
 
         interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
                                                      status='TestStatus',
-                                                     filename='test_register_contract.xlsx')
+                                                     filename='test_register_contract.xlsx',
+                                                     interface_definition=self.interface_definition)
 
         fields_with_position = dict(database_nr=0,
                                     contract_nr=1,
@@ -365,6 +424,41 @@ class ExcelTests(TestCase):
 
         self.assertEqual(status, expected_status)
 
+    def test_get_org_unit_found_by_system(self):
+        mapping_name = "my_map"
+        mapping = Mapping.objects.create(name=mapping_name,
+                                         system=self.system_a,
+                                         org_unit=self.org_unit)
+        found_org_unit = get_org_unit(self.system_a, mapping_name)
+        self.assertEqual(self.org_unit.name, found_org_unit.name)
+
+    def test_get_org_unit_found_by_system_name(self):
+        mapping_name = "my_map"
+        mapping = Mapping.objects.create(name=mapping_name,
+                                         system=self.system_a,
+                                         org_unit=self.org_unit)
+        found_org_unit = get_org_unit(self.system_a.name, mapping_name)
+        self.assertEqual(self.org_unit.name, found_org_unit.name)
+
+    def test_get_org_unit_unknown_system_name(self):
+        mapping_name = "my_map"
+        mapping = Mapping.objects.create(name=mapping_name,
+                                         system=self.system_a,
+                                         org_unit=self.org_unit)
+        found_org_unit = get_org_unit("SYSTEM UNKNOWN", mapping_name)
+        self.assertIsNone(found_org_unit)
+
+    def test_get_org_unit_unknown_mapping(self):
+        not_existing_mapping_name = "Not existing"
+        mapping_name = "my_map"
+        mapping = Mapping.objects.create(name=mapping_name,
+                                         system=self.system_a,
+                                         org_unit=self.org_unit)
+        found_org_unit = get_org_unit(self.system_a, not_existing_mapping_name)
+        self.assertIsNone(found_org_unit)
+
+
+
 class LoginRequiredTests(TestCase):
     """
     All pages require login, except the login page
@@ -372,12 +466,11 @@ class LoginRequiredTests(TestCase):
 
     def test_login_required_home_page(self):
         response = self.client.get(reverse("home"))
-        self.assertRedirects(response, reverse('account_login')+ "?next=/")
+        self.assertRedirects(response, reverse('account_login') + "?next=/")
 
     def test_login_required_upload_page(self):
         response = self.client.get(reverse("upload"))
         self.assertRedirects(response, reverse('account_login') + "?next=/upload/")
-
 
 
 class RoleBasedAuthorizationSuperuserTests(TestCase):
@@ -395,7 +488,7 @@ class RoleBasedAuthorizationSuperuserTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_superuser_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        response = self.client.get(f'/interfacecall/{self.interface_call.pk}/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
@@ -429,7 +522,7 @@ class RoleBasedAuthorizationClusterLeadTests(TestCase):
 
     def setUp(self):
         setUpUserWithInterfaceCallAndContract(self, superuser=False, group_name="Cluster Lead")
-        #print_permissions_and_groups()
+        # print_permissions_and_groups()
 
     def test_cluster_lead_sees_no_upload_button(self):
         response = self.client.get(reverse("interface_call_list"))
@@ -445,11 +538,12 @@ class RoleBasedAuthorizationClusterLeadTests(TestCase):
         self.assertTrue(self.user.has_perm('rm.view_contract'))
 
     def test_cluster_lead_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        response = self.client.get(f'/interfacecall/{self.interface_call.pk}/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester', count=1)
+
 
 class RoleBasedAuthorizationBuyerTests(TestCase):
 
@@ -472,7 +566,7 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         self.assertTrue(self.user.has_perm('rm.call_contract_interface'))
 
     def test_buyer_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interfaceCall.pk}/')
+        response = self.client.get(f'/interfacecall/{self.interface_call.pk}/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract 1')

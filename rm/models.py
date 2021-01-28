@@ -85,19 +85,31 @@ class InterfaceCall(models.Model):
     status = models.CharField(max_length=15)
     message = models.TextField(max_length=250, blank=True)
 
+    number_of_rows_received = models.IntegerField("Ontvangen regels", default=0)
+    number_of_data_rows_received = models.IntegerField("Ontvangen dataregels", default=0)
+    number_of_data_rows_ok = models.IntegerField("Dataregels goed", default=0)
+    number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing", default=0)
+    number_of_data_rows_error = models.IntegerField("Dataregels fout", default=0)
+    number_of_data_rows_ignored = models.IntegerField("Dataregels genegeerd", default=0)
+
     interface_definition = models.ForeignKey(InterfaceDefinition,
                                              on_delete=models.CASCADE,
                                              related_name='interface_calls')
 
+    def contracts(self):
+        contracts = Contract.objects.none()
+        for data_per_org_unit in self.dataperorgunit_set.all():
+            contracts_per_org_unit = data_per_org_unit.contracten.all()
+            contracts = contracts.union(contracts_per_org_unit)
+        return contracts
 
     def __str__(self):
-        return f"File {self.filename} - {self.status} - {self.system}"
+        return f"{self.interface_definition.name} - {self.date_time_creation}"
 
 
 class RawData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
-                                       on_delete=models.CASCADE,
-                                       related_name='received_data')
+                                       on_delete=models.CASCADE)
     seq_nr = models.IntegerField()
     status = models.CharField(max_length=20, blank=True)
     message = models.CharField(max_length=250, blank=True, null=True)
@@ -153,7 +165,7 @@ class RawData(models.Model):
     field_50 = models.CharField(max_length=250, blank=True)
 
 
-class DataSetPerOrgUnit(models.Model):
+class DataPerOrgUnit(models.Model):
     """
     The data from the interface is transformed into business objects. They always
     have a relation with a Organizational Unit. Per interfacecall that can be multiple
@@ -163,10 +175,11 @@ class DataSetPerOrgUnit(models.Model):
     """
     interface_call = models.ForeignKey(InterfaceCall, on_delete=models.CASCADE)
     org_unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
-    number_of_data_rows_ok = models.IntegerField("Dataregels goed")
-    number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing")
+    number_of_data_rows_ok = models.IntegerField("Dataregels goed", default=0)
+    number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing", default=0)
 
-
+    def __str__(self):
+        return f"{self.org_unit.name} - {self.interface_call.interface_definition.name} - {self.interface_call.date_time_creation}"
 
 # BUSINESS MODELS #########################################################################
 
@@ -219,7 +232,7 @@ class Contract(models.Model):
     notice_period = models.CharField("Opzegtermijn", max_length=50, blank=True, null=True)
     notice_period_available = models.CharField("Opzegtermijn aanwezig", max_length=50, blank=True, null=True)
 
-    data_per_org_unit = models.ForeignKey(DataSetPerOrgUnit,
+    data_per_org_unit = models.ForeignKey(DataPerOrgUnit,
                                           on_delete=models.CASCADE,
                                           related_name='contracten')
 

@@ -3,7 +3,7 @@ from typing import Tuple, Dict
 
 from rm.constants import SKIPPED, OK, ERROR, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
-    register_in_received_data, mandatory_fields_present
+    register_in_raw_data, mandatory_fields_present, get_org_unit
 from rm.models import InterfaceCall, Contract
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def register_contract(row_nr: int,
                       fields_with_position: Dict[str, int],
                       mandatory_field_positions: Tuple[int]) -> Tuple[str, str]:
     if row_nr == 1:
-        return OK, 'Valid Header'
+        return OK, 'Header'
 
     if row_is_empty(row_values):
         return SKIPPED, 'Skipped empty row'
@@ -59,14 +59,29 @@ def register_contract(row_nr: int,
                                     row_values):
         return ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
 
-    contract = Contract(interface_call=interfaceCall,
-                        seq_nr=row_nr)
 
+    contract = Contract(seq_nr=row_nr)
+
+    # set all fields in a generic way
     for field in fields_with_position:
         position = fields_with_position[field]
         value = row_values[position]
         setattr(contract, field, value)
 
+    # set up link with DataPerOrgUnit
+    system = interfaceCall.interface_definition.system
+    if not contract.category or contract.category == "":
+        return ERROR, "Categorie is leeg, dus kan dit contract niet aan " \
+                      "een organisatieonderdel gekoppeld worden"
+    org_unit = get_org_unit(system, contract.category)
+    if not org_unit:
+        return ERROR, f"Voor categorie '{contract.category}' kan geen " \
+                      f"organisatieonderdeel gevonden worden voor {system.name} "
+
+    data_per_org_unit, created = interfaceCall.dataperorgunit_set.get_or_create(org_unit=org_unit)
+    contract.data_per_org_unit = data_per_org_unit
+
+    # save the bastard!
     contract.save()
 
     return OK, "Valid Contract"
@@ -93,11 +108,11 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
                    interfaceCall: InterfaceCall,
                    field_positions: Dict[str, int],
                    mandatory_field_positions: Tuple[int]):
-        logger.debug(f"register ReceivedData {row_nr} - {row_values}")
+        logger.debug(f"register RawData {row_nr} - {row_values}")
 
-        receivedData = register_in_received_data(row_nr,
-                                                 row_values,
-                                                 interfaceCall)
+        raw_data = register_in_raw_data(row_nr,
+                                        row_values,
+                                        interfaceCall)
         try:
             status, message = register_contract(row_nr,
                                                 row_values,
@@ -105,12 +120,13 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
                                                 field_positions,
                                                 mandatory_field_positions)
         except Exception as ex:
-            receivedData.status = ERROR
-            receivedData.message = str(ex)
+            raw_data.status = ERROR
+            raw_data.message = str(ex)
         else:
-            receivedData.status = status
-            receivedData.message = message
-        receivedData.save()
+            raw_data.status = status
+            raw_data.message = message
+        logger.debug(f"Result register Contact {row_nr} : {raw_data.status} : {raw_data.message}")
+        raw_data.save()
 
     def get_mandatory_fields(self):
         return self.mandatory_fields

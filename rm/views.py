@@ -2,10 +2,12 @@ import logging
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db.models import QuerySet
 from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
+from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR, NO_PERMISSION_TO_UPLOAD_CONTRACT_FILE
@@ -82,13 +84,19 @@ class InterfaceCallListView(ListView):
 def interface_call_details(request, pk: int):
     logger.debug(f"interface_call_details: pk: {pk}")
     interfaceCall = InterfaceCall.objects.get(pk=pk)
-    logger.debug("interfaceCall: " + interfaceCall.__str__())
-    contracts = interfaceCall.contracten.all()
-    received_data = interfaceCall.received_data.all()
+    logger.debug("interface_call: " + interfaceCall.__str__())
+
+    contracts = interfaceCall.contracts()
+
+    raw_data = interfaceCall.rawdata_set.all()
     context = {
         'interface_call': interfaceCall,
         'contract_list': contracts,
-        'received_data': received_data,
+        'received_data': raw_data,
     }
     template = loader.get_template('rm/interface_call_details.html')
     return HttpResponse(template.render(context, request))
+
+
+class RefreshDataSets(View):
+    pass

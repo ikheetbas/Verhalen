@@ -1,6 +1,8 @@
 from django.contrib import admin
-from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, InterfaceDefinition
+from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, InterfaceDefinition, DataPerOrgUnit
 
+
+# STATIC DATA
 
 # -------------------------------------------------------------------
 # System page with InterfaceDefinition
@@ -42,7 +44,7 @@ class InterfaceDefinitionAdmin(admin.ModelAdmin):
 admin.site.register(InterfaceDefinition, InterfaceDefinitionAdmin)
 
 
-
+# PROCESS DATA
 
 # -------------------------------------------------------------------
 # Interface page with Contracts
@@ -55,20 +57,38 @@ admin.site.register(RawData, ReceivedDataAdmin)
 
 
 # -------------------------------------------------------------------
-# InterfaceCall page with Contracts
+# InterfaceCall page with Raw Data
 # -------------------------------------------------------------------
 
 class RawDataInline(admin.TabularInline):
     model = RawData
 
+
+class DataPerOrgUnitInline(admin.TabularInline):
+    model = DataPerOrgUnit
+
 class InterfaceCallAdmin(admin.ModelAdmin):
     """
     Change the way the list of interface calls looks
     """
-    inlines = [RawDataInline]
+    inlines = [RawDataInline, DataPerOrgUnitInline]
     list_display = ["date_time_creation", "status", "filename"]
 
 admin.site.register(InterfaceCall, InterfaceCallAdmin)
+
+# -------------------------------------------------------------------
+# DataPerOrgUnit page with Contracts
+# -------------------------------------------------------------------
+class ContractInline(admin.TabularInline):
+    show_change_link = True
+    model = Contract
+    fields = ('seq_nr','contract_nr', 'contract_status', 'contract_name')
+
+class DataPerOrgUnitAdmin(admin.ModelAdmin):
+    inlines = [ContractInline]
+    pass
+
+admin.site.register(DataPerOrgUnit, DataPerOrgUnitAdmin)
 
 
 # -------------------------------------------------------------------
