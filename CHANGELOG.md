@@ -1,7 +1,7 @@
 NPO Resource Manager Changelog 
 =============================
 
-0.2.6 (unreleased)
+0.2.6 (2021-01-29)
 ------------------
 
 - [RM-110](https://aesset.atlassian.net/browse/RM-110) Updated software to new Models and Database structure (for RM-10 Data_verversen)
