@@ -23,10 +23,10 @@ ENVIRONMENT = 'test-local'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY DATA_WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'bm5d)*t)bp95-q*gq85k3-e^=)r)+-8grp+&wu+d#^eji(enx9'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY DATA_WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']

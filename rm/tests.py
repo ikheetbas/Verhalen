@@ -9,7 +9,7 @@ from openpyxl import Workbook, load_workbook
 
 import rm
 from users.models import OrganizationalUnit
-from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK, NEGOMETRIX, CONTRACTEN
+from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, NEGOMETRIX, CONTRACTEN, FileStatus, RowStatus
 from .interface_file_util import check_file_and_interface_type
 from .models import Contract, InterfaceCall, System, DataSetType, InterfaceDefinition, DataPerOrgUnit, Mapping
 from django.db.utils import IntegrityError
@@ -17,7 +17,7 @@ from django.db.utils import IntegrityError
 from .interface_file import check_file_is_excel_file, check_file_has_excel_extension, is_valid_header_row, \
     get_mandatory_field_positions, get_headers_from_sheet, get_fields_with_their_position, mandatory_fields_present, \
     get_org_unit
-from .negometrix import register_contract, NegometrixInterfaceFile
+from .negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
 
 
 def setUpUserWithInterfaceCallAndContract(self,
@@ -353,10 +353,14 @@ class ExcelTests(TestCase):
         mandatory_field_positions = (1, 2)
         mandatory_fields = ('a_field', 'another_field')
 
-        status, msg = register_contract(row_nr, values_row_4, interfaceCall, fields_with_position,
-                                        mandatory_field_positions)
 
-        expected_status = ERROR
+        status, msg = handle_negometrix_file_row(row_nr,
+                                                 values_row_4,
+                                                 interfaceCall,
+                                                 fields_with_position,
+                                                 mandatory_field_positions)
+
+        expected_status = RowStatus.DATA_ERROR
 
         self.assertEqual(status, expected_status)
 
@@ -434,7 +438,7 @@ class ExcelTests(TestCase):
 #
 #         interface_call: InterfaceCall = InterfaceCall.objects.last()
 #         self.assertEqual(interface_call.filename, "a_valid_excel_file.xlsx")
-#         self.assertEqual(interface_call.status, "OK", msg=interface_call.message)
+#         self.assertEqual(interface_call.status, "DATA_OK", msg=interface_call.message)
 #         self.assertIsNone(interface_call.message)
 #
 #
@@ -458,7 +462,7 @@ class ExcelTests(TestCase):
     #
     #     interface_call: InterfaceCall = InterfaceCall.objects.last()
     #     self.assertEqual(interface_call.filename, "Overzicht_Tech_Cluster_Backend 2-12.xlsx")
-    #     self.assertEqual(interface_call.status, "OK", msg=interface_call.message)
+    #     self.assertEqual(interface_call.status, "DATA_OK", msg=interface_call.message)
     #     self.assertIsNone(interface_call.message)
 
 

@@ -10,7 +10,7 @@ from django.template import loader
 from django.views import View
 from django.views.generic import ListView, TemplateView
 
-from rm.constants import INTERFACE_TYPE_FILE, NEW, UNKNOWN, ERROR, NO_PERMISSION_TO_UPLOAD_CONTRACT_FILE
+from rm.constants import FileStatus
 from rm.forms import UploadFileForm
 from rm.models import Contract, InterfaceCall
 from rm.interface_file_util import check_file_and_interface_type
@@ -39,7 +39,7 @@ def upload_file(request):
 
             # First things first, create the InterfaceCall
             interfaceCall = InterfaceCall(filename=file.name,
-                                          status=NEW,
+                                          status=FileStatus.NEW,
                                           date_time_creation=Now())
             try:
                 # check the file and try to find out what type it is
@@ -57,7 +57,7 @@ def upload_file(request):
 
             except Exception as ex:
 
-                interfaceCall.status = ERROR
+                interfaceCall.status = FileStatus.ERROR
                 interfaceCall.message = ex.__str__()
                 interfaceCall.save()
 

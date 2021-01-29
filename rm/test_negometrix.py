@@ -3,7 +3,7 @@ from django.db.models.functions import Now
 from django.test import TestCase
 
 import rm
-from rm.constants import CONTRACTEN, NEGOMETRIX, ERROR, OK
+from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping
 from rm.negometrix import NegometrixInterfaceFile
@@ -79,7 +79,7 @@ class NegometrixFileTests(TestCase):
         self.user = _create_superuser()
         self.client.force_login(self.user)
 
-        # STATIC DATA
+        # STATIC TOTAL_DATA_ROWS_RECEIVED
         self.system, created = System.objects.get_or_create(name=NEGOMETRIX)
         self.dataset_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
         self.interface_definition, created = InterfaceDefinition.objects.get_or_create(
@@ -122,7 +122,7 @@ class NegometrixFileTests(TestCase):
         self.assertEqual(len(raw_data_set), 3)
         errors = 0
         for raw_data in raw_data_set:
-            if raw_data.status == ERROR:
+            if raw_data.status == RowStatus.DATA_ERROR:
                 errors += 1
         self.assertEqual(errors, 0)
 
@@ -161,10 +161,10 @@ class NegometrixFileTests(TestCase):
 
         rawdata = interfaceCall.rawdata_set.all()
         self.assertEqual(len(rawdata), 4)
-        self.assertEqual(rawdata[0].status, OK)
-        self.assertEqual(rawdata[1].status, OK)
-        self.assertEqual(rawdata[2].status, ERROR)
-        self.assertEqual(rawdata[3].status, OK)
+        self.assertEqual(rawdata[0].status, RowStatus.HEADER_ROW.name)
+        self.assertEqual(rawdata[1].status, RowStatus.DATA_OK.name)
+        self.assertEqual(rawdata[2].status, RowStatus.DATA_ERROR.name)
+        self.assertEqual(rawdata[3].status, RowStatus.DATA_OK.name)
 
 
     def test_upload_valid_negometrix_file_and_see_contracts(self):

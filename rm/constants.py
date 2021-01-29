@@ -1,12 +1,30 @@
+from enum import Enum
+
 #
 # STATUS VALUES
 #
-NEW = "NEW"
-PROCESSING = "PROCESSING"
-ERROR = "ERROR"
-OK = "OK"
-SKIPPED = "SKIPPED"
+class FileStatus(Enum):
+    NEW = "NEW"
+    PROCESSING = "PROCESSING"
+    ERROR = "ERROR"
+    OK = "OK"
 
+# ROW STATISTICS
+
+TOTAL_ROWS_RECEIVED = "TOTAL_ROWS_RECEIVED"
+TOTAL_DATA_ROWS_RECEIVED = "TOTAL_DATA_ROWS_RECEIVED"
+
+class RowStatus(Enum):
+    EMPTY_ROW = "EMPTY_ROW"
+    HEADER_ROW = "HEADER_OK"
+
+    DATA_OK = "DATA_OK"
+    DATA_ERROR = "DATA_ERROR"
+    DATA_WARNING = "DATA_WARNING"
+    DATA_IGNORED = "DATA_IGNORED"
+
+    def is_data_row(self):
+        return self.name.startswith("DATA")
 #
 # INTERFACE TYPES
 #
@@ -20,7 +38,7 @@ NEGOMETRIX = "Negometrix"
 CONTRACTEN = "Contracten"
 UNKNOWN = "UNKNOWN"
 #
-# ERROR MESSAGES
+# DATA_ERROR MESSAGES
 #
 ERROR_MSG_FILE_DEFINITION_ERROR = "File definition error, fields have been declared " \
                                   "mandatory, but the corresponding header not!"

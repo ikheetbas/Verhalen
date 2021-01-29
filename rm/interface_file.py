@@ -8,7 +8,8 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 import rm
-from rm.constants import ERROR, OK, ERROR_MSG_FILE_DEFINITION_ERROR
+from rm.constants import ERROR_MSG_FILE_DEFINITION_ERROR, TOTAL_ROWS_RECEIVED, TOTAL_DATA_ROWS_RECEIVED, \
+    RowStatus, FileStatus
 from rm.models import InterfaceCall, RawData, System, Mapping
 
 logger = logging.getLogger(__name__)
@@ -219,12 +220,63 @@ def get_org_unit(system, mapping_name):
     return org_unit
 
 
+class RowStatistics(object):
+
+    def __init__(self):
+        self.number_of_rows = {TOTAL_ROWS_RECEIVED: 0,
+                               TOTAL_DATA_ROWS_RECEIVED: 0,
+                               RowStatus.EMPTY_ROW: 0,
+                               RowStatus.HEADER_ROW: 0,
+                               RowStatus.DATA_OK: 0,
+                               RowStatus.DATA_ERROR: 0,
+                               RowStatus.DATA_WARNING: 0,
+                               RowStatus.DATA_IGNORED: 0}
+
+    def add_row_with_status(self, row_status):
+
+        if isinstance(row_status,str):
+            row_status = RowStatus[row_status]
+
+        """
+        Keep the statistics for all the row-statuses
+        """
+        self.number_of_rows[TOTAL_ROWS_RECEIVED] += 1
+        self.number_of_rows[row_status] += 1
+        if row_status.is_data_row():
+            self.number_of_rows[TOTAL_DATA_ROWS_RECEIVED] += 1
+
+    def get_total_rows_received(self):
+        return self.number_of_rows[TOTAL_ROWS_RECEIVED]
+
+    def get_total_data_rows_received(self):
+        return self.number_of_rows[TOTAL_DATA_ROWS_RECEIVED]
+
+    def get_total_empty_rows(self):
+        return self.number_of_rows[RowStatus.EMPTY_ROW]
+
+    def get_total_header_rows(self):
+        return self.number_of_rows[RowStatus.HEADER_ROW]
+
+    def get_total_data_ok_rows(self):
+        return self.number_of_rows[RowStatus.DATA_OK]
+
+    def get_total_data_error_rows(self):
+        return self.number_of_rows[RowStatus.DATA_ERROR]
+
+    def get_total_data_warning_rows(self):
+        return self.number_of_rows[RowStatus.DATA_WARNING]
+
+    def get_total_data_ignored_rows(self):
+        return self.number_of_rows[RowStatus.DATA_IGNORED]
+
 class ExcelInterfaceFile(ABC):
     """
     Base class containing all non-specific logic for uploading an Excel file
     with data.
     """
     interfaceCall: InterfaceCall = None
+
+    row_statistics = RowStatistics()
 
     def __init__(self,
                  file):
@@ -242,15 +294,23 @@ class ExcelInterfaceFile(ABC):
                              self.interfaceCall,
                              fields_with_their_position)
 
-            self.interfaceCall.status = OK
+            self.interfaceCall.status = FileStatus.OK.name
 
         except Exception as ex:
-            self.interfaceCall.status = ERROR
+            self.interfaceCall.status = FileStatus.ERROR.name
             self.interfaceCall.message = f'Reason: {ex.__str__()}'
+
+
+        self.interfaceCall.number_of_rows_received = self.row_statistics.get_total_rows_received()
+        self.interfaceCall.number_of_data_rows_ok = self.row_statistics.get_total_data_ok_rows()
+        self.interfaceCall.number_of_data_rows_ignored = self.row_statistics.get_total_data_ignored_rows()
+        self.interfaceCall.number_of_data_rows_error = self.row_statistics.get_total_data_error_rows()
+        self.interfaceCall.number_of_data_rows_received = self.row_statistics.get_total_data_rows_received()
+        self.interfaceCall.number_of_data_rows_warning = self.row_statistics.get_total_data_warning_rows()
 
         self.interfaceCall.save()
 
-        if not self.interfaceCall.status == OK:
+        if not self.interfaceCall.status == FileStatus.OK.name:
             raise Exception(self.interfaceCall.message)
 
     @abstractmethod
@@ -280,6 +340,8 @@ class ExcelInterfaceFile(ABC):
         Generic handling of the file.
         """
 
+        self.interfaceCall = interfaceCall
+
         mandatory_field_positions: Tuple[int] = \
             get_mandatory_field_positions(self.get_mandatory_fields(),
                                           field_positions)
@@ -292,20 +354,50 @@ class ExcelInterfaceFile(ABC):
                                           min_col=1,
                                           values_only=True):
             # TODO test on number of complete empty rows and STOP!
-            self.handle_row(row_nr,
-                            row_values,
-                            interfaceCall,
-                            field_positions,
-                            mandatory_field_positions)
+            row_status = self.handle_row(row_nr,
+                                         row_values,
+                                         field_positions,
+                                         mandatory_field_positions)
             row_nr += 1
+            self.row_statistics.add_row_with_status(row_status)
+
+    def handle_row(self,
+                   row_nr: int,
+                   row_values: Tuple[str],
+                   field_positions: Dict[str, int],
+                   mandatory_field_positions: Tuple[int]) -> str:
+        logger.debug(f"register RawData {row_nr} - {row_values}")
+
+        raw_data = register_in_raw_data(row_nr,
+                                        row_values,
+                                        self.interfaceCall)
+        try:
+            status, message = self.register_business_data(row_nr,
+                                                          row_values,
+                                                          self.interfaceCall,
+                                                          field_positions,
+                                                          mandatory_field_positions)
+        except Exception as ex:
+            raw_data.status = RowStatus.DATA_ERROR.name
+            raw_data.message = str(ex)
+        else:
+            raw_data.status = status.name
+            raw_data.message = message
+        logger.debug(f"Result register Contact {row_nr} : {raw_data.status} : {raw_data.message}")
+        raw_data.save()
+        return raw_data.status
 
     @abstractmethod
-    def handle_row(self,
-                   row_nr,
-                   row_values,
-                   interfaceCall,
-                   field_positions,
-                   mandatory_field_positions):
+    def register_business_data(self,
+                               row_nr,
+                               row_values,
+                               interfaceCall,
+                               field_positions,
+                               mandatory_field_positions) -> Tuple[RowStatus, str]:
+        """
+        Handling of the row with data, creating the Business Data, to be implemented for each
+        file type specific.
+        """
         raise Exception("Must be overridden, programming error")
 
     @abstractmethod

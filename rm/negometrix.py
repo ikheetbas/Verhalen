@@ -2,9 +2,10 @@ import logging
 from typing import Tuple, Dict
 
 import rm
-from rm.constants import SKIPPED, OK, ERROR, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN
+from rm.constants import RowStatus, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, \
+    RowStatus
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
-    register_in_raw_data, mandatory_fields_present, get_org_unit
+    mandatory_fields_present, get_org_unit
 from rm.models import InterfaceCall, Contract, System, DataSetType, InterfaceDefinition
 
 logger = logging.getLogger(__name__)
@@ -45,21 +46,20 @@ defined_headers = dict(
 )
 
 
-def register_contract(row_nr: int,
-                      row_values: Tuple[str],
-                      interfaceCall: InterfaceCall,
-                      fields_with_position: Dict[str, int],
-                      mandatory_field_positions: Tuple[int]) -> Tuple[str, str]:
+def handle_negometrix_file_row(row_nr,
+                               row_values,
+                               interfaceCall,
+                               fields_with_position,
+                               mandatory_field_positions) -> Tuple[RowStatus, str]:
     if row_nr == 1:
-        return OK, 'Header'
+        return RowStatus.HEADER_ROW, 'Header'
 
     if row_is_empty(row_values):
-        return SKIPPED, 'Skipped empty row'
+        return RowStatus.EMPTY_ROW, 'Skipped empty row'
 
     if not mandatory_fields_present(mandatory_field_positions,
                                     row_values):
-        return ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
-
+        return RowStatus.DATA_ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
 
     contract = Contract(seq_nr=row_nr)
 
@@ -72,12 +72,13 @@ def register_contract(row_nr: int,
     # set up link with DataPerOrgUnit
     system = interfaceCall.interface_definition.system
     if not contract.category or contract.category == "":
-        return ERROR, "Categorie is leeg, dus kan dit contract niet aan " \
-                      "een organisatieonderdel gekoppeld worden"
+        return RowStatus.DATA_ERROR, "Categorie is leeg, dus kan dit contract niet aan " \
+                           "een organisatieonderdeel gekoppeld worden"
+
     org_unit = get_org_unit(system, contract.category)
     if not org_unit:
-        return ERROR, f"Voor categorie '{contract.category}' kan geen " \
-                      f"organisatieonderdeel gevonden worden voor {system.name} "
+        return RowStatus.DATA_ERROR, f"Voor categorie '{contract.category}' kan geen " \
+                           f"organisatieonderdeel gevonden worden voor {system.name} "
 
     data_per_org_unit, created = interfaceCall.dataperorgunit_set.get_or_create(org_unit=org_unit)
     if created:
@@ -92,11 +93,10 @@ def register_contract(row_nr: int,
 
     logger.debug(f"Created Contract: {contract.__str__()}")
 
-    return OK, "Valid Contract"
+    return RowStatus.DATA_OK, "Valid Contract"
 
 
 class NegometrixInterfaceFile(ExcelInterfaceFile):
-
     mandatory_headers = ('Contract nr.', 'Contract status')
     mandatory_fields = ('contract_nr', 'contract_status')
     interface_definition: InterfaceDefinition = None
@@ -146,32 +146,21 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
             self._set_interface_definition()
         return self.interface_definition
 
-
-    def handle_row(self,
-                   row_nr: int,
-                   row_values: Tuple[str],
-                   interfaceCall: InterfaceCall,
-                   field_positions: Dict[str, int],
-                   mandatory_field_positions: Tuple[int]):
-        logger.debug(f"register RawData {row_nr} - {row_values}")
-
-        raw_data = register_in_raw_data(row_nr,
-                                        row_values,
-                                        interfaceCall)
-        try:
-            status, message = register_contract(row_nr,
-                                                row_values,
-                                                interfaceCall,
-                                                field_positions,
-                                                mandatory_field_positions)
-        except Exception as ex:
-            raw_data.status = ERROR
-            raw_data.message = str(ex)
-        else:
-            raw_data.status = status
-            raw_data.message = message
-        logger.debug(f"Result register Contact {row_nr} : {raw_data.status} : {raw_data.message}")
-        raw_data.save()
-
     def get_mandatory_fields(self):
         return self.mandatory_fields
+
+    def register_business_data(self,
+                               row_nr: int,
+                               row_values: Tuple[str],
+                               interfaceCall: InterfaceCall,
+                               fields_with_position: Dict[str, int],
+                               mandatory_field_positions: Tuple[int]) -> Tuple[RowStatus, str]:
+
+        # call a function, which makes it easier to unit test, could not do that direct
+        # since we wanted an abstract method to force subclasses to implement it.
+
+        return handle_negometrix_file_row(row_nr,
+                                          row_values,
+                                          interfaceCall,
+                                          fields_with_position,
+                                          mandatory_field_positions)

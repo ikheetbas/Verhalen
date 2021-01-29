@@ -3,7 +3,7 @@ from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, Int
     Mapping
 
 
-# STATIC DATA
+# STATIC TOTAL_DATA_ROWS_RECEIVED
 
 # -------------------------------------------------------------------
 # System page with InterfaceDefinition and Mappings
@@ -50,7 +50,7 @@ class InterfaceDefinitionAdmin(admin.ModelAdmin):
 admin.site.register(InterfaceDefinition, InterfaceDefinitionAdmin)
 
 
-# PROCESS DATA
+# PROCESS TOTAL_DATA_ROWS_RECEIVED
 
 # -------------------------------------------------------------------
 # Interface page with Contracts
