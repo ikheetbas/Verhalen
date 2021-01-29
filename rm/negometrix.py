@@ -1,10 +1,10 @@
 import logging
 from typing import Tuple, Dict
 
-from rm.constants import SKIPPED, OK, ERROR, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
+from rm.constants import SKIPPED, OK, ERROR, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     register_in_raw_data, mandatory_fields_present, get_org_unit
-from rm.models import InterfaceCall, Contract
+from rm.models import InterfaceCall, Contract, System, DataSetType, InterfaceDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -79,10 +79,17 @@ def register_contract(row_nr: int,
                       f"organisatieonderdeel gevonden worden voor {system.name} "
 
     data_per_org_unit, created = interfaceCall.dataperorgunit_set.get_or_create(org_unit=org_unit)
+    if created:
+        logger.debug(f"Created Data Org Per Unit: {data_per_org_unit.__str__()}")
+    else:
+        logger.debug(f"Found Data Org Per Unit: {data_per_org_unit.__str__()}")
+
     contract.data_per_org_unit = data_per_org_unit
 
     # save the bastard!
     contract.save()
+
+    logger.debug(f"Created Contract: {contract.__str__()}")
 
     return OK, "Valid Contract"
 
@@ -91,16 +98,38 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
 
     mandatory_headers = ('Contract nr.', 'Contract status')
     mandatory_fields = ('contract_nr', 'contract_status')
+    interface_definition: InterfaceDefinition = None
 
-    def __init__(self, file, interfaceCall: InterfaceCall):
-        super().__init__(file, interfaceCall)
+    def __init__(self, file):
+
+        super().__init__(file)
+
+    def _set_interface_definition(self):
+        logger.debug(f"Trying to get InterfaceDefinition "
+                     f"for system {NEGOMETRIX} for datasettype {CONTRACTEN}")
+        try:
+            system = System.objects.get(name=NEGOMETRIX)
+            logger.debug(f"Found System: {system}")
+            data_set_type = DataSetType.objects.get(name=CONTRACTEN)
+            logger.debug(f"Found DataSetType: {data_set_type}")
+            self.interface_definition = InterfaceDefinition.objects.get(system=system,
+                                                                        dataset_type=data_set_type)
+            logger.debug(f"Found InterfaceDefinition: {self.interface_definition}")
+        except Exception as ex:
+            logger.error(f"Error in static data: there is no InterfaceDefinition "
+                         f"for system {NEGOMETRIX} for datasettype {CONTRACTEN}")
+            raise Exception(f"Error while trying to set_interface_definition in"
+                            f" NegometrixInterfaceFile {ex.__str__()}")
 
     def get_fields_with_their_position(self, found_headers: Tuple[str]) \
             -> Dict[str, int]:
         return get_fields_with_their_position(found_headers, defined_headers)
 
-    def get_interface_system(self):
-        return NEGOMETRIX
+    def get_interface_definition(self):
+        if not self.interface_definition:
+            self._set_interface_definition()
+        return self.interface_definition
+
 
     def handle_row(self,
                    row_nr: int,

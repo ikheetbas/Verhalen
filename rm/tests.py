@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Group, Permission
+from django.core.files.uploadedfile import SimpleUploadedFile, InMemoryUploadedFile
 from django.db.models.functions import Now
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -204,6 +205,15 @@ class ExcelTests(TestCase):
 
     # Test on really being an Excel file, so can it be read as Workbook?
 
+    def test_empty_file_with_xls_extension(self):
+        file = open("rm/test/resources/EmptyFileWithXLSExtension.xls", "rb")
+        print(f'type of file: {type(file)}')
+        try:
+            is_excel = check_file_is_excel_file(file)
+        except Exception as ex:
+            self.assertTrue("Het openen van dit bestand als excel bestand"
+                            " geeft een foutmelding" in ex.__str__())
+
     def test_not_an_excelfile(self):
         file = open("rm/test/resources/aPdfWithExcelExtension.xls", "rb")
         print(f'type of file: {type(file)}')
@@ -242,7 +252,7 @@ class ExcelTests(TestCase):
                                                          filename='valid_excel_without_headers.xlsx',
                                                          interface_definition=self.interface_definition)
             file = "rm/test/resources/valid_excel_without_headers.xlsx"
-            check_file_and_interface_type(file, interfaceCall)
+            check_file_and_interface_type(file)
         except Exception as ex:
             self.assertTrue("File can not be recognized" in ex.__str__(),
                             f"We got another exception than expected, received: {ex.__str__()}")
@@ -255,13 +265,14 @@ class ExcelTests(TestCase):
                                                      filename='test_register_contract.xlsx',
                                                      interface_definition=self.interface_definition)
         file = "rm/test/resources/test_register_contract.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+        excelInterfaceFile = check_file_and_interface_type(file)
         self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
 
     def test_upload_valid_negometrix_excel_file_2_valid_rows(self):
 
-        categorie = "NPO/Technology/IAAS"
-        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name=categorie)
+        Mapping.objects.create(system=self.system,
+                               org_unit=self.org_unit,
+                               name="NPO/Technology/IAAS")
 
         interfaceCall = InterfaceCall.objects.create(
                         date_time_creation=Now(),
@@ -270,11 +281,11 @@ class ExcelTests(TestCase):
                         interface_definition=self.interface_definition)
 
         file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+        excelInterfaceFile = check_file_and_interface_type(file)
 
         self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
 
-        excelInterfaceFile.process()
+        excelInterfaceFile.process(interfaceCall)
 
         raw_data_set = interfaceCall.rawdata_set.all()
         self.assertEqual(len(raw_data_set), 3)
@@ -295,6 +306,25 @@ class ExcelTests(TestCase):
         contract2 = contracten[1]
         self.assertEqual(contract2.contract_nr, '44336')
 
+    def test_upload_valid_negometrix_file_and_see_contracts(self):
+
+        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="NPO/Technology/IAAS")
+
+        interfaceCall = InterfaceCall.objects.create(
+                        date_time_creation=Now(),
+                        status='TestStatus',
+                        filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx',
+                        interface_definition=self.interface_definition)
+
+        file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
+        excelInterfaceFile = check_file_and_interface_type(file)
+        excelInterfaceFile.process(interfaceCall)
+
+        response = self.client.get(f'/interfacecall/{interfaceCall.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Data verversen details')
+        self.assertContains(response, '44336') # contract nr
+
 
     def test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row(self):
         categorie = "NPO/Technology/IAAS"
@@ -305,10 +335,10 @@ class ExcelTests(TestCase):
                                                      filename='test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx',
                                                      interface_definition=self.interface_definition)
         file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file, interfaceCall)
+        excelInterfaceFile = check_file_and_interface_type(file)
         self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
 
-        excelInterfaceFile.process()
+        excelInterfaceFile.process(interfaceCall)
 
         contracten = interfaceCall.contracts()
         self.assertEqual(len(contracten), 2)
@@ -457,6 +487,71 @@ class ExcelTests(TestCase):
         found_org_unit = get_org_unit(self.system_a, not_existing_mapping_name)
         self.assertIsNone(found_org_unit)
 
+
+# class FileUploadTests(TestCase):
+#
+#     def setUp(self):
+#         setUpUserWithInterfaceCallAndContract(self, superuser=True)
+#
+#     def test_upload_empty_file_with_xls(self):
+#
+#         nr_int_calls_before = len(InterfaceCall.objects.all())
+#
+#         file = SimpleUploadedFile(name="rm/test/resources/EmptyFileWithXLSExtension.xls",
+#                                   content=b"file_content",
+#                                   content_type="excel/xls")
+#         response = self.client.post(reverse('upload'), {'file': file})
+#         nr_int_calls_after = len(InterfaceCall.objects.all())
+#         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
+#
+#         interface_call: InterfaceCall = InterfaceCall.objects.last()
+#         self.assertEqual(interface_call.filename, "EmptyFileWithXLSExtension.xls")
+#         self.assertTrue(interface_call.message.__contains__('Het openen van dit bestand als excel bestand '
+#                                                             'geeft een foutmelding: File is not a zip file'))
+#
+#         self.assertContains(response, 'Het openen van dit bestand als excel bestand geeft een '
+#                                       'foutmelding: File is not a zip file')
+#
+#
+#     def test_upload_a_valid_excel_file(self):
+#
+#         nr_int_calls_before = len(InterfaceCall.objects.all())
+#
+#         file = SimpleUploadedFile(name="rm/test/resources/a_valid_excel_file.xlsx",
+#                                   content=b"file_content",
+#                                   content_type="excel/xls")
+#         response = self.client.post(reverse('upload'), {'file': file})
+#         nr_int_calls_after = len(InterfaceCall.objects.all())
+#         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
+#
+#         interface_call: InterfaceCall = InterfaceCall.objects.last()
+#         self.assertEqual(interface_call.filename, "a_valid_excel_file.xlsx")
+#         self.assertEqual(interface_call.status, "OK", msg=interface_call.message)
+#         self.assertIsNone(interface_call.message)
+#
+#
+    # def test_upload_Overzicht_Tech_Cluster_Backend_2_12_xlsx(self):
+    #
+    #     nr_int_calls_before = len(InterfaceCall.objects.all())
+    #
+    #     with open('rm/test/resources/Overzicht_Tech_Cluster_Backend 2-12.xlsx') as upload_file:
+    #         response = self.client.post(reverse('upload'),
+    #                                     {'name': 'rm/test/resources/Overzicht_Tech_Cluster_Backend 2-12.xlsx',
+    #                                      'content': b"file_content",
+    #                                      'attachment': upload_file})
+    #
+    #     # file = SimpleUploadedFile(name="rm/test/resources/Overzicht_Tech_Cluster_Backend 2-12.xlsx",
+    #     #                           content=b"file_content",
+    #     #                           content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    #     #
+    #     # response = self.client.post(reverse('upload'), {'file': file})
+    #     nr_int_calls_after = len(InterfaceCall.objects.all())
+    #     self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
+    #
+    #     interface_call: InterfaceCall = InterfaceCall.objects.last()
+    #     self.assertEqual(interface_call.filename, "Overzicht_Tech_Cluster_Backend 2-12.xlsx")
+    #     self.assertEqual(interface_call.status, "OK", msg=interface_call.message)
+    #     self.assertIsNone(interface_call.message)
 
 
 class LoginRequiredTests(TestCase):

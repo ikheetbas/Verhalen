@@ -1,18 +1,24 @@
 from django.contrib import admin
-from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, InterfaceDefinition, DataPerOrgUnit
+from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, InterfaceDefinition, DataPerOrgUnit, \
+    Mapping
 
 
 # STATIC DATA
 
 # -------------------------------------------------------------------
-# System page with InterfaceDefinition
+# System page with InterfaceDefinition and Mappings
 # -------------------------------------------------------------------
 class InterfaceDefinitionInline(admin.TabularInline):
     show_change_link = True
     model = InterfaceDefinition
 
+
+class MappingInline(admin.TabularInline):
+    show_change_link = True
+    model = Mapping
+
 class SystemAdmin(admin.ModelAdmin):
-    inlines = [InterfaceDefinitionInline]
+    inlines = [InterfaceDefinitionInline, MappingInline]
     list_display = ["name", "description"]
 
 admin.site.register(System, SystemAdmin)

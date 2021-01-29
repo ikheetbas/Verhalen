@@ -224,14 +224,14 @@ class ExcelInterfaceFile(ABC):
     Base class containing all non-specific logic for uploading an Excel file
     with data.
     """
+    interfaceCall: InterfaceCall = None
 
     def __init__(self,
-                 file,
-                 interfaceCall: InterfaceCall):
+                 file):
         self.file = file
-        self.interfaceCall = interfaceCall
 
-    def process(self):
+    def process(self, interfaceCall: InterfaceCall):
+        self.interfaceCall = interfaceCall
 
         try:
             found_headers = get_headers_from_file(self.file)
@@ -254,7 +254,7 @@ class ExcelInterfaceFile(ABC):
             raise Exception(self.interfaceCall.message)
 
     @abstractmethod
-    def get_interface_system(self):
+    def get_interface_definition(self):
         raise Exception("Must be overridden, programming error")
 
     @abstractmethod

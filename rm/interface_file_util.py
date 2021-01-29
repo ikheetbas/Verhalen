@@ -8,7 +8,7 @@ from rm.models import InterfaceCall
 from rm.negometrix import NegometrixInterfaceFile
 
 
-def check_file_and_interface_type(file, interfaceCall: InterfaceCall) -> ExcelInterfaceFile:
+def check_file_and_interface_type(file) -> ExcelInterfaceFile:
     """
     Checks what type of Interface the file is, performs checks and returns
     the right subclass of ExcelInterfaceFile:
@@ -26,6 +26,6 @@ def check_file_and_interface_type(file, interfaceCall: InterfaceCall) -> ExcelIn
     #  hardcoded check on Negometrix headers
     if is_valid_header_row(headers_in_file,
                            NegometrixInterfaceFile.mandatory_headers):
-        return NegometrixInterfaceFile(file, interfaceCall)
+        return NegometrixInterfaceFile(file)
     else:
         raise Exception(ERROR_MSG_FILE_CAN_NOT_BE_RECOGNISED)

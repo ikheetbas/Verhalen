@@ -94,7 +94,8 @@ class InterfaceCall(models.Model):
 
     interface_definition = models.ForeignKey(InterfaceDefinition,
                                              on_delete=models.CASCADE,
-                                             related_name='interface_calls')
+                                             related_name='interface_calls',
+                                             null=True)
 
     def contracts(self):
         contracts = Contract.objects.none()
@@ -104,7 +105,8 @@ class InterfaceCall(models.Model):
         return contracts
 
     def __str__(self):
-        return f"{self.interface_definition.name} - {self.date_time_creation}"
+        return f"{self.interface_definition.name}" if self.interface_definition else "Onbekende interface"\
+                                                                                     + f" - {self.date_time_creation}"
 
 
 class RawData(models.Model):

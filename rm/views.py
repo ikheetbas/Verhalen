@@ -27,23 +27,33 @@ def upload_file(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             file = request.FILES['file']
-            # First things first, register file in InterfaceCall
-            interfaceCall = InterfaceCall.objects.create(filename=file.name,
-                                                         status=NEW,
-                                                         date_time_creation=Now(),
-                                                         type=INTERFACE_TYPE_FILE,
-                                                         system=UNKNOWN)
+
+            logger.debug(f"---- TYPE of the FILE object: {type(file)}")
+            logger.debug(f"File name: {file.name}")
+            logger.debug(f"File content_type: {file.content_type}")
+            logger.debug(f"File size: {file.size}")
+            logger.debug(f"File charset: {file.charset}")
+            logger.debug(f"File content_type_extra: {file.content_type_extra} ")
+            logger.debug(f"File field_name: {file.field_name}")
+            logger.debug(f"File file: {file.file}")
+
+            # First things first, create the InterfaceCall
+            interfaceCall = InterfaceCall(filename=file.name,
+                                          status=NEW,
+                                          date_time_creation=Now())
             try:
                 # check the file and try to find out what type it is
-                interfaceFile = check_file_and_interface_type(file, interfaceCall)
+                interfaceFile = check_file_and_interface_type(file)
 
-                # register found system in the interfaceFile registration
-                system = interfaceFile.get_interface_system()
-                interfaceCall.system = system
+                # register found system in the interfaceFileCall
+                interface_definition = interfaceFile.get_interface_definition()
+
+                interfaceCall.interface_definition = interface_definition
                 interfaceCall.save()
+                logger.debug(f"Created InterfaceCall: {interfaceCall.__str__()}")
 
                 # process the file!
-                interfaceFile.process()
+                interfaceFile.process(interfaceCall)
 
             except Exception as ex:
 
