@@ -7,8 +7,9 @@ from django.contrib.auth import get_user_model
 
 from openpyxl import Workbook, load_workbook
 
+import rm
 from users.models import OrganizationalUnit
-from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK
+from .constants import ERROR_MSG_FILE_DEFINITION_ERROR, ERROR, OK, NEGOMETRIX, CONTRACTEN
 from .interface_file_util import check_file_and_interface_type
 from .models import Contract, InterfaceCall, System, DataSetType, InterfaceDefinition, DataPerOrgUnit, Mapping
 from django.db.utils import IntegrityError
@@ -259,101 +260,6 @@ class ExcelTests(TestCase):
         else:
             self.assertTrue(False, "No Exception, while expected because file has no headers")
 
-    def test_check_valid_negometrix_excel_file(self):
-        interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                     status='TestStatus',
-                                                     filename='test_register_contract.xlsx',
-                                                     interface_definition=self.interface_definition)
-        file = "rm/test/resources/test_register_contract.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file)
-        self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
-
-    def test_upload_valid_negometrix_excel_file_2_valid_rows(self):
-
-        Mapping.objects.create(system=self.system,
-                               org_unit=self.org_unit,
-                               name="NPO/Technology/IAAS")
-
-        interfaceCall = InterfaceCall.objects.create(
-                        date_time_creation=Now(),
-                        status='TestStatus',
-                        filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx',
-                        interface_definition=self.interface_definition)
-
-        file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file)
-
-        self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
-
-        excelInterfaceFile.process(interfaceCall)
-
-        raw_data_set = interfaceCall.rawdata_set.all()
-        self.assertEqual(len(raw_data_set), 3)
-        errors = 0
-        for raw_data in raw_data_set:
-            if raw_data.status == ERROR:
-                errors += 1
-        self.assertEqual(errors, 0)
-
-        #TODO make this work, InterfaceCall.number_of_rows etc
-        # self.assertEqual(interfaceCall.number_of_rows_received, 3)
-
-        contracten = interfaceCall.contracts()
-        self.assertEqual(len(contracten), 2)
-
-        contract1 = contracten[0]
-        self.assertEqual(contract1.contract_nr, '44335')
-        contract2 = contracten[1]
-        self.assertEqual(contract2.contract_nr, '44336')
-
-    def test_upload_valid_negometrix_file_and_see_contracts(self):
-
-        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="NPO/Technology/IAAS")
-
-        interfaceCall = InterfaceCall.objects.create(
-                        date_time_creation=Now(),
-                        status='TestStatus',
-                        filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx',
-                        interface_definition=self.interface_definition)
-
-        file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file)
-        excelInterfaceFile.process(interfaceCall)
-
-        response = self.client.get(f'/interfacecall/{interfaceCall.pk}/')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Data verversen details')
-        self.assertContains(response, '44336') # contract nr
-
-
-    def test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row(self):
-        categorie = "NPO/Technology/IAAS"
-        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name=categorie)
-
-        interfaceCall = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                     status='TestStatus',
-                                                     filename='test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx',
-                                                     interface_definition=self.interface_definition)
-        file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows_1_invalid_row.xlsx"
-        excelInterfaceFile = check_file_and_interface_type(file)
-        self.assertTrue(isinstance(excelInterfaceFile, NegometrixInterfaceFile))
-
-        excelInterfaceFile.process(interfaceCall)
-
-        contracten = interfaceCall.contracts()
-        self.assertEqual(len(contracten), 2)
-
-        contract1 = contracten[0]
-        self.assertEqual(contract1.contract_nr, '44335')
-        contract2 = contracten[1]
-        self.assertEqual(contract2.contract_nr, '44337')
-
-        rawdata = interfaceCall.rawdata_set.all()
-        self.assertEqual(len(rawdata), 4)
-        self.assertEqual(rawdata[0].status, OK)
-        self.assertEqual(rawdata[1].status, OK)
-        self.assertEqual(rawdata[2].status, ERROR)
-        self.assertEqual(rawdata[3].status, OK)
 
     #  Test generic database functions
 
@@ -486,6 +392,8 @@ class ExcelTests(TestCase):
                                          org_unit=self.org_unit)
         found_org_unit = get_org_unit(self.system_a, not_existing_mapping_name)
         self.assertIsNone(found_org_unit)
+
+
 
 
 # class FileUploadTests(TestCase):

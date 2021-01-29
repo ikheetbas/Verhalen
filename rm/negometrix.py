@@ -1,6 +1,7 @@
 import logging
 from typing import Tuple, Dict
 
+import rm
 from rm.constants import SKIPPED, OK, ERROR, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     register_in_raw_data, mandatory_fields_present, get_org_unit
@@ -113,13 +114,28 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
             data_set_type = DataSetType.objects.get(name=CONTRACTEN)
             logger.debug(f"Found DataSetType: {data_set_type}")
             self.interface_definition = InterfaceDefinition.objects.get(system=system,
-                                                                        dataset_type=data_set_type)
+                                                                        dataset_type=data_set_type,
+                                                                        interface_type=InterfaceDefinition.UPLOAD)
             logger.debug(f"Found InterfaceDefinition: {self.interface_definition}")
+        except rm.models.System.DoesNotExist as ex:
+            msg = f"System {NEGOMETRIX} is niet geregistreerd, waarschuw Admin"
+            logger.error(msg)
+            raise rm.models.System.DoesNotExist(msg)
+        except rm.models.DataSetType.DoesNotExist as ex:
+            msg = f"DataSetType {CONTRACTEN} is niet geregistreerd, waarschuw Admin"
+            logger.error(msg)
+            raise rm.models.DataSetType.DoesNotExist(msg)
+        except rm.models.InterfaceDefinition.DoesNotExist as ex:
+            msg = f"Interface definitie {NEGOMETRIX} voor {CONTRACTEN} type {InterfaceDefinition.UPLOAD} " \
+                  f"is niet geregistreerd, waarschuw Admin"
+            logger.error(msg)
+            raise rm.models.InterfaceDefinition.DoesNotExist(msg)
         except Exception as ex:
-            logger.error(f"Error in static data: there is no InterfaceDefinition "
-                         f"for system {NEGOMETRIX} for datasettype {CONTRACTEN}")
-            raise Exception(f"Error while trying to set_interface_definition in"
-                            f" NegometrixInterfaceFile {ex.__str__()}")
+            msg = (f"Unexpected Error in static data: there is no InterfaceDefinition "
+                   f"for system {NEGOMETRIX} for datasettype {CONTRACTEN} "
+                   f"\n ExceptionType {type(ex)}, message: {ex.__str__()}")
+            logger.error(msg)
+            raise Exception(msg)
 
     def get_fields_with_their_position(self, found_headers: Tuple[str]) \
             -> Dict[str, int]:
