@@ -24,9 +24,9 @@ class System(models.Model):
     """
     name = models.CharField("Naam", max_length=20, unique=True)
     description = models.CharField("Omschrijving", max_length=50, blank=True)
-    dataset_types = models.ManyToManyField(DataSetType,
+    data_set_types = models.ManyToManyField(DataSetType,
                                            through='InterfaceDefinition',
-                                           through_fields=('system', 'dataset_type'))
+                                           through_fields=('system', 'data_set_type'))
     org_units = models.ManyToManyField(OrganizationalUnit,
                                        through='Mapping',
                                        through_fields=('system', 'org_unit'))
@@ -50,7 +50,7 @@ class InterfaceDefinition(models.Model):
     interface_type = models.CharField(max_length=3, choices=INTERFACE_TYPE)
     url = models.URLField(blank=True)
     system = models.ForeignKey(System, on_delete=models.CASCADE)
-    dataset_type = models.ForeignKey(DataSetType, on_delete=models.CASCADE)
+    data_set_type = models.ForeignKey(DataSetType, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -85,12 +85,14 @@ class InterfaceCall(models.Model):
     status = models.CharField(max_length=15)
     message = models.TextField(max_length=250, blank=True)
 
-    number_of_rows_received = models.IntegerField("Ontvangen regels", default=0)
-    number_of_data_rows_received = models.IntegerField("Ontvangen dataregels", default=0)
-    number_of_data_rows_ok = models.IntegerField("Dataregels goed", default=0)
-    number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing", default=0)
-    number_of_data_rows_error = models.IntegerField("Dataregels fout", default=0)
-    number_of_data_rows_ignored = models.IntegerField("Dataregels genegeerd", default=0)
+    number_of_rows_received = models.IntegerField("Aantal ontvangen regels", default=0)
+    number_of_data_rows_received = models.IntegerField("Aantal ontvangen dataregels", default=0)
+    number_of_empty_rows = models.IntegerField("Aantal lege regels", default=0)
+    number_of_header_rows = models.IntegerField("Aantal header regels", default=0)
+    number_of_data_rows_ok = models.IntegerField("Aantal dataregels goed", default=0)
+    number_of_data_rows_warning = models.IntegerField("Aantal dataregels waarschuwing", default=0)
+    number_of_data_rows_error = models.IntegerField("Aantal dataregels fout", default=0)
+    number_of_data_rows_ignored = models.IntegerField("Aantal dataregels genegeerd", default=0)
 
     interface_definition = models.ForeignKey(InterfaceDefinition,
                                              on_delete=models.CASCADE,

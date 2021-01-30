@@ -2,8 +2,7 @@ import logging
 from typing import Tuple, Dict
 
 import rm
-from rm.constants import RowStatus, NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, \
-    RowStatus
+from rm.constants import NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, RowStatus
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     mandatory_fields_present, get_org_unit
 from rm.models import InterfaceCall, Contract, System, DataSetType, InterfaceDefinition
@@ -114,7 +113,7 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
             data_set_type = DataSetType.objects.get(name=CONTRACTEN)
             logger.debug(f"Found DataSetType: {data_set_type}")
             self.interface_definition = InterfaceDefinition.objects.get(system=system,
-                                                                        dataset_type=data_set_type,
+                                                                        data_set_type=data_set_type,
                                                                         interface_type=InterfaceDefinition.UPLOAD)
             logger.debug(f"Found InterfaceDefinition: {self.interface_definition}")
         except rm.models.System.DoesNotExist as ex:

@@ -41,9 +41,9 @@ def setUpUserWithInterfaceCallAndContract(self,
     # Set up static data
     self.system_a = System.objects.create(name="SYSTEM_A")
     self.system = System.objects.create(name="Negometrix")
-    self.dataset_type = DataSetType.objects.create(name="contracten")
+    self.data_set_type = DataSetType.objects.create(name="contracten")
     self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
-                                                                   dataset_type=self.dataset_type,
+                                                                   data_set_type=self.data_set_type,
                                                                    interface_type=InterfaceDefinition.UPLOAD)
     self.org_unit = OrganizationalUnit.objects.create(name="MyTeam",
                                                       type=OrganizationalUnit.TEAM)

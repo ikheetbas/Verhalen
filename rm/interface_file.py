@@ -302,6 +302,8 @@ class ExcelInterfaceFile(ABC):
 
 
         self.interfaceCall.number_of_rows_received = self.row_statistics.get_total_rows_received()
+        self.interfaceCall.number_of_empty_rows = self.row_statistics.get_total_empty_rows()
+        self.interfaceCall.number_of_header_rows = self.row_statistics.get_total_header_rows()
         self.interfaceCall.number_of_data_rows_ok = self.row_statistics.get_total_data_ok_rows()
         self.interfaceCall.number_of_data_rows_ignored = self.row_statistics.get_total_data_ignored_rows()
         self.interfaceCall.number_of_data_rows_error = self.row_statistics.get_total_data_error_rows()

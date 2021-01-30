@@ -29,9 +29,9 @@ class NegometrixFindInterfaceDefinitionTests(TestCase):
     def test_get_interface_definition_fail_Negometrix_not_found(self):
         # static data (wrong)
         system = System.objects.create(name="FOUTGESPELD")
-        dataset_type = DataSetType.objects.create(name=CONTRACTEN)
+        data_set_type = DataSetType.objects.create(name=CONTRACTEN)
         interface_definition = InterfaceDefinition.objects.create(system=system,
-                                                                  dataset_type=dataset_type,
+                                                                  data_set_type=data_set_type,
                                                                   interface_type=InterfaceDefinition.UPLOAD)
 
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
@@ -41,9 +41,9 @@ class NegometrixFindInterfaceDefinitionTests(TestCase):
     def test_get_interface_definition_fail_Foute_dataset(self):
         # static data (wrong)
         system = System.objects.create(name=NEGOMETRIX)
-        dataset_type = DataSetType.objects.create(name="Foute Dataset")
+        data_set_type = DataSetType.objects.create(name="Foute Dataset")
         interface_definition = InterfaceDefinition.objects.create(system=system,
-                                                                  dataset_type=dataset_type,
+                                                                  data_set_type=data_set_type,
                                                                   interface_type=InterfaceDefinition.UPLOAD)
 
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
@@ -53,18 +53,18 @@ class NegometrixFindInterfaceDefinitionTests(TestCase):
 
     def test_get_interface_definition_fail_no_interface_definition_forgot_UPLOAD_in_GET(self):
         system = System.objects.create(name=NEGOMETRIX)
-        dataset_type = DataSetType.objects.create(name=CONTRACTEN)
+        data_set_type = DataSetType.objects.create(name=CONTRACTEN)
         interface_definition = InterfaceDefinition.objects.create(system=system,
-                                                                  dataset_type=dataset_type)
+                                                                  data_set_type=data_set_type)
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
             interface_definition = negometrix_file.get_interface_definition()
 
     def test_get_interface_definition_happy(self):
         system = System.objects.create(name=NEGOMETRIX)
-        dataset_type = DataSetType.objects.create(name=CONTRACTEN)
+        data_set_type = DataSetType.objects.create(name=CONTRACTEN)
         interface_definition = InterfaceDefinition.objects.create(system=system,
-                                                                  dataset_type=dataset_type,
+                                                                  data_set_type=data_set_type,
                                                                   interface_type=InterfaceDefinition.UPLOAD)
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         interface_definition = negometrix_file.get_interface_definition()
@@ -81,10 +81,10 @@ class NegometrixFileTests(TestCase):
 
         # STATIC TOTAL_DATA_ROWS_RECEIVED
         self.system, created = System.objects.get_or_create(name=NEGOMETRIX)
-        self.dataset_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        self.data_set_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
         self.interface_definition, created = InterfaceDefinition.objects.get_or_create(
                                                                             system=self.system,
-                                                                            dataset_type=self.dataset_type,
+                                                                            data_set_type=self.data_set_type,
                                                                             interface_type=InterfaceDefinition.UPLOAD)
         self.org_unit, created = OrganizationalUnit.objects.get_or_create(name="PT: IaaS",
                                                                           type=OrganizationalUnit.TEAM)
@@ -187,3 +187,42 @@ class NegometrixFileTests(TestCase):
         self.assertContains(response, '44336') # contract nr
 
 
+class NegometrixCountTests(TestCase):
+
+    def setUp(self):
+
+        # Create Superuser and Login
+        self.user = _create_superuser()
+        self.client.force_login(self.user)
+
+        # STATIC TOTAL_DATA_ROWS_RECEIVED
+        self.system, created = System.objects.get_or_create(name=NEGOMETRIX)
+        self.data_set_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(
+                                                                            system=self.system,
+                                                                            data_set_type=self.data_set_type,
+                                                                            interface_type=InterfaceDefinition.UPLOAD)
+        self.org_unit, created = OrganizationalUnit.objects.get_or_create(name="PT: IaaS",
+                                                                          type=OrganizationalUnit.TEAM)
+
+    def test_total_empty_header_data_recevied_error_and_ok(self):
+        Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="NPO/Technology/IAAS")
+
+        interfaceCall = InterfaceCall.objects.create(
+                        date_time_creation=Now(),
+                        status='TestStatus',
+                        filename='test_total_data_error_empty_rows.xlsx',
+                        interface_definition=self.interface_definition)
+
+        file = "rm/test/resources/test_total_data_error_empty_rows.xlsx"
+        excelInterfaceFile = check_file_and_interface_type(file)
+        excelInterfaceFile.process(interfaceCall)
+
+        self.assertEqual(interfaceCall.number_of_rows_received, 4)
+        self.assertEqual(interfaceCall.number_of_empty_rows, 1)
+        self.assertEqual(interfaceCall.number_of_header_rows, 1)
+        self.assertEqual(interfaceCall.number_of_data_rows_received, 2)
+        self.assertEqual(interfaceCall.number_of_data_rows_error, 1)
+        self.assertEqual(interfaceCall.number_of_data_rows_ok, 1)
+
+        #TODO Test IGNORED - when we check on organizational department of the user
