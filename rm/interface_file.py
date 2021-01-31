@@ -64,8 +64,8 @@ def to_upper_none_proof(x):
     return x
 
 
-def is_valid_header_row(found_headers: Tuple[str],
-                        mandatory_headers: Tuple[str]) -> bool:
+def is_valid_header_row(found_headers: Tuple[str, ...],
+                        mandatory_headers: Tuple[str, ...]) -> bool:
     """
     Checks if the found headers contain all mandatory headers.
     """

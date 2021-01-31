@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.db.models.functions import Now
 
 from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall, Contract
@@ -28,7 +28,7 @@ def setUpUser(self,
     When called without parameters, you get a superuser
     """
     if superuser:
-        self.user = create_superuser()
+        self.user = _create_superuser()
     else:
         self.user = _create_user(group_name=group_name,
                                  username=username,
@@ -38,7 +38,7 @@ def setUpUser(self,
     self.client.force_login(self.user)
 
 
-def create_superuser(username="john", password="doe", **kwargs):
+def _create_superuser(username="john", password="doe", **kwargs):
     user = get_user_model().objects.create(username=username,
                                            is_superuser=True,
                                            is_active=True,
@@ -107,3 +107,26 @@ def set_up_process_contract_data(self):
                                               contract_owner='T. Ester',
                                               contract_name='Test contract naam',
                                               data_per_org_unit=self.data_per_org_unit)
+
+
+def print_permissions_and_groups():
+    all_permissions = Permission.objects.all()
+    print("--------------------------------------")
+    print("           PERMISSIONS")
+    print("--------------------------------------")
+    for permission in all_permissions:
+        print(f"Found permission: {permission.codename}")
+    print("--------------------------------------")
+
+    all_groups = Group.objects.all()
+    print("--------------------------------------")
+    print("           GROUPS")
+    print("--------------------------------------")
+    for group in all_groups:
+        print(f"Found group: {group.name}")
+        permissions = group.permissions.all()
+        if len(permissions) == 0:
+            print("- has no permissions")
+        for permission in permissions:
+            print(f"- has permission: {permission.codename}")
+    print("--------------------------------------")

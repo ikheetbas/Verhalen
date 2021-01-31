@@ -122,7 +122,7 @@ class ExtentionTests(TestCase):
 
 class FileFormatTests(TestCase):
     """
-    Test on really being an Excel file, so can it be read as Workbook?
+    Test if the file is an Excel file, so can it be read as Workbook?
     """
 
     def test_empty_file_with_xls_extension(self):
@@ -210,13 +210,13 @@ class FieldPositionsTests(TestCase):
         self.assertTrue(mandatory_fields_present(mandatory_field_positions,
                                                  row_values))
 
-    def test_mandatory_fields_not_present_1_pos(self):
-        mandatory_field_positions = [3]
-        row_values = ["nul", "een", "twee", None, "vier"]
+    def test_mandatory_fields_not_present_1_pos_empty_string(self):
+        mandatory_field_positions = (3, )
+        row_values = ("nul", "een", "twee", "", "vier")
         self.assertFalse(mandatory_fields_present(mandatory_field_positions,
                                                   row_values))
 
-    def test_mandatory_fields_not_present_1_ok_1_not(self):
+    def test_mandatory_fields_not_present_1_ok_1_not_and_none(self):
         mandatory_field_positions = [2, 3]
         row_values = ["nul", "een", "twee", None, "vier"]
         self.assertFalse(mandatory_fields_present(mandatory_field_positions,
@@ -224,7 +224,6 @@ class FieldPositionsTests(TestCase):
 
 
 class GenericExcelTests(TestCase):
-
     def test_get_headers(self):
         file = open("rm/test/resources/test_get_headers.xlsx", "rb")
         workbook: Workbook = load_workbook(file)
@@ -245,8 +244,6 @@ class GenericExcelTests(TestCase):
                             f"We got another exception than expected, received: {ex.__str__()}")
         else:
             self.assertTrue(False, "No Exception, while expected because file has no headers")
-
-    #  Test generic database functions
 
 
 class GenericFileUploadTests(TestCase):

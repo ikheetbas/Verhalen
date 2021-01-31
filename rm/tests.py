@@ -1,15 +1,11 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group, Permission
-from django.db.models.functions import Now
 from django.test import TestCase
 from django.urls import reverse
 
-from users.models import OrganizationalUnit
 from .interface_file import get_org_unit
-from .models import Contract, InterfaceCall, DataPerOrgUnit, Mapping, System, DataSetType, InterfaceDefinition
+from .models import Contract, Mapping
 
 from django.db.utils import IntegrityError
-from .test_util import setUpUser, set_up_static_data, set_up_user_with_interface_call_and_contract
+from .test_util import set_up_user_with_interface_call_and_contract
 
 
 class DataModelTest(TestCase):
@@ -37,7 +33,7 @@ class DataModelTest(TestCase):
         self.assertEqual(len(contracts), 2)
 
 
-class ContractTest(TestCase):
+class WebPagesTest(TestCase):
 
     def setUp(self):
         set_up_user_with_interface_call_and_contract(self)
@@ -114,29 +110,6 @@ class RoleBasedAuthorizationSuperuserTests(TestCase):
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester', count=1)
-
-
-def print_permissions_and_groups():
-    all_permissions = Permission.objects.all()
-    print("--------------------------------------")
-    print("           PERMISSIONS")
-    print("--------------------------------------")
-    for permission in all_permissions:
-        print(f"Found permission: {permission.codename}")
-    print("--------------------------------------")
-
-    all_groups = Group.objects.all()
-    print("--------------------------------------")
-    print("           GROUPS")
-    print("--------------------------------------")
-    for group in all_groups:
-        print(f"Found group: {group.name}")
-        permissions = group.permissions.all()
-        if len(permissions) == 0:
-            print("- has no permissions")
-        for permission in permissions:
-            print(f"- has permission: {permission.codename}")
-    print("--------------------------------------")
 
 
 class RoleBasedAuthorizationClusterLeadTests(TestCase):
