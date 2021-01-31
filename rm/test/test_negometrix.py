@@ -7,9 +7,10 @@ from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus, FileStatus
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping
 from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
-from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, setUpUser, set_up_static_data
+from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, set_up_user, \
+    set_up_static_data
 from rm.views import process_file
-from users.models import OrganizationalUnit
+from users.models import OrganizationalUnit, CustomUser
 
 
 class GetInterfaceDefinitionTests(TestCase):
@@ -61,9 +62,8 @@ class GetInterfaceDefinitionTests(TestCase):
 class NegometrixFileTests(TestCase):
 
     def setUp(self):
-        setUpUser(self, superuser=True)
+        set_up_user(self, superuser=True)
         set_up_static_data(self)
-
 
     def test_check_valid_negometrix_excel_file(self):
         interface_call = InterfaceCall.objects.create(date_time_creation=Now(),
@@ -79,11 +79,14 @@ class NegometrixFileTests(TestCase):
                                org_unit=self.org_unit,
                                name="NPO/Technology/IAAS")
 
+        print(self.user.org_units.all())
+
         interface_call = InterfaceCall.objects.create(
             date_time_creation=Now(),
             status='TestStatus',
             filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx',
-            interface_definition=self.interface_definition)
+            interface_definition=self.interface_definition,
+            user=self.user)
 
         file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
         excel_interface_file = check_file_and_interface_type(file)
@@ -116,7 +119,8 @@ class NegometrixFileTests(TestCase):
                                                       status='TestStatus',
                                                       filename='test_upload_valid_negometrix_excel_'
                                                                'file_2_valid_rows_1_invalid_row.xlsx',
-                                                      interface_definition=self.interface_definition)
+                                                      interface_definition=self.interface_definition,
+                                                      user=self.user)
         file = "rm/test/resources/test_upload_valid_negometrix_excel_" \
                "file_2_valid_rows_1_invalid_row.xlsx"
         excel_interface_file = check_file_and_interface_type(file)
@@ -178,26 +182,29 @@ class NegometrixCountTests(TestCase):
 
     def test_total_empty_header_data_recevied_error_and_ok(self):
         Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="NPO/Technology/IAAS")
+        self.user.org_units.add(self.org_unit)
+
+        org_unit2 = OrganizationalUnit.objects.create(name="Nog een unit", type=OrganizationalUnit.TEAM)
+        Mapping.objects.create(system=self.system, org_unit=org_unit2, name="Team zonder users")
 
         interface_call = InterfaceCall.objects.create(
             date_time_creation=Now(),
             status='TestStatus',
             filename='test_total_data_error_empty_rows.xlsx',
-            interface_definition=self.interface_definition)
+            interface_definition=self.interface_definition,
+            user=self.user)
 
         file = "rm/test/resources/test_total_data_error_empty_rows.xlsx"
         excel_interface_file = check_file_and_interface_type(file)
         excel_interface_file.process(interface_call)
 
-        self.assertEqual(interface_call.number_of_rows_received, 4)
+        self.assertEqual(interface_call.number_of_rows_received, 5)
         self.assertEqual(interface_call.number_of_empty_rows, 1)
         self.assertEqual(interface_call.number_of_header_rows, 1)
-        self.assertEqual(interface_call.number_of_data_rows_received, 2)
+        self.assertEqual(interface_call.number_of_data_rows_received, 3)
         self.assertEqual(interface_call.number_of_data_rows_error, 1)
         self.assertEqual(interface_call.number_of_data_rows_ok, 1)
-
-        # TODO Test IGNORED - when we check on organizational department of the user
-
+        self.assertEqual(interface_call.number_of_data_rows_ignored, 1)
 
 class FileWithContractTests(TestCase):
 
@@ -285,3 +292,74 @@ class NegometrixFileUploadTests(TestCase):
         self.assertEqual(interface_call.filename, "rm/test/resources/a_valid_excel_file.xlsx")
         self.assertEqual(interface_call.status, FileStatus.OK.name, msg=interface_call.message)
         self.assertEqual(interface_call.message, "")
+
+
+class HandleNegometrixFileRowTests(TestCase):
+
+    def setUp(self):
+        set_up_user_with_interface_call_and_contract(self)
+        self.mandatory_field_positions = (0, 2)
+        self.fields_with_position = {"contract_nr": 1, 'contract_status': 2, "category": 3}
+
+    def test_handle_negometrix_file_row_test_header(self):
+        row_status, msg = handle_negometrix_file_row(row_nr=1,
+                                                     row_values=(),
+                                                     interface_call=self.interface_call,
+                                                     fields_with_position={},
+                                                     mandatory_field_positions=())
+        self.assertEqual(row_status, RowStatus.HEADER_ROW)
+
+    def test_handle_negometrix_file_row_test_empty(self):
+        row_status, msg = handle_negometrix_file_row(row_nr=2,
+                                                     row_values=(),
+                                                     interface_call=self.interface_call,
+                                                     fields_with_position={},
+                                                     mandatory_field_positions=())
+        self.assertEqual(row_status, RowStatus.EMPTY_ROW)
+
+    def test_handle_negometrix_file_row_test_missing_mandatory_fields(self):
+        row_values = ("123", "123", "")
+        row_status, msg = handle_negometrix_file_row(row_nr=2,
+                                                     row_values=row_values,
+                                                     interface_call=self.interface_call,
+                                                     fields_with_position=self.fields_with_position,
+                                                     mandatory_field_positions=self.mandatory_field_positions)
+        self.assertEqual(row_status, RowStatus.DATA_ERROR)
+
+    def test_handle_negometrix_file_row_test_missing_category(self):
+        row_values = ("123", "", "123", "")
+        row_status, msg = handle_negometrix_file_row(row_nr=2,
+                                                     row_values=row_values,
+                                                     interface_call=self.interface_call,
+                                                     fields_with_position=self.fields_with_position,
+                                                     mandatory_field_positions=self.mandatory_field_positions)
+        self.assertEqual(row_status, RowStatus.DATA_ERROR)
+        self.assertTrue(msg.__contains__("Categorie is leeg"))
+
+    def test_handle_negometrix_file_row_test_unknown_category_as_org_unit(self):
+        row_values = ("123", "", "123", "onbekend")
+        mapping = Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="IAAS")
+
+        row_status, msg = handle_negometrix_file_row(row_nr=2,
+                                                     row_values=row_values,
+                                                     interface_call=self.interface_call,
+                                                     fields_with_position=self.fields_with_position,
+                                                     mandatory_field_positions=self.mandatory_field_positions)
+        self.assertEqual(row_status, RowStatus.DATA_ERROR)
+        self.assertTrue(msg.__contains__("Voor categorie 'onbekend'"), f"msg= {msg}")
+
+    def test_handle_negometrix_file_row_test_known_category_as_org_unit_but_user_not_part_of_that_org_unit(self):
+        row_values = ("123", "", "123", "IAAS")
+        another_user = CustomUser.objects.create(username="Eelco")
+        self.interface_call.user = another_user
+        mapping = Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="IAAS")
+
+        row_status, msg = handle_negometrix_file_row(row_nr=2,
+                                                     row_values=row_values,
+                                                     interface_call=self.interface_call,
+                                                     fields_with_position=self.fields_with_position,
+                                                     mandatory_field_positions=self.mandatory_field_positions)
+        self.assertEqual(row_status, RowStatus.DATA_IGNORED)
+        self.assertTrue(msg.__contains__("Gebruiker behoort niet tot het organisatieonderdeel van dit contract"))
+
+

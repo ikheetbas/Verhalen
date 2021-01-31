@@ -8,7 +8,7 @@ from rm.interface_file import RowStatistics, check_file_has_excel_extension, che
     get_headers_from_sheet
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import InterfaceCall
-from rm.test.test_util import setUpUser
+from rm.test.test_util import set_up_user
 from rm.views import process_file
 
 
@@ -249,7 +249,7 @@ class GenericExcelTests(TestCase):
 class GenericFileUploadTests(TestCase):
 
     def setUp(self):
-        setUpUser(self, superuser=True)
+        set_up_user(self, superuser=True)
 
     def test_upload_empty_file_with_xls(self):
         nr_int_calls_before = len(InterfaceCall.objects.all())

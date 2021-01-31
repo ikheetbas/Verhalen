@@ -28,4 +28,15 @@ class CustomUser(AbstractUser):
     # Django Generally, ManyToManyField instances should go in the object that’s going to be edited on a form.
     org_units = models.ManyToManyField(OrganizationalUnit)
 
-
+    def is_authorized_for_org_unit(self, org_unit: OrganizationalUnit) -> bool:
+        if org_unit in self.org_units.all():
+            return True
+        i = 0
+        while org_unit.parent_org_unit and i<15:
+            i += 1
+            org_unit = org_unit.parent_org_unit
+            if org_unit in self.org_units.all():
+                return True
+        if i == 15:
+            raise Exception("Exit i.v.m. endless-loopbeveiliging")
+        return False

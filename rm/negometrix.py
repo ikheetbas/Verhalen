@@ -8,6 +8,7 @@ from rm.constants import NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTR
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     mandatory_fields_present, get_org_unit, fill_fields_in_record_from_row_values
 from rm.models import InterfaceCall, Contract, System, DataSetType, InterfaceDefinition
+from users.models import OrganizationalUnit, CustomUser
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +48,11 @@ defined_headers = dict(
 )
 
 
-def user_belongs_to_org_unit(param, org_unit):
-    return True
-
-
-def handle_negometrix_file_row(row_nr,
-                               row_values,
-                               interface_call,
-                               fields_with_position,
-                               mandatory_field_positions) -> Tuple[RowStatus, str]:
+def handle_negometrix_file_row(row_nr: int,
+                               row_values: Tuple[str, ...],
+                               interface_call: InterfaceCall,
+                               fields_with_position: Dict[str, int],
+                               mandatory_field_positions: Tuple[int, ...]) -> Tuple[RowStatus, str]:
     if row_nr == 1:
         return RowStatus.HEADER_ROW, 'Header'
 
@@ -78,13 +75,15 @@ def handle_negometrix_file_row(row_nr,
     org_unit = get_org_unit(system, contract.category)
     if not org_unit:
         return RowStatus.DATA_ERROR, f"Voor categorie '{contract.category}' kan geen " \
-                                     f"organisatieonderdeel gevonden worden voor {system.name} "
+                                     f"organisatieonderdeel gevonden worden voor {system.name}"
+    if not interface_call.user:
+        msg = "Zou niet mogen voorkomen bij het inlezen, InterfaceCall heeft geen 'user'"
+        logger.error(f"{msg} bij interface_call.id:{interface_call.pk}")
+        return RowStatus.DATA_ERROR, msg
 
-    username = get_user_model().username
-    print(f"Username: {username}")
-    if not user_belongs_to_org_unit(username, org_unit):
+    if not interface_call.user.is_authorized_for_org_unit(org_unit):
         return RowStatus.DATA_IGNORED, \
-               f"Gebruiker behoort niet tot {org_unit.name} (gevonden bij catgeorie: {contract.category}"
+               f"Gebruiker behoort niet tot het organisatieonderdeel van dit contract ({org_unit.name})"
 
     # find and set data_per_org_unit
     data_per_org_unit, created = interface_call.dataperorgunit_set.get_or_create(org_unit=org_unit)

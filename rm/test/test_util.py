@@ -11,19 +11,19 @@ def set_up_user_with_interface_call_and_contract(self,
                                                  group_name=None,
                                                  username="John",
                                                  name_in_negometrix="John"):
-    setUpUser(self,
-              superuser,
-              group_name,
-              username,
-              name_in_negometrix)
+    set_up_user(self,
+                superuser,
+                group_name,
+                username,
+                name_in_negometrix)
     set_up_static_data(self)
     set_up_process_contract_data(self)
 
-def setUpUser(self,
-              superuser=True,
-              group_name=None,
-              username="John",
-              name_in_negometrix="John"):
+def set_up_user(self,
+                superuser=True,
+                group_name=None,
+                username="John",
+                name_in_negometrix="John"):
     """
     When called without parameters, you get a superuser
     """
@@ -34,7 +34,6 @@ def setUpUser(self,
                                  username=username,
                                  name_in_negometrix=name_in_negometrix,
                                  )
-
     self.client.force_login(self.user)
 
 
@@ -91,12 +90,16 @@ def set_up_static_data(self):
                                                                    interface_type=InterfaceDefinition.UPLOAD)
     self.org_unit = OrganizationalUnit.objects.create(name="MyTeam",
                                                       type=OrganizationalUnit.TEAM)
+    self.user.org_units.add(self.org_unit)
 
 def set_up_process_contract_data(self):
     self.interface_call = InterfaceCall.objects.create(date_time_creation=Now(),
                                                        status='TestStatus',
                                                        filename='Text.xls',
-                                                       interface_definition=self.interface_definition)
+                                                       interface_definition=self.interface_definition,
+                                                       user=self.user,
+                                                       username=self.user.username,
+                                                       user_email=self.user.email)
 
     self.data_per_org_unit = DataPerOrgUnit.objects.create(interface_call=self.interface_call,
                                                            org_unit=self.org_unit)
