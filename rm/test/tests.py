@@ -1,13 +1,15 @@
+from django.db.models.functions import Now
 from django.test import TestCase
 from django.urls import reverse
 
 from rm.interface_file import get_org_unit
-from rm.models import Contract, Mapping
+from rm.models import Contract, Mapping, System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
 
 from django.db.utils import IntegrityError
 
 from users.models import CustomUser, OrganizationalUnit
 from .test_util import set_up_user_with_interface_call_and_contract
+from ..constants import CONTRACTEN, NEGOMETRIX
 
 
 class DataModelTest(TestCase):
@@ -262,3 +264,44 @@ class DoesUserBelongToOrgUnitTests(TestCase):
         dep_chef.org_units.add(a_departement)
         with self.assertRaises(Exception):
             dep_chef.is_authorized_for_org_unit(a_team)
+
+
+class DeactivationsTests(TestCase):
+
+    def setUp(self):
+        self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
+        self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+                                                                       data_set_type=self.data_set_type,
+                                                                       interface_type=InterfaceDefinition.UPLOAD)
+        self.org_unit = OrganizationalUnit.objects.create(name="IAAS")
+
+        self.interface_call = InterfaceCall.objects.create(interface_definition=self.interface_definition,
+                                                           date_time_creation=Now(),
+                                                           status=InterfaceCall.ACTIVE)
+        self.data_per_org_unit = DataPerOrgUnit.objects.create(interface_call=self.interface_call,
+                                                               org_unit=self.org_unit,
+                                                               active=True)
+        self.contract_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit, seq_nr=0)
+        self.contract_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit, seq_nr=1)
+
+    def test_deactivate_data_per_org_unit_happy_path(self):
+        self.assertEqual(self.data_per_org_unit.contract_set.all().count(), 2)
+
+        self.data_per_org_unit.deactivate()
+        self.assertEqual(self.data_per_org_unit.contract_set.all().count(), 0)
+
+    def test_deactivate_data_per_org_unit_not_active(self):
+        self.data_per_org_unit.active = False  # NOT NORMAL BEHAVIOR, JUST FOR TESTING
+        self.assertEqual(self.data_per_org_unit.contract_set.all().count(), 2)
+
+        with self.assertRaises(RuntimeError):
+            self.data_per_org_unit.deactivate()
+
+        self.assertEqual(self.data_per_org_unit.contract_set.all().count(), 2)
+
+    def test_deactivate_interface_call_happy_path(self):
+        self.assertEqual(self.interface_call.contracts().count(),2)
+        self.interface_call.deactivate()
+        self.assertEqual(self.interface_call.contracts().count(), 0)
+

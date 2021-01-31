@@ -1,6 +1,7 @@
-from django.db import models
+from django.db import models, transaction
 
 # STATIC MODELS ################################################################
+from rm.constants import CONTRACTEN
 from users.models import OrganizationalUnit, CustomUser
 
 
@@ -75,6 +76,20 @@ class InterfaceCall(models.Model):
     """
     Call of interface (or file upload)
     """
+    NEW = "NEW"
+    LOADING = "LOADING"
+    ERROR = "ERROR"
+    READY_LOADING = "READY_LOADING"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    INTERFACE_CALL_STATUS = (
+        (NEW, "NEW"),
+        (LOADING, "LOADING"),
+        (ERROR, "ERROR"),
+        (READY_LOADING, "READY_LOADING"),
+        (ACTIVE, "ACTIVE"),
+        (INACTIVE, "INACTIVE"),
+    )
     class Meta:
         permissions = [
             ("upload_contract_file", "Can upload file with contracts"),
@@ -82,7 +97,7 @@ class InterfaceCall(models.Model):
         ]
     date_time_creation = models.DateTimeField(auto_now=False)
     filename = models.CharField(max_length=150, blank=True)
-    status = models.CharField(max_length=15)
+    status = models.CharField(max_length=15, choices=INTERFACE_CALL_STATUS)
     message = models.TextField(max_length=250, blank=True)
 
     number_of_rows_received = models.IntegerField("Aantal ontvangen regels", default=0)
@@ -108,13 +123,27 @@ class InterfaceCall(models.Model):
     def contracts(self):
         contracts = Contract.objects.none()
         for data_per_org_unit in self.dataperorgunit_set.all():
-            contracts_per_org_unit = data_per_org_unit.contracten.all()
+            contracts_per_org_unit = data_per_org_unit.contract_set.all()
             contracts = contracts.union(contracts_per_org_unit)
         return contracts
 
     def __str__(self):
         return f"{self.interface_definition.name}" if self.interface_definition else "Onbekende interface"\
                                                                                      + f" - {self.date_time_creation}"
+
+    def deactivate(self):
+        """
+        Deactivating a InterfaceCall means deactivating all its child DataPerOrgUnit records. Which means: deleting
+        all business records of that DataPerOrgUnit.
+        """
+        if not self.status == InterfaceCall.ACTIVE:
+            raise RuntimeError(f"Deze InterfaceCall (pk={self.pk}) is niet actief, de-activeren kan dus niet!")
+
+        with transaction.atomic():
+            for data_per_org_unit in self.dataperorgunit_set.all():
+                data_per_org_unit.deactivate()
+            self.status = InterfaceCall.INACTIVE
+
 
 
 class RawData(models.Model):
@@ -187,9 +216,34 @@ class DataPerOrgUnit(models.Model):
     org_unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
     number_of_data_rows_ok = models.IntegerField("Dataregels goed", default=0)
     number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing", default=0)
+    active = models.BooleanField("Actief", default=False)
 
     def __str__(self):
-        return f"{self.org_unit.name} - {self.interface_call.interface_definition.name} - {self.interface_call.date_time_creation}"
+        return f"{self.org_unit.name} - " \
+               f"{self.interface_call.interface_definition.name} - " \
+               f"{self.interface_call.date_time_creation}"
+
+    def deactivate(self):
+
+        if not self.active:
+            raise RuntimeError(f"Dit DataPerOrgUnit (pk={self.pk}) is niet actief, de-activeren kan dus niet!")
+        if not self.interface_call:
+            raise RuntimeError(f"Dit DataPerOrgUnit (pk={self.pk}) heeft geen InterfaceCall")
+        if not self.interface_call.interface_definition:
+            raise RuntimeError(f"Dit DataPerOrgUnit (pk={self.pk}) heeft geen InterfaceDefinition")
+        if not self.interface_call.interface_definition.data_set_type:
+            raise RuntimeError(f"Dit DataPerOrgUnit (pk={self.pk}) heeft geen DataSetType")
+        if not self.interface_call.interface_definition.data_set_type.name:
+            raise RuntimeError(f"De DataSetType van deze DataPerORgUnit (pk={self.pk}) heeft geen naam")
+
+        data_set_type_name = self.interface_call.interface_definition.data_set_type.name
+        if data_set_type_name == CONTRACTEN:
+            self.contract_set.all().delete()
+            active = False
+        else:
+            raise RuntimeError(f"DataSetType {data_set_type_name} is nog niet bekend "
+                               f"in dit stuk van de software (rm.models.DataPerOrgUnit")
+
 
 # BUSINESS MODELS #########################################################################
 
@@ -243,8 +297,7 @@ class Contract(models.Model):
     notice_period_available = models.CharField("Opzegtermijn aanwezig", max_length=50, blank=True, null=True)
 
     data_per_org_unit = models.ForeignKey(DataPerOrgUnit,
-                                          on_delete=models.CASCADE,
-                                          related_name='contracten')
+                                          on_delete=models.CASCADE)
 
     raw_data = models.OneToOneField(RawData, on_delete=models.SET_NULL, null=True)
 

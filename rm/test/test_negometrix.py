@@ -360,6 +360,6 @@ class HandleNegometrixFileRowTests(TestCase):
                                                      fields_with_position=self.fields_with_position,
                                                      mandatory_field_positions=self.mandatory_field_positions)
         self.assertEqual(row_status, RowStatus.DATA_IGNORED)
-        self.assertTrue(msg.__contains__("Gebruiker behoort niet tot het organisatieonderdeel van dit contract"))
+        self.assertTrue(msg.__contains__("Gebruiker is niet geautoriseerd voor het organisatieonderdeel van dit contract"))
 
 
