@@ -1,8 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from .interface_file import get_org_unit
-from .models import Contract, Mapping
+from rm.interface_file import get_org_unit
+from rm.models import Contract, Mapping
 
 from django.db.utils import IntegrityError
 from .test_util import set_up_user_with_interface_call_and_contract

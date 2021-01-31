@@ -7,7 +7,7 @@ from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus, FileStatus
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping
 from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
-from rm.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, setUpUser, set_up_static_data
+from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, setUpUser, set_up_static_data
 from rm.views import process_file
 from users.models import OrganizationalUnit
 

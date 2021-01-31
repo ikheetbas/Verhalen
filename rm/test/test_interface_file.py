@@ -8,7 +8,7 @@ from rm.interface_file import RowStatistics, check_file_has_excel_extension, che
     get_headers_from_sheet
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import InterfaceCall
-from rm.test_util import setUpUser
+from rm.test.test_util import setUpUser
 from rm.views import process_file
 
 
