@@ -83,7 +83,7 @@ def handle_negometrix_file_row(row_nr: int,
 
     if not interface_call.user.is_authorized_for_org_unit(org_unit):
         return RowStatus.DATA_IGNORED, \
-               f"Gebruiker behoort niet tot het organisatieonderdeel van dit contract ({org_unit.name})"
+               f"Gebruiker is niet geautoriseerd voor het organisatieonderdeel van dit contract ({org_unit.name})"
 
     # find and set data_per_org_unit
     data_per_org_unit, created = interface_call.dataperorgunit_set.get_or_create(org_unit=org_unit)
