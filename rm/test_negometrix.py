@@ -1,27 +1,17 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db.models.functions import Now
 from django.test import TestCase
+from openpyxl import Workbook, load_workbook
 
 import rm
-from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus
+from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus, FileStatus
 from rm.interface_file_util import check_file_and_interface_type
-from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping
-from rm.negometrix import NegometrixInterfaceFile
+from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping, DataPerOrgUnit, Contract
+from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
+from rm.test_util import set_up_user_with_interface_call_and_contract, create_superuser
+from rm.views import process_file
 from users.models import OrganizationalUnit
-
-
-def _create_superuser(username="john", password="doe", **kwargs):
-    user = get_user_model().objects.create(username=username,
-                                           is_superuser=True,
-                                           is_active=True,
-                                           **kwargs
-                                           )
-    if password:
-        user.set_password(password)
-    else:
-        user.set_unusable_password()
-    user.save()
-    return user
 
 
 class NegometrixFindInterfaceDefinitionTests(TestCase):
@@ -76,7 +66,7 @@ class NegometrixFileTests(TestCase):
     def setUp(self):
 
         # Create Superuser and Login
-        self.user = _create_superuser()
+        self.user = create_superuser()
         self.client.force_login(self.user)
 
         # STATIC TOTAL_DATA_ROWS_RECEIVED
@@ -127,7 +117,7 @@ class NegometrixFileTests(TestCase):
         self.assertEqual(errors, 0)
 
         #TODO make this work, InterfaceCall.number_of_rows etc
-        # self.assertEqual(interfaceCall.number_of_rows_received, 3)
+        # self.assertEqual(interface_call.number_of_rows_received, 3)
 
         contracten = interfaceCall.contracts()
         self.assertEqual(len(contracten), 2)
@@ -192,7 +182,7 @@ class NegometrixCountTests(TestCase):
     def setUp(self):
 
         # Create Superuser and Login
-        self.user = _create_superuser()
+        self.user = create_superuser()
         self.client.force_login(self.user)
 
         # STATIC TOTAL_DATA_ROWS_RECEIVED
@@ -226,3 +216,92 @@ class NegometrixCountTests(TestCase):
         self.assertEqual(interfaceCall.number_of_data_rows_ok, 1)
 
         #TODO Test IGNORED - when we check on organizational department of the user
+
+
+class FileWithContractTests(TestCase):
+
+    def setUp(self):
+        set_up_user_with_interface_call_and_contract(self)
+
+    def test_register_contract(self):
+        row_nr = 4
+        file = open("rm/test/resources/test_register_contract.xlsx", "rb")
+        workbook: Workbook = load_workbook(file)
+        sheet = workbook.active
+        count = 1
+        values_row_4 = []
+        for row_values in sheet.iter_rows(min_row=1,
+                                          min_col=1,
+                                          values_only=True):
+            if count == 4:
+                values_row_4 = row_values
+                break
+            count += 1
+
+        interface_call = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                      status='TestStatus',
+                                                      filename='test_register_contract.xlsx',
+                                                      interface_definition=self.interface_definition)
+
+        fields_with_position = dict(database_nr=0,
+                                    contract_nr=1,
+                                    contract_status=2,
+                                    description=3,
+                                    )
+
+        mandatory_field_positions = (1, 2)
+        mandatory_fields = ('a_field', 'another_field')
+
+        status, msg = handle_negometrix_file_row(row_nr,
+                                                 values_row_4,
+                                                 interface_call,
+                                                 fields_with_position,
+                                                 mandatory_field_positions)
+
+        expected_status = RowStatus.DATA_ERROR
+
+        self.assertEqual(status, expected_status)
+
+
+class NegometrixFileUploadTests(TestCase):
+
+    def setUp(self):
+        set_up_user_with_interface_call_and_contract(self, superuser=True)
+
+    def test_upload_a_valid_excel_file(self):
+        system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
+        data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        InterfaceDefinition.objects.get_or_create(name="Contracten upload",
+                                                  data_set_type=data_set_type_contracten,
+                                                  system=system_negometrix,
+                                                  interface_type=InterfaceDefinition.UPLOAD)
+        nr_int_calls_before = len(InterfaceCall.objects.all())
+        file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
+
+        status, msg = process_file(file, self.user)
+        nr_int_calls_after = len(InterfaceCall.objects.all())
+        self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
+
+        interface_call: InterfaceCall = InterfaceCall.objects.last()
+        self.assertEqual(interface_call.filename, "rm/test/resources/a_valid_excel_file.xlsx")
+        self.assertEqual(interface_call.status, FileStatus.OK.name, msg=interface_call.message)
+        self.assertEqual(interface_call.message, "")
+
+    def test_upload_a_valid_excel_file(self):
+        system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
+        data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        InterfaceDefinition.objects.get_or_create(name="Contracten upload",
+                                                  data_set_type=data_set_type_contracten,
+                                                  system=system_negometrix,
+                                                  interface_type=InterfaceDefinition.UPLOAD)
+        nr_int_calls_before = len(InterfaceCall.objects.all())
+        file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
+
+        status, msg = process_file(file, self.user)
+        nr_int_calls_after = len(InterfaceCall.objects.all())
+        self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
+
+        interface_call: InterfaceCall = InterfaceCall.objects.last()
+        self.assertEqual(interface_call.filename, "rm/test/resources/a_valid_excel_file.xlsx")
+        self.assertEqual(interface_call.status, FileStatus.OK.name, msg=interface_call.message)
+        self.assertEqual(interface_call.message, "")

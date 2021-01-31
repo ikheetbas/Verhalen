@@ -21,6 +21,39 @@ class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
 
 
+def process_file(file, user):
+    """
+    Process the file, register it with the user, find out the type
+
+    """
+    # First things first, create the InterfaceCall, with the user
+    interfaceCall = InterfaceCall(filename=file.name,
+                                  status=FileStatus.NEW,
+                                  date_time_creation=Now(),
+                                  user=user,
+                                  username=user.username,
+                                  user_email=user.email)
+    try:
+        # check the file and try to find out what type it is
+        interfaceFile = check_file_and_interface_type(file)
+
+        # register InterfaceDefinition
+        interfaceCall.interface_definition = interfaceFile.get_interface_definition()
+        interfaceCall.save()
+
+        # process the file!
+        interfaceFile.process(interfaceCall)
+
+    except Exception as ex:
+
+        interfaceCall.status = FileStatus.ERROR.name
+        interfaceCall.message = ex.__str__()
+        interfaceCall.save()
+        return "ERROR", ex.__str__()
+
+    return "OK", "File has been processed"
+
+
 @permission_required('rm.upload_contract_file', raise_exception=True)
 def upload_file(request):
     if request.method == 'POST':
@@ -28,42 +61,13 @@ def upload_file(request):
         if form.is_valid():
             file = request.FILES['file']
 
-            logger.debug(f"---- TYPE of the FILE object: {type(file)}")
-            logger.debug(f"File name: {file.name}")
-            logger.debug(f"File content_type: {file.content_type}")
-            logger.debug(f"File size: {file.size}")
-            logger.debug(f"File charset: {file.charset}")
-            logger.debug(f"File content_type_extra: {file.content_type_extra} ")
-            logger.debug(f"File field_name: {file.field_name}")
-            logger.debug(f"File file: {file.file}")
+            status, msg = process_file(file, request.user)
 
-            # First things first, create the InterfaceCall
-            interfaceCall = InterfaceCall(filename=file.name,
-                                          status=FileStatus.NEW,
-                                          date_time_creation=Now())
-            try:
-                # check the file and try to find out what type it is
-                interfaceFile = check_file_and_interface_type(file)
-
-                # register found system in the interfaceFileCall
-                interface_definition = interfaceFile.get_interface_definition()
-
-                interfaceCall.interface_definition = interface_definition
-                interfaceCall.save()
-                logger.debug(f"Created InterfaceCall: {interfaceCall.__str__()}")
-
-                # process the file!
-                interfaceFile.process(interfaceCall)
-
-            except Exception as ex:
-
-                interfaceCall.status = FileStatus.ERROR
-                interfaceCall.message = ex.__str__()
-                interfaceCall.save()
-
-                form.add_error("file", ex.__str__())
+            if status == "ERROR":
+                form.add_error("file", msg)
                 return render(request, 'rm/upload.html', {'form': form})
-            return HttpResponseRedirect('/interfacecalls')
+            else:
+                return HttpResponseRedirect('/interfacecalls')
     else:
         form = UploadFileForm()
     return render(request, 'rm/upload.html', {'form': form})

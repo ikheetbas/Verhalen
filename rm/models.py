@@ -1,7 +1,7 @@
 from django.db import models
 
 # STATIC MODELS ################################################################
-from users.models import OrganizationalUnit
+from users.models import OrganizationalUnit, CustomUser
 
 
 class DataSetType(models.Model):
@@ -98,6 +98,12 @@ class InterfaceCall(models.Model):
                                              on_delete=models.CASCADE,
                                              related_name='interface_calls',
                                              null=True)
+    # username and user_email are set, in case the user is removed, we still have the original user
+    username = models.CharField(max_length=250, null=True)
+    user_email = models.CharField(max_length=254, null=True)
+    user = models.ForeignKey(CustomUser,
+                             on_delete=models.SET_NULL,
+                             null=True)
 
     def contracts(self):
         contracts = Contract.objects.none()

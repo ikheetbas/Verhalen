@@ -1,10 +1,12 @@
 import logging
 from typing import Tuple, Dict
 
+from django.contrib.auth import get_user_model
+
 import rm
 from rm.constants import NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, RowStatus
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
-    mandatory_fields_present, get_org_unit
+    mandatory_fields_present, get_org_unit, fill_fields_in_record_from_row_values
 from rm.models import InterfaceCall, Contract, System, DataSetType, InterfaceDefinition
 
 logger = logging.getLogger(__name__)
@@ -45,9 +47,13 @@ defined_headers = dict(
 )
 
 
+def user_belongs_to_org_unit(param, org_unit):
+    return True
+
+
 def handle_negometrix_file_row(row_nr,
                                row_values,
-                               interfaceCall,
+                               interface_call,
                                fields_with_position,
                                mandatory_field_positions) -> Tuple[RowStatus, str]:
     if row_nr == 1:
@@ -62,32 +68,28 @@ def handle_negometrix_file_row(row_nr,
 
     contract = Contract(seq_nr=row_nr)
 
-    # set all fields in a generic way
-    for field in fields_with_position:
-        position = fields_with_position[field]
-        value = row_values[position]
-        setattr(contract, field, value)
+    fill_fields_in_record_from_row_values(contract, fields_with_position, row_values)
 
-    # set up link with DataPerOrgUnit
-    system = interfaceCall.interface_definition.system
     if not contract.category or contract.category == "":
         return RowStatus.DATA_ERROR, "Categorie is leeg, dus kan dit contract niet aan " \
-                           "een organisatieonderdeel gekoppeld worden"
+                                     "een organisatieonderdeel gekoppeld worden"
 
+    system = interface_call.interface_definition.system
     org_unit = get_org_unit(system, contract.category)
     if not org_unit:
         return RowStatus.DATA_ERROR, f"Voor categorie '{contract.category}' kan geen " \
-                           f"organisatieonderdeel gevonden worden voor {system.name} "
+                                     f"organisatieonderdeel gevonden worden voor {system.name} "
 
-    data_per_org_unit, created = interfaceCall.dataperorgunit_set.get_or_create(org_unit=org_unit)
-    if created:
-        logger.debug(f"Created Data Org Per Unit: {data_per_org_unit.__str__()}")
-    else:
-        logger.debug(f"Found Data Org Per Unit: {data_per_org_unit.__str__()}")
+    username = get_user_model().username
+    print(f"Username: {username}")
+    if not user_belongs_to_org_unit(username, org_unit):
+        return RowStatus.DATA_IGNORED, \
+               f"Gebruiker behoort niet tot {org_unit.name} (gevonden bij catgeorie: {contract.category}"
 
+    # find and set data_per_org_unit
+    data_per_org_unit, created = interface_call.dataperorgunit_set.get_or_create(org_unit=org_unit)
     contract.data_per_org_unit = data_per_org_unit
 
-    # save the bastard!
     contract.save()
 
     logger.debug(f"Created Contract: {contract.__str__()}")
@@ -150,16 +152,16 @@ class NegometrixInterfaceFile(ExcelInterfaceFile):
 
     def register_business_data(self,
                                row_nr: int,
-                               row_values: Tuple[str],
-                               interfaceCall: InterfaceCall,
+                               row_values: Tuple[str, ...],
+                               interface_call: InterfaceCall,
                                fields_with_position: Dict[str, int],
-                               mandatory_field_positions: Tuple[int]) -> Tuple[RowStatus, str]:
+                               mandatory_field_positions: Tuple[int, ...]) -> Tuple[RowStatus, str]:
 
         # call a function, which makes it easier to unit test, could not do that direct
         # since we wanted an abstract method to force subclasses to implement it.
 
         return handle_negometrix_file_row(row_nr,
                                           row_values,
-                                          interfaceCall,
+                                          interface_call,
                                           fields_with_position,
                                           mandatory_field_positions)

@@ -1,7 +1,7 @@
 import logging
 import pathlib
 from abc import ABC, abstractmethod
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 from django.core.files.uploadedfile import UploadedFile
 from openpyxl import load_workbook
@@ -75,8 +75,8 @@ def is_valid_header_row(found_headers: Tuple[str],
     return valid
 
 
-def get_mandatory_field_positions(mandatory_fields: Tuple[str],
-                                  field_positions: Dict[str, int]) -> Tuple[int]:
+def get_mandatory_field_positions(mandatory_fields: Tuple[str, ...],
+                                  field_positions: Dict[str, int]) -> List[int]:
     """
     Returns the position in the row that must have a value.
     """
@@ -124,8 +124,8 @@ def get_fields_with_their_position(found_headers, defined_headers):
     return field_positions
 
 
-def mandatory_fields_present(mandatory_field_positions: Tuple[int],
-                             row_values: Tuple[str]) -> bool:
+def mandatory_fields_present(mandatory_field_positions: Tuple[int, ...],
+                             row_values: Tuple[str, ...]) -> bool:
     """
     Checks in the mandatory fields in the row have a value. If a mandatory field contains
     a None or "" a False is returned.
@@ -336,15 +336,15 @@ class ExcelInterfaceFile(ABC):
 
     def handle_file(self,
                     file,
-                    interfaceCall: InterfaceCall,
+                    interface_call: InterfaceCall,
                     field_positions: Dict[str, int]):
         """
         Generic handling of the file.
         """
 
-        self.interfaceCall = interfaceCall
+        self.interfaceCall = interface_call
 
-        mandatory_field_positions: Tuple[int] = \
+        mandatory_field_positions: Tuple[int, ...] = \
             get_mandatory_field_positions(self.get_mandatory_fields(),
                                           field_positions)
 
@@ -365,9 +365,9 @@ class ExcelInterfaceFile(ABC):
 
     def handle_row(self,
                    row_nr: int,
-                   row_values: Tuple[str],
+                   row_values: Tuple[str, ...],
                    field_positions: Dict[str, int],
-                   mandatory_field_positions: Tuple[int]) -> str:
+                   mandatory_field_positions: Tuple[int, ...]) -> str:
         logger.debug(f"register RawData {row_nr} - {row_values}")
 
         raw_data = register_in_raw_data(row_nr,
@@ -391,11 +391,11 @@ class ExcelInterfaceFile(ABC):
 
     @abstractmethod
     def register_business_data(self,
-                               row_nr,
-                               row_values,
-                               interfaceCall,
-                               field_positions,
-                               mandatory_field_positions) -> Tuple[RowStatus, str]:
+                               row_nr: int,
+                               row_values: Tuple[str, ...],
+                               interface_call: InterfaceCall,
+                               fields_with_position: Dict[str, int],
+                               mandatory_field_positions: Tuple[int, ...]) -> Tuple[RowStatus, str]:
         """
         Handling of the row with data, creating the Business Data, to be implemented for each
         file type specific.
@@ -408,3 +408,13 @@ class ExcelInterfaceFile(ABC):
         Each subclass has its own mandatory fields.
         """
         raise Exception("Must be overridden, programming error")
+
+
+def fill_fields_in_record_from_row_values(record, fields_with_position, row_values):
+    """
+    Lookup all fields by position in row_values and store them in the record.
+    """
+    for field in fields_with_position:
+        position = fields_with_position[field]
+        value = row_values[position]
+        setattr(record, field, value)
