@@ -567,6 +567,10 @@ class LoginRequiredTests(TestCase):
         response = self.client.get(reverse("upload"))
         self.assertRedirects(response, reverse('account_login') + "?next=/upload/")
 
+    def test_inloggen_text(self):
+        response = self.client.get(reverse("account_login"))
+        self.assertContains(response, 'Inloggen')
+
 
 class RoleBasedAuthorizationSuperuserTests(TestCase):
 
