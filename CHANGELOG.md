@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.7 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- [RM-121](https://aesset.atlassian.net/browse/RM-121) Typefout op het inlogscherm
 
 
 0.2.6 (2021-01-29)
