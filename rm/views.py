@@ -12,7 +12,7 @@ from django.views.generic import ListView, TemplateView
 
 from rm.constants import FileStatus
 from rm.forms import UploadFileForm
-from rm.models import Contract, InterfaceCall
+from rm.models import StageContract, InterfaceCall
 from rm.interface_file_util import check_file_and_interface_type
 
 logger = logging.getLogger(__name__)
@@ -77,16 +77,16 @@ class ContractListView(PermissionRequiredMixin, ListView):
     permission_required = 'rm.view_contract'
     raise_exception = True
 
-    model = Contract
+    model = StageContract
     context_object_name = 'contract_list'
     template_name = 'contract_list.html'
 
     def get_queryset(self):
         user = self.request.user
         # if user.is_superuser:
-        return Contract.objects.all()
+        return StageContract.objects.all()
         # else:
-        #     return Contract.objects.filter(contract_owner=user.name_in_negometrix)
+        #     return StageContract.objects.filter(contract_owner=user.name_in_negometrix)
 
 class InterfaceCallListView(ListView):
     model = InterfaceCall

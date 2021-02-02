@@ -7,7 +7,7 @@ import rm
 from rm.constants import NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, RowStatus
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     mandatory_fields_present, get_org_unit, fill_fields_in_record_from_row_values
-from rm.models import InterfaceCall, Contract, System, DataSetType, InterfaceDefinition
+from rm.models import InterfaceCall, StageContract, System, DataSetType, InterfaceDefinition
 from users.models import OrganizationalUnit, CustomUser
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def handle_negometrix_file_row(row_nr: int,
                                     row_values):
         return RowStatus.DATA_ERROR, MISSING_ONE_OR_MORE_MANDATORY_FIELDS
 
-    contract = Contract(seq_nr=row_nr)
+    contract = StageContract(seq_nr=row_nr)
 
     fill_fields_in_record_from_row_values(contract, fields_with_position, row_values)
 
@@ -91,7 +91,7 @@ def handle_negometrix_file_row(row_nr: int,
 
     contract.save()
 
-    logger.debug(f"Created Contract: {contract.__str__()}")
+    logger.debug(f"Created StageContract: {contract.__str__()}")
 
     return RowStatus.DATA_OK, "Valid Contract"
 

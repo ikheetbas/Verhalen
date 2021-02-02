@@ -1,5 +1,5 @@
 from django.contrib import admin
-from rm.models import Contract, InterfaceCall, RawData, System, DataSetType, InterfaceDefinition, DataPerOrgUnit, \
+from rm.models import StageContract, InterfaceCall, RawData, System, DataSetType, InterfaceDefinition, DataPerOrgUnit, \
     Mapping
 
 
@@ -87,7 +87,7 @@ admin.site.register(InterfaceCall, InterfaceCallAdmin)
 # -------------------------------------------------------------------
 class ContractInline(admin.TabularInline):
     show_change_link = True
-    model = Contract
+    model = StageContract
     fields = ('seq_nr','contract_nr', 'contract_status', 'contract_name')
 
 class DataPerOrgUnitAdmin(admin.ModelAdmin):
@@ -98,7 +98,7 @@ admin.site.register(DataPerOrgUnit, DataPerOrgUnitAdmin)
 
 
 # -------------------------------------------------------------------
-# Contract page
+# StageContract page
 # -------------------------------------------------------------------
 class ContractAdmin(admin.ModelAdmin):
     """
@@ -106,6 +106,6 @@ class ContractAdmin(admin.ModelAdmin):
     """
     list_display = ["contract_nr", "description", "contract_owner"]
 
-admin.site.register(Contract, ContractAdmin)
+admin.site.register(StageContract, ContractAdmin)
 
 

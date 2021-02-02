@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group, Permission
 from django.db.models.functions import Now
 
 from rm.constants import CONTRACTEN
-from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall, Contract
+from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall, StageContract
 from users.models import OrganizationalUnit
 
 
@@ -105,12 +105,12 @@ def set_up_process_contract_data(self):
     self.data_per_org_unit = DataPerOrgUnit.objects.create(interface_call=self.interface_call,
                                                            org_unit=self.org_unit)
 
-    self.contract_1 = Contract.objects.create(contract_nr='NL-123',
-                                              seq_nr=0,
-                                              description='Test Contract 1',
-                                              contract_owner='T. Ester',
-                                              contract_name='Test contract naam',
-                                              data_per_org_unit=self.data_per_org_unit)
+    self.contract_1 = StageContract.objects.create(contract_nr='NL-123',
+                                                   seq_nr=0,
+                                                   description='Test Contract 1',
+                                                   contract_owner='T. Ester',
+                                                   contract_name='Test contract naam',
+                                                   data_per_org_unit=self.data_per_org_unit)
 
 
 def print_permissions_and_groups():

@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from rm.interface_file import get_org_unit
-from rm.models import Contract, Mapping, System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
+from rm.models import StageContract, Mapping, System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
 
 from django.db.utils import IntegrityError
 
@@ -26,12 +26,12 @@ class DataModelTest(TestCase):
         self.assertEqual(len(contracts), 1)
 
     def testContractsOfInterfaceCall_two_contracts(self):
-        self.contract_2 = Contract.objects.create(contract_nr='NL-123',
-                                                  seq_nr=0,
-                                                  description='Test Contract 2',
-                                                  contract_owner='T. Ester',
-                                                  contract_name='Test contract naam',
-                                                  data_per_org_unit=self.data_per_org_unit)
+        self.contract_2 = StageContract.objects.create(contract_nr='NL-123',
+                                                       seq_nr=0,
+                                                       description='Test Contract 2',
+                                                       contract_owner='T. Ester',
+                                                       contract_name='Test contract naam',
+                                                       data_per_org_unit=self.data_per_org_unit)
 
         contracts = self.interface_call.contracts()
         self.assertEqual(len(contracts), 2)
@@ -86,11 +86,11 @@ class WebPagesTest(TestCase):
         self.assertContains(response, 'T. Ester')
 
     def test_two_contract_on_interface_call_page(self):
-        Contract.objects.create(contract_nr='NL-345',
-                                seq_nr=1,
-                                description='Test Contract 2',
-                                contract_owner='T. Ester',
-                                data_per_org_unit=self.data_per_org_unit)
+        StageContract.objects.create(contract_nr='NL-345',
+                                     seq_nr=1,
+                                     description='Test Contract 2',
+                                     contract_owner='T. Ester',
+                                     data_per_org_unit=self.data_per_org_unit)
         response = self.client.get(f'/interfacecall/{self.interface_call.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
@@ -101,7 +101,7 @@ class WebPagesTest(TestCase):
 
     def test_create_contract_without_parent(self):
         try:
-            Contract.objects.create(seq_nr=0, contract_nr="NL-123", data_per_org_unit=self.data_per_org_unit)
+            StageContract.objects.create(seq_nr=0, contract_nr="NL-123", data_per_org_unit=self.data_per_org_unit)
         except IntegrityError as exception:
             expected = "null value in column \"interface_call_id\" " \
                        "violates not-null constraint"
@@ -325,16 +325,16 @@ class ActivationTests_1(TestCase):
         self.data_per_org_unit_1_1 = DataPerOrgUnit.objects.create(interface_call=self.interface_call_1,
                                                                    org_unit=self.org_unit_2,
                                                                    active=True)
-        self.contract_1_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=0)
-        self.contract_1_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=1)
+        self.contract_1_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=0)
+        self.contract_1_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=1)
 
         # InterfaceCall 2 -> READY_LOADING (SO, INACTIVE)
         self.interface_call_2 = InterfaceCall.objects.create(interface_definition=self.interface_definition,
                                                              status=InterfaceCall.READY_LOADING)
         self.data_per_org_unit_2_1 = DataPerOrgUnit.objects.create(interface_call=self.interface_call_2,
                                                                    org_unit=self.org_unit_1)
-        self.contract_2_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=0)
-        self.contract_2_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=1)
+        self.contract_2_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=0)
+        self.contract_2_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=1)
 
     def test_find_previous_interface_calls(self):
         """
@@ -391,16 +391,16 @@ class ActivationTests_2(TestCase):
         self.data_per_org_unit_1_1 = DataPerOrgUnit.objects.create(interface_call=self.interface_call_1,
                                                                    org_unit=self.org_unit_2,
                                                                    active=False)
-        self.contract_1_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=0)
-        self.contract_1_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=1)
+        self.contract_1_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=0)
+        self.contract_1_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=1)
 
         # InterfaceCall 2 -> READY_LOADING (SO, INACTIVE)
         self.interface_call_2 = InterfaceCall.objects.create(interface_definition=self.interface_definition,
                                                              status=InterfaceCall.READY_LOADING)
         self.data_per_org_unit_2_1 = DataPerOrgUnit.objects.create(interface_call=self.interface_call_2,
                                                                    org_unit=self.org_unit_1)
-        self.contract_2_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=0)
-        self.contract_2_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=1)
+        self.contract_2_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=0)
+        self.contract_2_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=1)
 class ActivationTests_2(TestCase):
 
     def setUp(self):
@@ -422,16 +422,16 @@ class ActivationTests_2(TestCase):
         self.data_per_org_unit_1_1 = DataPerOrgUnit.objects.create(interface_call=self.interface_call_1,
                                                                    org_unit=self.org_unit_2,
                                                                    active=False)
-        self.contract_1_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=0)
-        self.contract_1_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=1)
+        self.contract_1_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=0)
+        self.contract_1_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1_1, seq_nr=1)
 
         # InterfaceCall 2 -> READY_LOADING (SO, INACTIVE)
         self.interface_call_2 = InterfaceCall.objects.create(interface_definition=self.interface_definition,
                                                              status=InterfaceCall.READY_LOADING)
         self.data_per_org_unit_2_1 = DataPerOrgUnit.objects.create(interface_call=self.interface_call_2,
                                                                    org_unit=self.org_unit_1)
-        self.contract_2_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=0)
-        self.contract_2_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=1)
+        self.contract_2_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=0)
+        self.contract_2_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_2_1, seq_nr=1)
 
     def test_activate_interface_call_without_previous_upload(self):
 
@@ -476,8 +476,8 @@ class DeactivationTests(TestCase):
                                                                  org_unit=self.org_unit)
         self.data_per_org_unit_2 = DataPerOrgUnit.objects.create(interface_call=self.interface_call,
                                                                  org_unit=self.org_unit)
-        self.contract_1 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1, seq_nr=0)
-        self.contract_2 = Contract.objects.create(data_per_org_unit=self.data_per_org_unit_1, seq_nr=1)
+        self.contract_1 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1, seq_nr=0)
+        self.contract_2 = StageContract.objects.create(data_per_org_unit=self.data_per_org_unit_1, seq_nr=1)
 
     def test_activate_interface_call(self):
         self.assertTrue(self.interface_call.is_active())
@@ -497,11 +497,11 @@ class DeactivationTests(TestCase):
         Later, yes,
         """
         self.data_per_org_unit_1.active = True
-        self.assertEqual(self.data_per_org_unit_1.contract_set.all().count(), 2)
+        self.assertEqual(self.data_per_org_unit_1.stagecontract_set.all().count(), 2)
         self.assertTrue(self.data_per_org_unit_1.active)
 
         self.data_per_org_unit_1.deactivate()
-        self.assertEqual(self.data_per_org_unit_1.contract_set.all().count(), 2)
+        self.assertEqual(self.data_per_org_unit_1.stagecontract_set.all().count(), 2)
         self.assertFalse(self.data_per_org_unit_1.active)
 
     def test_deactivate_data_per_org_unit_not_active(self):
@@ -509,11 +509,11 @@ class DeactivationTests(TestCase):
         If DataPerOrgUnit can be deactivated, als when it is already not active
         """
         self.data_per_org_unit_1.active = False  # NOT NORMAL BEHAVIOR, JUST FOR TESTING
-        self.assertEqual(self.data_per_org_unit_1.contract_set.all().count(), 2)
+        self.assertEqual(self.data_per_org_unit_1.stagecontract_set.all().count(), 2)
 
         self.data_per_org_unit_1.deactivate()
 
-        self.assertEqual(self.data_per_org_unit_1.contract_set.all().count(), 2)
+        self.assertEqual(self.data_per_org_unit_1.stagecontract_set.all().count(), 2)
 
     def test_deactivate_interface_call_happy_path(self):
         self.assertEqual(self.interface_call.contracts().count(), 2)

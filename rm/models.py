@@ -124,9 +124,9 @@ class InterfaceCall(models.Model):
                              null=True)
 
     def contracts(self):
-        contracts = Contract.objects.none()
+        contracts = StageContract.objects.none()
         for data_per_org_unit in self.dataperorgunit_set.all():
-            contracts_per_org_unit = data_per_org_unit.contract_set.all()
+            contracts_per_org_unit = data_per_org_unit.stagecontract_set.all()
             contracts = contracts.union(contracts_per_org_unit)
         return contracts
 
@@ -295,7 +295,8 @@ class DataPerOrgUnit(models.Model):
 
 # BUSINESS MODELS #########################################################################
 
-class Contract(models.Model):
+class StageContract(models.Model):
+
     """
     Contract with almost no constraints.
     We only use Char and Date, to minimise the risk that the
