@@ -258,8 +258,7 @@ class NegometrixFileUploadTests(TestCase):
 
     def test_upload_a_valid_excel_file(self):
         data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        InterfaceDefinition.objects.get_or_create(name="Contracten upload",
-                                                  data_set_type=data_set_type_contracten,
+        InterfaceDefinition.objects.get_or_create(data_set_type=data_set_type_contracten,
                                                   system=self.system_negometrix,
                                                   interface_type=InterfaceDefinition.UPLOAD)
         nr_int_calls_before = InterfaceCall.objects.all().count()
@@ -276,16 +275,17 @@ class NegometrixFileUploadTests(TestCase):
 
     def test_upload_a_valid_excel_file(self):
         system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
-        data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        InterfaceDefinition.objects.get_or_create(name="Contracten upload",
-                                                  data_set_type=data_set_type_contracten,
+        data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN,
+                                                                              system=system_negometrix)
+        InterfaceDefinition.objects.get_or_create(data_set_type=data_set_type_contracten,
                                                   system=system_negometrix,
                                                   interface_type=InterfaceDefinition.UPLOAD)
-        nr_int_calls_before = len(InterfaceCall.objects.all())
+
+        nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
         status, msg = process_file(file, self.user)
-        nr_int_calls_after = len(InterfaceCall.objects.all())
+        nr_int_calls_after = InterfaceCall.objects.all().count()
         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
 
         interface_call: InterfaceCall = InterfaceCall.objects.last()

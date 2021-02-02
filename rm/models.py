@@ -53,6 +53,9 @@ class InterfaceDefinition(models.Model):
     system = models.ForeignKey(System, on_delete=models.CASCADE)
     data_set_type = models.ForeignKey(DataSetType, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = [['system', 'data_set_type', 'interface_type']]
+
     def __str__(self):
         return self.name
 
@@ -95,7 +98,7 @@ class InterfaceCall(models.Model):
             ("upload_contract_file", "Can upload file with contracts"),
             ("call_contract_interface", "Can call the (negometrix) contract-interface"),
         ]
-    date_time_creation = models.DateTimeField(auto_now=False)
+    date_time_creation = models.DateTimeField(auto_now=False, auto_now_add=True)
     filename = models.CharField(max_length=150, blank=True)
     status = models.CharField(max_length=15, choices=INTERFACE_CALL_STATUS)
     message = models.TextField(max_length=250, blank=True)
@@ -134,17 +137,30 @@ class InterfaceCall(models.Model):
     def deactivate(self):
         """
         Deactivating a InterfaceCall means deactivating all its child DataPerOrgUnit records. Which means: deleting
-        all business records of that DataPerOrgUnit.
+        all  business records (not the staging ones!) of that DataPerOrgUnit.
         """
-        if not self.status == InterfaceCall.ACTIVE:
-            raise RuntimeError(f"Deze InterfaceCall (pk={self.pk}) is niet actief, de-activeren kan dus niet!")
+        for data_per_org_unit in self.dataperorgunit_set.all():
+            data_per_org_unit.deactivate()
+        self.status = InterfaceCall.INACTIVE
+        self.save()
+
+    def activate(self):
 
         with transaction.atomic():
             for data_per_org_unit in self.dataperorgunit_set.all():
-                data_per_org_unit.deactivate()
-            self.status = InterfaceCall.INACTIVE
+                data_per_org_unit.activate()
+            self.status = InterfaceCall.ACTIVE
+            self.save()
 
 
+    def is_active(self):
+        """
+        Just to be clear: only status 'ACTIVE' is active, the others are not!
+        """
+        if self.status == InterfaceCall.ACTIVE:
+            return True
+        else:
+            return False
 
 class RawData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
@@ -219,14 +235,33 @@ class DataPerOrgUnit(models.Model):
     active = models.BooleanField("Actief", default=False)
 
     def __str__(self):
-        return f"{self.org_unit.name} - " \
+        return f"{self.id} - " \
+               f"{self.org_unit.name} - " \
                f"{self.interface_call.interface_definition.name} - " \
                f"{self.interface_call.date_time_creation}"
 
+    def activate(self):
+        self.deactivate_previous_interface_call()
+
+        self.active = True
+        self.save()
+
+
+
     def deactivate(self):
 
-        if not self.active:
-            raise RuntimeError(f"Dit DataPerOrgUnit (pk={self.pk}) is niet actief, de-activeren kan dus niet!")
+        self.active = False
+        self.save()
+
+        data_set_type_name = self.get_data_set_type().name
+        if data_set_type_name and data_set_type_name == CONTRACTEN:
+            # TODO delete the published Contracten
+            pass
+        else:
+            raise RuntimeError(f"DataSetType {data_set_type_name} is nog niet bekend "
+                               f"in dit stuk van de software (rm.models.DataPerOrgUnit")
+
+    def get_data_set_type(self):
         if not self.interface_call:
             raise RuntimeError(f"Dit DataPerOrgUnit (pk={self.pk}) heeft geen InterfaceCall")
         if not self.interface_call.interface_definition:
@@ -236,13 +271,26 @@ class DataPerOrgUnit(models.Model):
         if not self.interface_call.interface_definition.data_set_type.name:
             raise RuntimeError(f"De DataSetType van deze DataPerORgUnit (pk={self.pk}) heeft geen naam")
 
-        data_set_type_name = self.interface_call.interface_definition.data_set_type.name
-        if data_set_type_name == CONTRACTEN:
-            self.contract_set.all().delete()
-            active = False
-        else:
-            raise RuntimeError(f"DataSetType {data_set_type_name} is nog niet bekend "
-                               f"in dit stuk van de software (rm.models.DataPerOrgUnit")
+        return self.interface_call.interface_definition.data_set_type
+
+    def deactivate_previous_interface_call(self):
+        """
+        Looks for active 'siblings', meaning: active, same data_set_type and
+        deactivate the owning InterfaceCall (which will deactivate all its DataPerOrgUnit,
+        amongst which the just found DataPerOrgUnit
+        """
+        for interface_call in self.find_previous_interface_calls():
+            interface_call.deactivate()
+
+    def find_previous_interface_calls(self):
+        result = []
+        this_data_set = self.get_data_set_type()
+        for data_per_org_unit in DataPerOrgUnit.objects.filter(active=True,
+                                                               org_unit=self.org_unit):
+            if data_per_org_unit.get_data_set_type() == this_data_set:
+                result.append(data_per_org_unit.interface_call)
+        return result
+
 
 
 # BUSINESS MODELS #########################################################################

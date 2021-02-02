@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db.models.functions import Now
 
+from rm.constants import CONTRACTEN
 from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall, Contract
 from users.models import OrganizationalUnit
 
@@ -84,7 +85,7 @@ def set_up_static_data(self):
     # Set up static data
     self.system_a = System.objects.create(name="SYSTEM_A")
     self.system = System.objects.create(name="Negometrix")
-    self.data_set_type = DataSetType.objects.create(name="contracten")
+    self.data_set_type = DataSetType.objects.create(name=CONTRACTEN)
     self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
                                                                    data_set_type=self.data_set_type,
                                                                    interface_type=InterfaceDefinition.UPLOAD)
