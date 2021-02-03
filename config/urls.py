@@ -30,6 +30,7 @@ urlpatterns = [
 
     # Local apps
     path('', include('pages.urls')),
-    path('', include('rm.urls'))
-
+    path('', include('rm.urls')),
+    path('', include('stage.urls')),
+    path('', include('bdata.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

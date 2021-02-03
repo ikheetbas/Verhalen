@@ -52,7 +52,9 @@ INSTALLED_APPS = [
     # local apps
     'rm.apps.RmConfig',
     'users.apps.UsersConfig',
-    'pages.apps.PagesConfig'
+    'pages.apps.PagesConfig',
+    'bdata.apps.BdataConfig',
+    'stage.apps.StageConfig',
 ]
 
 MIDDLEWARE = [

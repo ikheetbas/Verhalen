@@ -1,7 +1,7 @@
 from django.db import models, transaction
 
-# STATIC MODELS ################################################################
 from rm.constants import CONTRACTEN
+from stage.models import StageContract
 from users.models import OrganizationalUnit, CustomUser
 
 
@@ -26,14 +26,15 @@ class System(models.Model):
     name = models.CharField("Naam", max_length=20, unique=True)
     description = models.CharField("Omschrijving", max_length=50, blank=True)
     data_set_types = models.ManyToManyField(DataSetType,
-                                           through='InterfaceDefinition',
-                                           through_fields=('system', 'data_set_type'))
+                                            through='InterfaceDefinition',
+                                            through_fields=('system', 'data_set_type'))
     org_units = models.ManyToManyField(OrganizationalUnit,
                                        through='Mapping',
                                        through_fields=('system', 'org_unit'))
 
     def __str__(self):
         return self.name
+
 
 class InterfaceDefinition(models.Model):
     """
@@ -93,11 +94,13 @@ class InterfaceCall(models.Model):
         (ACTIVE, "ACTIVE"),
         (INACTIVE, "INACTIVE"),
     )
+
     class Meta:
         permissions = [
             ("upload_contract_file", "Can upload file with contracts"),
             ("call_contract_interface", "Can call the (negometrix) contract-interface"),
         ]
+
     date_time_creation = models.DateTimeField(auto_now=False, auto_now_add=True)
     filename = models.CharField(max_length=150, blank=True)
     status = models.CharField(max_length=15, choices=INTERFACE_CALL_STATUS)
@@ -123,7 +126,7 @@ class InterfaceCall(models.Model):
                              on_delete=models.SET_NULL,
                              null=True)
 
-    def contracts(self):
+    def stage_contracts(self):
         contracts = StageContract.objects.none()
         for data_per_org_unit in self.dataperorgunit_set.all():
             contracts_per_org_unit = data_per_org_unit.stagecontract_set.all()
@@ -131,7 +134,7 @@ class InterfaceCall(models.Model):
         return contracts
 
     def __str__(self):
-        return f"{self.interface_definition.name}" if self.interface_definition else "Onbekende interface"\
+        return f"{self.interface_definition.name}" if self.interface_definition else "Onbekende interface" \
                                                                                      + f" - {self.date_time_creation}"
 
     def deactivate(self):
@@ -152,7 +155,6 @@ class InterfaceCall(models.Model):
             self.status = InterfaceCall.ACTIVE
             self.save()
 
-
     def is_active(self):
         """
         Just to be clear: only status 'ACTIVE' is active, the others are not!
@@ -161,6 +163,7 @@ class InterfaceCall(models.Model):
             return True
         else:
             return False
+
 
 class RawData(models.Model):
     interface_call = models.ForeignKey(InterfaceCall,
@@ -246,8 +249,6 @@ class DataPerOrgUnit(models.Model):
         self.active = True
         self.save()
 
-
-
     def deactivate(self):
 
         self.active = False
@@ -293,62 +294,3 @@ class DataPerOrgUnit(models.Model):
 
 
 
-# BUSINESS MODELS #########################################################################
-
-class StageContract(models.Model):
-
-    """
-    Contract with almost no constraints.
-    We only use Char and Date, to minimise the risk that the
-    received data can't be inserted.
-    """
-    seq_nr = models.IntegerField()
-
-    database_nr = models.CharField(max_length=50, blank=True, null=True)
-    contract_nr = models.CharField(max_length=50, blank=True, null=True)
-    contract_status = models.CharField(max_length=50, blank=True, null=True)
-    contract_name = models.CharField("Contract naam", max_length=250, blank=True, null=True)
-    description = models.CharField("Beschrijving", max_length=250, blank=True, null=True)
-    description_contract = models.CharField("Beschrijving contract", max_length=250, blank=True, null=True)
-    category = models.CharField("Categorie", max_length=50, blank=True, null=True)
-
-    contract_owner = models.CharField("Contracteigenaar", max_length=50, blank=True, null=True)
-    contract_owner_email = models.CharField("Contracteigenaar email", max_length=50, blank=True, null=True)
-    contract_owner_phone_nr = models.CharField("Contracteigenaar telnr", max_length=20, blank=True, null=True)
-
-    end_date_contract = models.DateField("Einddatum contract", null=True, blank=True)
-
-    contact_person = models.CharField("Contactpersoon", max_length=50, blank=True, null=True)
-    contact_person_email = models.CharField("Contactpersoon email", max_length=50, blank=True, null=True)
-    contact_person_phone_nr = models.CharField("Contactpersoon telnr", max_length=20, blank=True, null=True)
-    contact_person_name = models.CharField("Contactpersoon naam", max_length=50, blank=True, null=True)
-
-    manufacturer = models.CharField("Fabrikant", max_length=50, blank=True, null=True)
-    manufacturer_kvk_nr = models.CharField("Fabrikant KvK nr", max_length=50, blank=True, null=True)
-    manufacturer_address = models.CharField("Fabrikant Adres", max_length=250, blank=True, null=True)
-    manufacturer_website = models.CharField("Fabrikant Website", max_length=50, blank=True, null=True)
-
-    contracted_value = models.DecimalField("Gecontracteerde waarde", max_digits=10, decimal_places=2, null=True,
-                                           blank=True)
-
-    service_level_manager = models.CharField(max_length=50, blank=True, null=True)
-    service_level_manager_email = models.CharField(max_length=50, blank=True, null=True)
-    service_level_manager_phone_nr = models.CharField(max_length=20, blank=True, null=True)
-    service_level_manager_2 = models.CharField(max_length=50, blank=True, null=True)
-    service_level_manager_2_email = models.CharField(max_length=50, blank=True, null=True)
-    service_level_manager_2_phone_nr = models.CharField(max_length=20, blank=True, null=True)
-
-    type = models.CharField("Soort Contract", max_length=50, blank=True, null=True)
-    start_date = models.DateField("Startdatum", null=True, blank=True)
-    last_end_date = models.DateField("Uiterste einddatum", null=True, blank=True)
-    original_end_date = models.DateField("Oorspronkelijke einddatum", null=True, blank=True)
-    notice_period = models.CharField("Opzegtermijn", max_length=50, blank=True, null=True)
-    notice_period_available = models.CharField("Opzegtermijn aanwezig", max_length=50, blank=True, null=True)
-
-    data_per_org_unit = models.ForeignKey(DataPerOrgUnit,
-                                          on_delete=models.CASCADE)
-
-    raw_data = models.OneToOneField(RawData, on_delete=models.SET_NULL, null=True)
-
-    def __str__(self):
-        return "Leeg" if not self.contract_nr else str(self.contract_nr) + ": " + self.contract_name

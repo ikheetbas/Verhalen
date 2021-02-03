@@ -103,7 +103,7 @@ class NegometrixFileTests(TestCase):
                 errors += 1
         self.assertEqual(errors, 0)
 
-        contracten = interface_call.contracts()
+        contracten = interface_call.stage_contracts()
         self.assertEqual(len(contracten), 2)
 
         contract1 = contracten[0]
@@ -128,7 +128,7 @@ class NegometrixFileTests(TestCase):
 
         excel_interface_file.process(interface_call)
 
-        contracten = interface_call.contracts()
+        contracten = interface_call.stage_contracts()
         self.assertEqual(len(contracten), 2)
 
         contract1 = contracten[0]

@@ -3,7 +3,8 @@ from django.contrib.auth.models import Group, Permission
 from django.db.models.functions import Now
 
 from rm.constants import CONTRACTEN
-from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall, StageContract
+from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall
+from stage.models import StageContract
 from users.models import OrganizationalUnit
 
 

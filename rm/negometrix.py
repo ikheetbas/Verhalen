@@ -1,14 +1,12 @@
 import logging
 from typing import Tuple, Dict
 
-from django.contrib.auth import get_user_model
-
 import rm
 from rm.constants import NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, RowStatus
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     mandatory_fields_present, get_org_unit, fill_fields_in_record_from_row_values
-from rm.models import InterfaceCall, StageContract, System, DataSetType, InterfaceDefinition
-from users.models import OrganizationalUnit, CustomUser
+from rm.models import InterfaceCall, System, DataSetType, InterfaceDefinition
+from stage.models import StageContract
 
 logger = logging.getLogger(__name__)
 

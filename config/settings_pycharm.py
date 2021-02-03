@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     # local apps
     'rm.apps.RmConfig',
     'users.apps.UsersConfig',
+    'bdata.apps.BdataConfig',
+    'stage.apps.StageConfig',
 ]
 
 MIDDLEWARE = [

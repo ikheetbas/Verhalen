@@ -3,7 +3,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from rm.interface_file import get_org_unit
-from rm.models import StageContract, Mapping, System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
+from rm.models import Mapping, System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
+from stage.models import StageContract
 
 from django.db.utils import IntegrityError
 
@@ -22,7 +23,7 @@ class DataModelTest(TestCase):
         self.assertEqual(self.contract_1.__str__(), expected)
 
     def testContractsOfInterfaceCall_one_contract(self):
-        contracts = self.interface_call.contracts()
+        contracts = self.interface_call.stage_contracts()
         self.assertEqual(len(contracts), 1)
 
     def testContractsOfInterfaceCall_two_contracts(self):
@@ -33,7 +34,7 @@ class DataModelTest(TestCase):
                                                        contract_name='Test contract naam',
                                                        data_per_org_unit=self.data_per_org_unit)
 
-        contracts = self.interface_call.contracts()
+        contracts = self.interface_call.stage_contracts()
         self.assertEqual(len(contracts), 2)
 
 
@@ -516,12 +517,12 @@ class DeactivationTests(TestCase):
         self.assertEqual(self.data_per_org_unit_1.stagecontract_set.all().count(), 2)
 
     def test_deactivate_interface_call_happy_path(self):
-        self.assertEqual(self.interface_call.contracts().count(), 2)
+        self.assertEqual(self.interface_call.stage_contracts().count(), 2)
         for data_per_org_unit in self.interface_call.dataperorgunit_set.all():
             data_per_org_unit.active = True
             print(f"voor) {data_per_org_unit} active: {data_per_org_unit.active}")
         self.interface_call.deactivate()
-        self.assertEqual(self.interface_call.contracts().count(), 2)
+        self.assertEqual(self.interface_call.stage_contracts().count(), 2)
         self.assertFalse(self.interface_call.is_active())
         for data_per_org_unit in self.interface_call.dataperorgunit_set.all():
             print(f"na  ) {data_per_org_unit} active: {data_per_org_unit.active}")

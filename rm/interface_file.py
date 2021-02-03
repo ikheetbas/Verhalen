@@ -234,7 +234,7 @@ class RowStatistics(object):
 
     def add_row_with_status(self, row_status):
 
-        if isinstance(row_status,str):
+        if isinstance(row_status, str):
             row_status = RowStatus[row_status]
 
         """
@@ -269,6 +269,7 @@ class RowStatistics(object):
     def get_total_data_ignored_rows(self):
         return self.number_of_rows[RowStatus.DATA_IGNORED]
 
+
 class ExcelInterfaceFile(ABC):
     """
     Base class containing all non-specific logic for uploading an Excel file
@@ -299,7 +300,6 @@ class ExcelInterfaceFile(ABC):
         except Exception as ex:
             self.interfaceCall.status = FileStatus.ERROR.name
             self.interfaceCall.message = f'Reason: {ex.__str__()}'
-
 
         self.interfaceCall.number_of_rows_received = self.row_statistics.get_total_rows_received()
         self.interfaceCall.number_of_empty_rows = self.row_statistics.get_total_empty_rows()

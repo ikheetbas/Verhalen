@@ -1,8 +1,7 @@
 import logging
 
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.db.models import QuerySet
+from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
@@ -12,10 +11,11 @@ from django.views.generic import ListView, TemplateView
 
 from rm.constants import FileStatus
 from rm.forms import UploadFileForm
-from rm.models import StageContract, InterfaceCall
+from rm.models import InterfaceCall
 from rm.interface_file_util import check_file_and_interface_type
 
 logger = logging.getLogger(__name__)
+
 
 class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
@@ -27,28 +27,28 @@ def process_file(file, user):
 
     """
     # First things first, create the InterfaceCall, with the user
-    interfaceCall = InterfaceCall(filename=file.name,
-                                  status=FileStatus.NEW,
-                                  date_time_creation=Now(),
-                                  user=user,
-                                  username=user.username,
-                                  user_email=user.email)
+    interface_call = InterfaceCall(filename=file.name,
+                                   status=FileStatus.NEW,
+                                   date_time_creation=Now(),
+                                   user=user,
+                                   username=user.username,
+                                   user_email=user.email)
     try:
         # check the file and try to find out what type it is
-        interfaceFile = check_file_and_interface_type(file)
+        interface_file = check_file_and_interface_type(file)
 
         # register InterfaceDefinition
-        interfaceCall.interface_definition = interfaceFile.get_interface_definition()
-        interfaceCall.save()
+        interface_call.interface_definition = interface_file.get_interface_definition()
+        interface_call.save()
 
         # process the file!
-        interfaceFile.process(interfaceCall)
+        interface_file.process(interface_call)
 
     except Exception as ex:
 
-        interfaceCall.status = FileStatus.ERROR.name
-        interfaceCall.message = ex.__str__()
-        interfaceCall.save()
+        interface_call.status = FileStatus.ERROR.name
+        interface_call.message = ex.__str__()
+        interface_call.save()
         return "ERROR", ex.__str__()
 
     return "OK", "File has been processed"
@@ -73,39 +73,25 @@ def upload_file(request):
     return render(request, 'rm/upload.html', {'form': form})
 
 
-class ContractListView(PermissionRequiredMixin, ListView):
-    permission_required = 'rm.view_contract'
-    raise_exception = True
-
-    model = StageContract
-    context_object_name = 'contract_list'
-    template_name = 'contract_list.html'
-
-    def get_queryset(self):
-        user = self.request.user
-        # if user.is_superuser:
-        return StageContract.objects.all()
-        # else:
-        #     return StageContract.objects.filter(contract_owner=user.name_in_negometrix)
-
 class InterfaceCallListView(ListView):
     model = InterfaceCall
     context_object_name = 'interface_call_list'
     template_name = 'rm/interface_call_list.html'
     # ordering = ['-date_time_creation'] is done through DataTables in JavaScript (see custom.css)
 
+
 @permission_required('rm.view_contract', raise_exception=True)
 def interface_call_details(request, pk: int):
     logger.debug(f"interface_call_details: pk: {pk}")
-    interfaceCall = InterfaceCall.objects.get(pk=pk)
-    logger.debug("interface_call: " + interfaceCall.__str__())
+    interface_call = InterfaceCall.objects.get(pk=pk)
+    logger.debug("interface_call: " + interface_call.__str__())
 
-    contracts = interfaceCall.contracts()
+    stage_contracts = interface_call.stage_contracts()
 
-    raw_data = interfaceCall.rawdata_set.all()
+    raw_data = interface_call.rawdata_set.all()
     context = {
-        'interface_call': interfaceCall,
-        'contract_list': contracts,
+        'interface_call': interface_call,
+        'stage_contract_list': stage_contracts,
         'received_data': raw_data,
     }
     template = loader.get_template('rm/interface_call_details.html')
