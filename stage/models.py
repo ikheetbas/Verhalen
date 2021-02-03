@@ -58,4 +58,5 @@ class StageContract(models.Model):
     raw_data = models.OneToOneField("rm.RawData", on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
-        return "Leeg" if not self.contract_nr else str(self.contract_nr) + ": " + self.contract_name
+        return "StageContract: Leeg" if not self.contract_nr else \
+            "StageContract: " + str(self.contract_nr) + ": " + self.contract_name

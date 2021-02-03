@@ -1,5 +1,7 @@
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction
 
+from bdata.models import Contract
 from rm.constants import CONTRACTEN
 from stage.models import StageContract
 from users.models import OrganizationalUnit, CustomUser
@@ -133,6 +135,14 @@ class InterfaceCall(models.Model):
             contracts = contracts.union(contracts_per_org_unit)
         return contracts
 
+    def contracts(self):
+        contracts = Contract.objects.none()
+        for data_per_org_unit in self.dataperorgunit_set.all():
+            contracts_per_org_unit = data_per_org_unit.contract_set.all()
+            contracts = contracts.union(contracts_per_org_unit)
+        return contracts
+
+
     def __str__(self):
         return f"{self.interface_definition.name}" if self.interface_definition else "Onbekende interface" \
                                                                                      + f" - {self.date_time_creation}"
@@ -223,6 +233,8 @@ class RawData(models.Model):
     field_50 = models.CharField(max_length=250, blank=True)
 
 
+
+
 class DataPerOrgUnit(models.Model):
     """
     The data from the interface is transformed into business objects. They always
@@ -231,6 +243,7 @@ class DataPerOrgUnit(models.Model):
     We need that for example to see the latest refresh moment of data for certain
     OrgUnits
     """
+
     class Meta:
         unique_together = [['interface_call', 'org_unit']]
 
@@ -240,7 +253,6 @@ class DataPerOrgUnit(models.Model):
     number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing", default=0)
     active = models.BooleanField("Actief", default=False)
 
-
     def __str__(self):
         return f"{self.id} - " \
                f"{self.org_unit.name} - " \
@@ -248,15 +260,17 @@ class DataPerOrgUnit(models.Model):
                f"{self.interface_call.date_time_creation}"
 
     def activate(self, deactivate_previous_interface_calls_first: bool = False):
+        """
+        Activate the DataOrgPerUnit
+        """
         if deactivate_previous_interface_calls_first:
             self.deactivate_previous_interface_call()
         else:
             if self.are_there_active_siblings():
                 raise SystemError(f"Onbekende datasettype nog niet bekend in dit"
                                   f" stuk van de software: {self.get_data_set_type().name}")
-            else:
-                if self.get_data_set_type().name == CONTRACTEN:
-                    self.copy_stage_contracts_to_bdata()
+
+        copy_stage_data_to_bdata(self)
 
         self.active = True
         self.save()
@@ -271,8 +285,7 @@ class DataPerOrgUnit(models.Model):
 
         data_set_type_name = self.get_data_set_type().name
         if data_set_type_name and data_set_type_name == CONTRACTEN:
-            # TODO delete the published Contracten
-            pass
+            self.contract_set.all().delete()
         else:
             raise RuntimeError(f"DataSetType {data_set_type_name} is nog niet bekend "
                                f"in dit stuk van de software (rm.models.DataPerOrgUnit")
@@ -319,5 +332,28 @@ class DataPerOrgUnit(models.Model):
         return False
 
 
-    def copy_stage_contracts_to_bdata(self):
-        pass
+
+def copy_stage_data_to_bdata(self):
+    if self.get_data_set_type().name == CONTRACTEN:
+        copy_stage_contracts_to_bdata(self)
+
+
+def copy_stage_contracts_to_bdata(self):
+    for stage_contract in self.stagecontract_set.all():
+        contract = Contract(seq_nr=stage_contract.seq_nr)
+        copy_all_fields_from_stage_object_to_bdata_object(stage_contract, contract)
+        contract.save()
+
+
+def copy_all_fields_from_stage_object_to_bdata_object(stage_contract, contract):
+    for field in StageContract._meta.get_fields():
+        if contract_has_field(field.name):
+            value = getattr(stage_contract, field.name)
+            setattr(contract, field.name, value)
+
+def contract_has_field(name):
+    try:
+        Contract._meta.get_field(name)
+    except FieldDoesNotExist as ex:
+        return False
+    return True
