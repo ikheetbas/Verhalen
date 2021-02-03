@@ -151,7 +151,7 @@ class InterfaceCall(models.Model):
 
         with transaction.atomic():
             for data_per_org_unit in self.dataperorgunit_set.all():
-                data_per_org_unit.activate()
+                data_per_org_unit.activate(deactivate_previous_interface_calls_first=True)
             self.status = InterfaceCall.ACTIVE
             self.save()
 
@@ -231,11 +231,15 @@ class DataPerOrgUnit(models.Model):
     We need that for example to see the latest refresh moment of data for certain
     OrgUnits
     """
+    class Meta:
+        unique_together = [['interface_call', 'org_unit']]
+
     interface_call = models.ForeignKey(InterfaceCall, on_delete=models.CASCADE)
     org_unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
     number_of_data_rows_ok = models.IntegerField("Dataregels goed", default=0)
     number_of_data_rows_warning = models.IntegerField("Dataregels waarschuwing", default=0)
     active = models.BooleanField("Actief", default=False)
+
 
     def __str__(self):
         return f"{self.id} - " \
@@ -243,14 +247,25 @@ class DataPerOrgUnit(models.Model):
                f"{self.interface_call.interface_definition.name} - " \
                f"{self.interface_call.date_time_creation}"
 
-    def activate(self):
-        self.deactivate_previous_interface_call()
+    def activate(self, deactivate_previous_interface_calls_first: bool = False):
+        if deactivate_previous_interface_calls_first:
+            self.deactivate_previous_interface_call()
+        else:
+            if self.are_there_active_siblings():
+                raise SystemError(f"Onbekende datasettype nog niet bekend in dit"
+                                  f" stuk van de software: {self.get_data_set_type().name}")
+            else:
+                if self.get_data_set_type().name == CONTRACTEN:
+                    self.copy_stage_contracts_to_bdata()
 
         self.active = True
         self.save()
 
     def deactivate(self):
-
+        """
+        Change active->False and removes corresponding Business Data.
+        No check on status Active/Inactive, it will always perform these steps.
+        """
         self.active = False
         self.save()
 
@@ -292,5 +307,17 @@ class DataPerOrgUnit(models.Model):
                 result.append(data_per_org_unit.interface_call)
         return result
 
+    def are_there_active_siblings(self) -> bool:
+        """
+        Checks if all other DataPerOrgUnit for the same OrgUnit and DataSetType are inactive
+        """
+        this_data_set = self.get_data_set_type()
+        for data_per_org_unit in DataPerOrgUnit.objects.filter(active=True,
+                                                               org_unit=self.org_unit):
+            if data_per_org_unit.get_data_set_type() == this_data_set:
+                return True
+        return False
 
 
+    def copy_stage_contracts_to_bdata(self):
+        pass

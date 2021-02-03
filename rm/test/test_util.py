@@ -95,23 +95,23 @@ def set_up_static_data(self):
     self.user.org_units.add(self.org_unit)
 
 def set_up_process_contract_data(self):
-    self.interface_call = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                       status='TestStatus',
-                                                       filename='Text.xls',
-                                                       interface_definition=self.interface_definition,
-                                                       user=self.user,
-                                                       username=self.user.username,
-                                                       user_email=self.user.email)
+    self.interface_call_1 = InterfaceCall.objects.create(date_time_creation=Now(),
+                                                         status='TestStatus',
+                                                         filename='Text.xls',
+                                                         interface_definition=self.interface_definition,
+                                                         user=self.user,
+                                                         username=self.user.username,
+                                                         user_email=self.user.email)
 
-    self.data_per_org_unit = DataPerOrgUnit.objects.create(interface_call=self.interface_call,
+    self.data_per_org_unit = DataPerOrgUnit.objects.create(interface_call=self.interface_call_1,
                                                            org_unit=self.org_unit)
 
-    self.contract_1 = StageContract.objects.create(contract_nr='NL-123',
-                                                   seq_nr=0,
-                                                   description='Test Contract 1',
-                                                   contract_owner='T. Ester',
-                                                   contract_name='Test contract naam',
-                                                   data_per_org_unit=self.data_per_org_unit)
+    self.stage_contract_1 = StageContract.objects.create(contract_nr='NL-123',
+                                                         seq_nr=0,
+                                                         description='Test Contract 1',
+                                                         contract_owner='T. Ester',
+                                                         contract_name='Test contract naam',
+                                                         data_per_org_unit=self.data_per_org_unit)
 
 
 def print_permissions_and_groups():

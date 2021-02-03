@@ -304,7 +304,7 @@ class HandleNegometrixFileRowTests(TestCase):
     def test_handle_negometrix_file_row_test_header(self):
         row_status, msg = handle_negometrix_file_row(row_nr=1,
                                                      row_values=(),
-                                                     interface_call=self.interface_call,
+                                                     interface_call=self.interface_call_1,
                                                      fields_with_position={},
                                                      mandatory_field_positions=())
         self.assertEqual(row_status, RowStatus.HEADER_ROW)
@@ -312,7 +312,7 @@ class HandleNegometrixFileRowTests(TestCase):
     def test_handle_negometrix_file_row_test_empty(self):
         row_status, msg = handle_negometrix_file_row(row_nr=2,
                                                      row_values=(),
-                                                     interface_call=self.interface_call,
+                                                     interface_call=self.interface_call_1,
                                                      fields_with_position={},
                                                      mandatory_field_positions=())
         self.assertEqual(row_status, RowStatus.EMPTY_ROW)
@@ -321,7 +321,7 @@ class HandleNegometrixFileRowTests(TestCase):
         row_values = ("123", "123", "")
         row_status, msg = handle_negometrix_file_row(row_nr=2,
                                                      row_values=row_values,
-                                                     interface_call=self.interface_call,
+                                                     interface_call=self.interface_call_1,
                                                      fields_with_position=self.fields_with_position,
                                                      mandatory_field_positions=self.mandatory_field_positions)
         self.assertEqual(row_status, RowStatus.DATA_ERROR)
@@ -330,7 +330,7 @@ class HandleNegometrixFileRowTests(TestCase):
         row_values = ("123", "", "123", "")
         row_status, msg = handle_negometrix_file_row(row_nr=2,
                                                      row_values=row_values,
-                                                     interface_call=self.interface_call,
+                                                     interface_call=self.interface_call_1,
                                                      fields_with_position=self.fields_with_position,
                                                      mandatory_field_positions=self.mandatory_field_positions)
         self.assertEqual(row_status, RowStatus.DATA_ERROR)
@@ -342,7 +342,7 @@ class HandleNegometrixFileRowTests(TestCase):
 
         row_status, msg = handle_negometrix_file_row(row_nr=2,
                                                      row_values=row_values,
-                                                     interface_call=self.interface_call,
+                                                     interface_call=self.interface_call_1,
                                                      fields_with_position=self.fields_with_position,
                                                      mandatory_field_positions=self.mandatory_field_positions)
         self.assertEqual(row_status, RowStatus.DATA_ERROR)
@@ -351,12 +351,12 @@ class HandleNegometrixFileRowTests(TestCase):
     def test_handle_negometrix_file_row_test_known_category_as_org_unit_but_user_not_part_of_that_org_unit(self):
         row_values = ("123", "", "123", "IAAS")
         another_user = CustomUser.objects.create(username="Eelco")
-        self.interface_call.user = another_user
+        self.interface_call_1.user = another_user
         mapping = Mapping.objects.create(system=self.system, org_unit=self.org_unit, name="IAAS")
 
         row_status, msg = handle_negometrix_file_row(row_nr=2,
                                                      row_values=row_values,
-                                                     interface_call=self.interface_call,
+                                                     interface_call=self.interface_call_1,
                                                      fields_with_position=self.fields_with_position,
                                                      mandatory_field_positions=self.mandatory_field_positions)
         self.assertEqual(row_status, RowStatus.DATA_IGNORED)
