@@ -52,5 +52,9 @@ class Contract(models.Model):
                                           on_delete=models.CASCADE)
 
     def __str__(self):
-        return "Leeg" if not self.contract_nr else str(self.contract_nr) + ": " + self.contract_name
+        if self.contract_nr:
+            return f"Contract: {self.contract_nr}: {self.contract_name} (oorsprong rij {self.seq_nr}"
+        else:
+            return "Leeg Contract (geen contract_nr!)"
+
 

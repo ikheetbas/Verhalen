@@ -18,8 +18,8 @@ class DataModelTest(TestCase):
     def setUp(self):
         set_up_user_with_interface_call_and_contract(self)
 
-    def test_contract(self):
-        expected = 'NL-123: Test contract naam'
+    def test_stage_contract(self):
+        expected = 'StageContract: NL-123: Test contract naam'
         self.assertEqual(self.stage_contract_1.__str__(), expected)
 
     def testContractsOfInterfaceCall_one_contract(self):

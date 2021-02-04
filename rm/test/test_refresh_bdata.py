@@ -104,7 +104,7 @@ def setUpNegometrixInterfaceCall_5_InActive_EUS(self):
                                                      data_per_org_unit=self.data_per_org_unit_EUS_5, seq_nr=1)
 
 
-class ActivateDataPerOrgUnitTest(TestCase):
+class ActivateAndDeactivateTest(TestCase):
 
     def test_activate_and_deactivate_data_org_per_unit(self):
 
@@ -115,11 +115,11 @@ class ActivateDataPerOrgUnitTest(TestCase):
         self.assertEqual(self.data_per_org_unit_EUS_5.stagecontract_set.all().count(), 2)
         self.assertEqual(self.data_per_org_unit_EUS_5.contract_set.all().count(), 0)
 
-        self.data_per_org_unit_EUS_5.activate()
+        self.data_per_org_unit_EUS_5.activate_dataset()
 
         self.assertEqual(self.data_per_org_unit_EUS_5.contract_set.all().count(), 2)
 
-        self.data_per_org_unit_EUS_5.deactivate()
+        self.data_per_org_unit_EUS_5.deactivate_dataset()
         self.assertEqual(self.data_per_org_unit_EUS_5.contract_set.all().count(), 0)
 
     def test_activate_and_deactivate_interface_call(self):
@@ -131,11 +131,12 @@ class ActivateDataPerOrgUnitTest(TestCase):
         self.assertEqual(len(self.interface_call_4.stage_contracts()), 4)
         self.assertEqual(len(self.interface_call_4.contracts()), 0)
 
-        self.interface_call_4.activate()
+        self.interface_call_4.activate_interface_call()
 
         self.assertEqual(len(self.interface_call_4.contracts()), 4)
 
-        self.interface_call_4.deactivate()
+        self.interface_call_4.deactivate_interface_call()
 
         self.assertEqual(len(self.interface_call_4.contracts()), 0)
+
 
