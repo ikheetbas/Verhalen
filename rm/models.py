@@ -3,6 +3,8 @@ import logging
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction, IntegrityError
 
+import rm
+import users
 from bdata.models import Contract
 from rm.constants import CONTRACTEN
 from rm.exceptions import OtherActiveDataPerOrgUnitException, DuplicateKeyException
@@ -147,17 +149,34 @@ class InterfaceCall(models.Model):
             contracts = contracts.union(contracts_per_org_unit)
         return contracts
 
-
     def __str__(self):
         return f"{self.interface_definition.name}" if self.interface_definition else "Onbekende interface" \
                                                                                      + f" - {self.date_time_creation}"
 
+    def get_dataperorgunit(self, org_unit) -> "DataPerOrgUnit":
+        if not org_unit:
+            raise ValueError("Calling get_dataperorgunit with org_unit is None")
+
+        if type(org_unit) == str:
+            org_unit = OrganizationalUnit.objects.get(name=org_unit)
+
+        if type(org_unit) == OrganizationalUnit:
+            dpou_set = self.dataperorgunit_set.filter(org_unit=org_unit)
+            if len(dpou_set) == 1:
+                return dpou_set[0]
+            else:
+                raise users.models.OrganizationalUnit.DoesNotExist
+
     def deactivate_interface_call(self,
-                                  start_transaction: bool=False):
+                                  start_transaction: bool = False):
         """
         Deactivating a InterfaceCall means deactivating all its child DataPerOrgUnit records. Which means: deleting
         all  business records (not the staging ones!) of that DataPerOrgUnit.
         """
+        self.refresh_from_db()
+        if not self.is_active():
+            return
+
         if start_transaction:
             try:
                 with transaction.atomic():
@@ -171,43 +190,47 @@ class InterfaceCall(models.Model):
             self._deactivate_interface_call()
 
     def _deactivate_interface_call(self):
-        for data_per_org_unit in self.dataperorgunit_set.all():
-            data_per_org_unit.deactivate_dataset()
         self.status = InterfaceCall.INACTIVE
         self.save()
+        for data_per_org_unit in self.dataperorgunit_set.filter(active=True):
+            data_per_org_unit.deactivate_dataset()
 
     def activate_interface_call(self,
-                                start_transaction: bool=False,
-                                deactivate_previous_interface_calls_first: bool=False):
+                                start_transaction: bool = False,
+                                cascading=False):
         """
         Activate this Interface Call, by activating all Data Per Org Units under it.
         Parameters:
             * start_transaction: default False
-            * deactivate_previous_interface_calls_first: default False
+            * cascading: when True, children DPOU will be activated as well
         Exceptions:
             * all exceptions that occur during underlying actions
         """
+        self.refresh_from_db()
+
+
         if start_transaction:
             try:
                 with transaction.atomic():
-                    self._activate_interface_call(deactivate_previous_interface_calls_first)
+                    self._activate_interface_call(cascading)
             except Exception as ex:
                 logger.exception(f"Exception tijdens het activeren van Interface Call: "
                                  f"id={self.id} {self.filename} {self.date_time_creation}", ex)
                 # re raise so we can show it to the user
                 raise
         else:
-            self._activate_interface_call(deactivate_previous_interface_calls_first)
+            self._activate_interface_call(cascading)
 
-    def _activate_interface_call(self, deactivate_previous_interface_calls_first):
+    def _activate_interface_call(self, cascading):
         """
         Loop through all data_per_org_unit and activate them.
         After that, activate this interface_call
         """
-        for data_per_org_unit in self.dataperorgunit_set.all():
-            data_per_org_unit.activate_dataset(deactivate_previous_interface_calls_first=True)
         self.status = InterfaceCall.ACTIVE
         self.save()
+        if cascading:
+            for data_per_org_unit in self.dataperorgunit_set.filter(active=False):
+                data_per_org_unit.activate_dataset(activating_from_interface_call=True)
 
     def is_active(self):
         """
@@ -217,6 +240,44 @@ class InterfaceCall(models.Model):
             return True
         else:
             return False
+
+    @property
+    def active(self):
+        return self.is_active()
+
+    def is_not_active(self):
+        """
+        Just to be clear: only status 'ACTIVE' is active, the others are not!
+        """
+        return not self.is_active()
+
+    @property
+    def not_active(self):
+        return self.is_not_active()
+
+    def is_completely_active(self):
+        """
+        True if the interface_call is active AND all data_per_org_unit's are active
+        """
+        if not self.is_active():
+            return False
+
+        if self.dataperorgunit_set.filter(active=False).count() > 0:
+            return False
+
+        return True
+
+    def is_completely_inactive(self):
+        """
+        True if the interface_call is not active AND all data_per_org_unit's are not active
+        """
+        if self.is_active():
+            return False
+
+        if self.dataperorgunit_set.filter(active=True).count() > 0:
+            return False
+
+        return True
 
 
 class RawData(models.Model):
@@ -277,8 +338,6 @@ class RawData(models.Model):
     field_50 = models.CharField(max_length=250, blank=True)
 
 
-
-
 class DataPerOrgUnit(models.Model):
     """
     The data from the interface is transformed into business objects. They always
@@ -303,9 +362,13 @@ class DataPerOrgUnit(models.Model):
                f"{self.interface_call.interface_definition.name} - " \
                f"{self.interface_call.date_time_creation}"
 
+    @property
+    def not_active(self):
+        return not self.active
+
     def activate_dataset(self,
-                         deactivate_previous_interface_calls_first: bool = False,
-                         start_transaction: bool = False):
+                         start_transaction: bool = False,
+                         activating_from_interface_call: bool = False):
 
         if self.active:
             return
@@ -313,36 +376,36 @@ class DataPerOrgUnit(models.Model):
         if start_transaction:
             try:
                 with transaction.atomic():
-                    self._activate_dataset(deactivate_previous_interface_calls_first)
+                    self._activate_dataset(activating_from_interface_call)
             except Exception as ex:
                 logger.exception(f"Exception tijdens het activeren van DataPerOrgUnit: "
                                  f"id={self.id} {self.org_unit.name} {self.get_data_set_type().name}", ex)
                 # re raise so we can show it to the user
                 raise
         else:
-            self._activate_dataset(deactivate_previous_interface_calls_first)
+            self._activate_dataset(activating_from_interface_call)
 
-    def _activate_dataset(self, deactivate_previous_interface_calls_first):
+    def _activate_dataset(self,
+                          activating_from_interface_call: bool):
 
         """
         Activate the DataOrgPerUnit
         """
-        if deactivate_previous_interface_calls_first:
+        if activating_from_interface_call:
             self.deactivate_previous_interface_call()
         else:
-            if self.are_there_active_siblings():
-                raise OtherActiveDataPerOrgUnitException(self.pk,
-                                                         self.get_data_set_type().name,
-                                                         self.org_unit.name)
+            self.deactivate_active_siblings()
 
         copy_stage_data_to_bdata(self)
 
         self.active = True
         self.save()
 
+        if self.interface_call.is_not_active():
+            self.interface_call.activate_interface_call(cascading=False)
+
         if self.all_data_org_units_of_this_interface_call_are_active():
             self.interface_call.activate_interface_call()
-
 
     def deactivate_dataset(self,
                            start_transaction: bool = False):
@@ -366,7 +429,7 @@ class DataPerOrgUnit(models.Model):
         else:
             self._deactivate_dataset()
 
-    def _deactivate_dataset(self):
+    def _deactivate_dataset(self, ):
         self.active = False
         self.save()
 
@@ -379,8 +442,6 @@ class DataPerOrgUnit(models.Model):
 
         if self.all_data_org_units_of_this_interface_call_are_inactive():
             self.interface_call.deactivate_interface_call()
-
-
 
     def get_data_set_type(self):
         if not self.interface_call:
@@ -408,26 +469,29 @@ class DataPerOrgUnit(models.Model):
         this_data_set = self.get_data_set_type()
         for data_per_org_unit in DataPerOrgUnit.objects.filter(active=True,
                                                                org_unit=self.org_unit):
-            if data_per_org_unit.get_data_set_type() == this_data_set:
-                result.append(data_per_org_unit.interface_call)
+            if not self.myself(data_per_org_unit):
+                if data_per_org_unit.get_data_set_type() == this_data_set:
+                    result.append(data_per_org_unit.interface_call)
         return result
-
-    def are_there_active_siblings(self) -> bool:
-        """
-        Checks if all other DataPerOrgUnit for the same OrgUnit and DataSetType are inactive
-        """
-        this_data_set = self.get_data_set_type()
-        for data_per_org_unit in DataPerOrgUnit.objects.filter(active=True,
-                                                               org_unit=self.org_unit):
-            if data_per_org_unit.get_data_set_type() == this_data_set:
-                return True
-        return False
 
     def all_data_org_units_of_this_interface_call_are_inactive(self):
         return self.interface_call.dataperorgunit_set.filter(active=True).count() == 0
 
     def all_data_org_units_of_this_interface_call_are_active(self):
         return self.interface_call.dataperorgunit_set.filter(active=False).count() == 0
+
+    def deactivate_active_siblings(self):
+        """
+        Deactivate other active datasets for the same org_unit and datasettype
+        """
+        data_set_type_name = self.get_data_set_type().name
+        for data_per_org_unit in DataPerOrgUnit.objects.filter(active=True, org_unit=self.org_unit):
+            if not self.myself(data_per_org_unit):
+                if data_per_org_unit.get_data_set_type().name == data_set_type_name:
+                    data_per_org_unit.deactivate_dataset()
+
+    def myself(self, data_per_org_unit):
+        return data_per_org_unit.id == self.id
 
 
 def copy_stage_data_to_bdata(self):
@@ -453,7 +517,8 @@ def copy_stage_contracts_to_bdata(self):
             else:
                 raise
         except Exception as ex:
-            logger.error(f"Andere exception dan Integrity fout bij het wegschrijven van Contract: {contract.__str__()}", ex)
+            logger.error(f"Andere exception dan Integrity fout bij het wegschrijven van Contract: {contract.__str__()}",
+                         ex)
             raise
 
 
@@ -462,6 +527,7 @@ def copy_all_fields_from_stage_object_to_bdata_object(stage_contract, contract):
         if contract_has_field(field.name):
             value = getattr(stage_contract, field.name)
             setattr(contract, field.name, value)
+
 
 def contract_has_field(name):
     try:

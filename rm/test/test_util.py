@@ -135,3 +135,16 @@ def print_permissions_and_groups():
         for permission in permissions:
             print(f"- has permission: {permission.codename}")
     print("--------------------------------------")
+
+
+def add_data_per_org_unit(interface_call, org_unit, active) -> DataPerOrgUnit:
+    return DataPerOrgUnit.objects.create(interface_call=interface_call,
+                                  active=active,
+                                  org_unit=org_unit)
+
+
+def create_interface_call(active, interface_definition) -> InterfaceCall:
+    interface_call = InterfaceCall.objects.create(interface_definition=interface_definition,
+                                                  status=InterfaceCall.ACTIVE if active else
+                                                         InterfaceCall.READY_LOADING)
+    return interface_call
