@@ -66,6 +66,14 @@ class InterfaceDefinition(models.Model):
     class Meta:
         unique_together = [['system', 'data_set_type', 'interface_type']]
 
+    @property
+    def data_set_type_name(self):
+        return self.data_set_type.name
+
+    @property
+    def system_name(self):
+        return self.system.name
+
     def __str__(self):
         return self.name
 
