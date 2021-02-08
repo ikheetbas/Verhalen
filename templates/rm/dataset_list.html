@@ -18,12 +18,13 @@
 <table class="table table-sm table-hover table-striped table-bordered" id="interface_call_table">
     <thead class="thead-dark ">
     <tr>
-        <th rowspan="2">system</th>
-        <th rowspan="2">dataset_type</th>
-        <th rowspan="2">interface_type</th>
-        <th rowspan="2">date</th>
-        <th rowspan="2">time</th>
-        <th rowspan="2">org_unit</th>
+        <th>system</th>
+        <th>dataset_type</th>
+        <th>interface_type</th>
+        <th>active</th>
+        <th>date</th>
+        <th>time</th>
+        <th>org_unit</th>
         <th>ok</th>
         <th>warning</th>
     </tr>
@@ -37,6 +38,7 @@
         <td>{{  dataset.system }}</td>
         <td>{{  dataset.dataset_type}}</td>
         <td>{{  dataset.interface_type}}</td>
+        <td>{{  dataset.status}}</td>
         <td>{{  dataset.date_time |date:'Y-m-d' }}</td>
         <td>{{  dataset.date_time |date:'H:i' }}</td>
         <td>{{  dataset.org_unit }}</td>

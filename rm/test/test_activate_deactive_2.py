@@ -320,7 +320,7 @@ class ActivateDataPerOrgUnitTests(TestCase):
         # ACTION: activate 1
         interface_call_1.get_dataperorgunit(self.org_unit_IAAS).activate_dataset(start_transaction=True)
 
-        # POST Call is active, dpou IAAS is active, EUS still inactive
+        # POST Call is active, dpou_1 IAAS is active, EUS still inactive
         self.assertTrue(interface_call_1.active)
         self.assertTrue(interface_call_1.get_dataperorgunit("IAAS").active)
         self.assertTrue(interface_call_1.get_dataperorgunit("EUS").not_active)

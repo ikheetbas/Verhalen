@@ -19,6 +19,13 @@ class OrganizationalUnit(models.Model):
         return f"{self.get_type_display()} - {self.name}"
 
 
+def convert_permission_name_to_id(app, permission_name):
+    """
+
+    """
+    return app + "." + permission_name.lower().replace(" ", "_")
+
+
 class CustomUser(AbstractUser):
     """
     Custom User extending the Django AbstractUser gives us the possibility to add attributes and relations
@@ -40,3 +47,8 @@ class CustomUser(AbstractUser):
         if i == 15:
             raise Exception("Exit i.v.m. endless-loopbeveiliging")
         return False
+
+    def has_perm_with_name(self, app, permission_name: str):
+        permission = convert_permission_name_to_id(app, permission_name)
+        return self.has_perm(permission)
+

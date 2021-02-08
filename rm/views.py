@@ -112,6 +112,7 @@ class DataSetListView(ListView):
             record = {"system": dpou.interface_call.interface_definition.system.name,
                       "dataset_type": dpou.interface_call.interface_definition.data_set_type.name,
                       "interface_type": dpou.interface_call.interface_definition.get_interface_type_display(),
+                      "status": dpou.active,
                       "date_time": dpou.interface_call.date_time_creation,
                       "org_unit": dpou.org_unit.name,
                       "data_rows_ok": dpou.number_of_data_rows_ok,

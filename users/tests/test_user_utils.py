@@ -1,41 +1,13 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.test import TestCase
 
-from users.models import OrganizationalUnit, CustomUser
-from users.user_utils import all_org_units_of_org_unit, get_all_org_units_of_user
+from rm.test.test_util import _create_user
+from users.models import OrganizationalUnit, CustomUser, convert_permission_name_to_id
+from users.user_utils import all_org_units_of_org_unit, get_all_org_units_of_user, get_user_responsible_interface_names
 
 
-class CustomUserTests(TestCase):
-
-    def test_create_user(self):
-        User = get_user_model()  # through this method we get the object defined
-        # in the settings.py
-        user = User.objects.create_user(
-            username='will',
-            email='will@email.com',
-            password='testpass123'
-        )
-        self.assertEqual(user.username, 'will')
-        self.assertEqual(user.email, 'will@email.com')
-        self.assertTrue(user.is_active)
-        self.assertFalse(user.is_staff)
-        self.assertFalse(user.is_superuser)
-
-    def test_create_superuser(self):
-        User = get_user_model()
-        admin_user = User.objects.create_superuser(
-            username='superadmin',
-            email='superadmin@email.com',
-            password='testpass123'
-        )
-        self.assertEqual(admin_user.username, 'superadmin')
-        self.assertEqual(admin_user.email, 'superadmin@email.com')
-        self.assertTrue(admin_user.is_active)
-        self.assertTrue(admin_user.is_staff)
-        self.assertTrue(admin_user.is_superuser)
-
-
-class UserUtilTests(TestCase):
+class AllOrgUnitsOfAUserTests(TestCase):
 
     def setUp(self):
         self.dep_1 = OrganizationalUnit.objects.get_or_create(name="dep1",
@@ -111,3 +83,42 @@ class UserUtilTests(TestCase):
                     self.cluster1, self.team1_1, self.team1_2,
                     self.cluster2, self.team2_1, self.team2_2]
         self.assertEqual(result, expected)
+
+
+class UserPermissionTests(TestCase):
+
+    def test_convert_permission_name(self):
+        app = "rm"
+        name = "Contracten Upload"
+
+        expected = "rm.contracten_upload"
+        result = convert_permission_name_to_id(app, name)
+        self.assertEqual(result, expected)
+
+    def test_has_user_permission_with_name(self):
+        user = CustomUser.objects.create(username="Inkoper")
+        permission = Permission.objects.get(name="Contracten upload")
+        user.user_permissions.add(permission)
+
+        self.assertTrue(user.has_perm_with_name("rm", "Contracten upload"))
+
+    def test_get_user_responsible_interface_names_with_zero_interface_permissions(self):
+        self.user = _create_user(username="No Body")
+        permission_names = get_user_responsible_interface_names(self.user)
+        self.assertTrue(len(permission_names) == 0)
+
+    def test_get_user_responsible_interface_names_with_contract_api_and_upload(self):
+        self.user = _create_user(group_name="Buyer",
+                                 username="I. koper")
+        permission_names = get_user_responsible_interface_names(self.user)
+        self.assertTrue("Contracten API" in permission_names)
+        self.assertTrue("Contracten upload" in permission_names)
+
+    def test_get_user_responsible_interface_names_superuser(self):
+        self.user = get_user_model().objects.create(username="Superman",
+                                                    is_superuser=True,
+                                                    is_active=True)
+        permission_names = get_user_responsible_interface_names(self.user)
+        self.assertTrue("Contracten API" in permission_names)
+        self.assertTrue("Contracten upload" in permission_names)
+

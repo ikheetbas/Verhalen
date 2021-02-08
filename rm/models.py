@@ -114,8 +114,8 @@ class InterfaceCall(models.Model):
 
     class Meta:
         permissions = [
-            ("upload_contract_file", "Can upload file with contracts"),
-            ("call_contract_interface", "Can call the (negometrix) contract-interface"),
+            ("contracten_api", "Contracten API"),
+            ("contracten_upload", "Contracten upload"),
         ]
 
     date_time_creation = models.DateTimeField(auto_now=False, auto_now_add=True)
