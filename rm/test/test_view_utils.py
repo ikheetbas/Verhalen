@@ -151,7 +151,7 @@ class ViewUtilTests(TestCase):
                                                     active=False)
 
         # ACTION: get datasets visible for this user again
-        datasets = get_datasets_for_user(self.user, {})
+        datasets = get_datasets_for_user(self.user, {'active': 'All'})
 
         # POST: now 2:
         self.assertEqual(len(datasets), 2)
@@ -164,7 +164,7 @@ class ViewUtilTests(TestCase):
                                                     active=True)
 
         # ACTION: get datasets visible for this user again
-        datasets = get_datasets_for_user(self.user, {})
+        datasets = get_datasets_for_user(self.user, {'active': 'All'})
 
         # POST: now 3:
         self.assertEqual(len(datasets), 3)
@@ -292,7 +292,7 @@ class ViewUtilTests(TestCase):
         self.dpou_contracten_upload.active = False
         self.dpou_contracten_upload.save()
 
-        datasets = get_datasets_for_user(self.user, {'responsibility': 'user'})
+        datasets = get_datasets_for_user(self.user, {'responsibility': 'user', 'active': 'All'})
         self.assertEqual(len(datasets), 2)
         self.assertEqual(datasets[0].id, self.dpou_contracten_upload.id)
         self.assertEqual(datasets[1].id, self.dpou_contracten_api.id)

@@ -103,23 +103,34 @@ class DataSetListView(ListView):
     context_object_name = 'dataset_list'
     template_name = 'rm/dataset_list.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        logger.debug(f"get_context_data {self.request.GET} ")
+        params = self.request.GET
+        active = params.get('active', 'True')
+        logger.debug(f"active: {active}")
+        context["active"] = active
+        return context
+
     def get_queryset(self):
+        logger.debug("get_queryset")
         params = self.request.GET
         queryset = get_datasets_for_user(self.request.user, params)
 
-        result = []
+        datasets = []
         for dpou in queryset:
             record = {"system": dpou.interface_call.interface_definition.system.name,
                       "dataset_type": dpou.interface_call.interface_definition.data_set_type.name,
                       "interface_type": dpou.interface_call.interface_definition.get_interface_type_display(),
                       "status": dpou.active,
+                      "username": dpou.interface_call.username,
                       "date_time": dpou.interface_call.date_time_creation,
                       "org_unit": dpou.org_unit.name,
                       "data_rows_ok": dpou.number_of_data_rows_ok,
                       "data_rows_warning": dpou.number_of_data_rows_warning
                       }
-            result.append(record)
-        return result
+            datasets.append(record)
+        return datasets
 
 
 class RefreshDataSets(View):

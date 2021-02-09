@@ -2,26 +2,39 @@
 
 {% block title %}NPO-RM - Datasets{% endblock title %}
 {% block content %}
-<h1 class="mt-4">Datasets</h1>
-
-<br>
-
-    {%  if perms.rm.upload_contract_file %}
-        <a href="upload/"
-           class="btn btn-primary btn-lg active"
-           role="button"
-           aria-pressed="true">Upload file</a>
-        <br>
-    {% endif %}
-
-<br>
-<table class="table table-sm table-hover table-striped table-bordered" id="interface_call_table">
+    <br>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+      <div class="navbar-header">
+        <h2>Datasets</h2>
+      </div>
+      {%  if active == 'True' %}
+          <a href="?active=All" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Actief</a>
+      {% else %}
+          <a href="?active=True"  class="btn btn-outline-secondary navbar-btn btn-sm">Actief</a>
+      {% endif %}
+      {%  if my_datasets == 'True' %}
+          <a href="?my_datasets=False" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Mijn Datasets</a>
+      {% else %}
+          <a href="?my_datasets=True"  class="btn btn-outline-secondary navbar-btn btn-sm">Mijn Datasets</a>
+      {% endif %}
+      <div class="navbar-header">
+      <select class="custom-select" id="datasettype-select">
+          <option selected>Dataset...</option>
+          <option value="1">Contracten</option>
+          <option value="2">Risks</option>
+      </select>
+      </div>
+  </div>
+</nav>
+    <table class="table table-sm table-hover table-striped table-bordered" id="interface_call_table">
     <thead class="thead-dark ">
     <tr>
         <th>system</th>
         <th>dataset_type</th>
         <th>interface_type</th>
-        <th>active</th>
+        <th>status</th>
+        <th>gebruiker</th>
         <th>date</th>
         <th>time</th>
         <th>org_unit</th>
@@ -39,6 +52,7 @@
         <td>{{  dataset.dataset_type}}</td>
         <td>{{  dataset.interface_type}}</td>
         <td>{{  dataset.status}}</td>
+        <td>{{  dataset.username}}</td>
         <td>{{  dataset.date_time |date:'Y-m-d' }}</td>
         <td>{{  dataset.date_time |date:'H:i' }}</td>
         <td>{{  dataset.org_unit }}</td>

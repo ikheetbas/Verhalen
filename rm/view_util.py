@@ -46,8 +46,10 @@ def create_addition_dataset_filter(user, kwargs) -> dict:
         key = key.lower()
         value = value.lower()
         logger.debug(f"Key: {key}, value: {value}")
+        filter_key = None
         if key == 'active':
-            filter_key, filter_value = get_active_filter_value(value)
+            if value == 'true' or value == 'false':
+                filter_key, filter_value = get_active_filter_value(value)
         elif key == 'system':
             filter_key, filter_value = get_system_filter_value(value)
         elif key == 'responsibility' and value == 'user':
@@ -58,7 +60,23 @@ def create_addition_dataset_filter(user, kwargs) -> dict:
             additional_filter[filter_key] = filter_value
     return additional_filter
 
+
 # filter(interface_call__interface_definition__name__in=user_interface_permissions)
+
+def set_defaults_for_page(kwargs):
+    """
+    When 'active' not present in the parameters, 'active' is set to 'True'
+    """
+    params = {}
+    active_present = False
+    for key, value in kwargs.items():
+        params[key] = value
+        if key == 'active':
+            active_present = True
+    if not active_present:
+        params['active'] = 'True'
+    return params
+
 
 def get_datasets_for_user(user: CustomUser, kwargs: dict):
     """
@@ -67,12 +85,13 @@ def get_datasets_for_user(user: CustomUser, kwargs: dict):
     Value example of kwargs: {'active': 'True', 'system': 'Negometrix'}>
     """
     org_based_authorization_filter = get_all_org_units_of_user(user)
-    additional_filter = create_addition_dataset_filter(user, kwargs)
+    params = set_defaults_for_page(kwargs)
+    additional_filter = create_addition_dataset_filter(user, params)
 
     dataset_filter = {}
-    queryset = DataPerOrgUnit.objects.\
-        select_related('interface_call', 'org_unit').\
-        filter(org_unit__in=org_based_authorization_filter).\
+    queryset = DataPerOrgUnit.objects. \
+        select_related('interface_call', 'org_unit'). \
+        filter(org_unit__in=org_based_authorization_filter). \
         filter(**additional_filter).filter()
 
     # if kwargs.get('callable') == 'True':
