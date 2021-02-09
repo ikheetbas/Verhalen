@@ -1,10 +1,5 @@
-from django.db.models.functions import Now
-from openpyxl import load_workbook
-
-from rm.constants import NEW, INTERFACE_TYPE_FILE, ERROR_MSG_FILE_CAN_NOT_BE_RECOGNISED
-from rm.interface_file import ExcelInterfaceFile, check_file_has_excel_extension, check_file_is_excel_file, get_headers_from_sheet, \
-    is_valid_header_row, ExcelInterfaceFile, get_headers_from_file
-from rm.models import InterfaceCall
+from rm.constants import ERROR_MSG_FILE_CAN_NOT_BE_RECOGNISED
+from rm.interface_file import check_file_has_excel_extension, check_file_is_excel_file, is_valid_header_row, ExcelInterfaceFile, get_headers_from_file
 from rm.negometrix import NegometrixInterfaceFile
 
 

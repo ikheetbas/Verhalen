@@ -1,6 +1,6 @@
 # when your secret key contains a $, escape it with another $, so $ -> $$
 # otherwise you get a:
-# ERROR: Invalid interpolation format for "environment" option in service "web"
+# DATA_ERROR: Invalid interpolation format for "environment" option in service "web"
 
 version: '3.7'
 

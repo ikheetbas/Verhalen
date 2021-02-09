@@ -6,7 +6,7 @@ class CustomUserTests(TestCase):
 
     def test_create_user(self):
         User = get_user_model()  # through this method we get the object defined
-                                 # in the settings.py
+        # in the settings.py
         user = User.objects.create_user(
             username='will',
             email='will@email.com',
@@ -30,3 +30,5 @@ class CustomUserTests(TestCase):
         self.assertTrue(admin_user.is_active)
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
+
+

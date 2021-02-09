@@ -1,6 +1,6 @@
 {% extends '_base.html' %}
 
-{% block title %}NPO-RM - Contracts{% endblock title %}
+{% block title %}NPO-RM - Data Verversen details{% endblock title %}
 {% block content %}
 
 <h1 class="mt-4">Data verversen details</h1>
@@ -40,7 +40,7 @@
 
  <ul class="nav nav-tabs">
   <li class="nav-item">
-    <a class="nav-link active" href="#contracts">Contracten</a>
+    <a class="nav-link active" href="#stage_contracts">Contracten</a>
   </li>
   <li class="nav-item">
     <a class="nav-link" href="#received_data">Ontvangen data</a>
@@ -48,7 +48,7 @@
 </ul>
 
   <div class="tab-content border mb-3">
-    <div id="contracts" class="container-fluid tab-pane active"><br>
+    <div id="stage_contracts" class="container-fluid tab-pane active"><br>
 
         <table class="table table-sm table-hover table-striped table-bordered">
             <thead class="thead-dark ">
@@ -63,7 +63,7 @@
                 <th>Eigenaar email</th>
             </tr>
             </thead>
-            {% for contract in contract_list %}
+            {% for contract in stage_contract_list %}
                 <tr>
                     <td>{{  contract.seq_nr }}</td>
                     <td>{{  contract.contract_nr }}</td>

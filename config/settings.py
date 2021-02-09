@@ -23,10 +23,10 @@ ENVIRONMENT = os.environ.get('ENVIRONMENT', default='prod')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY DATA_WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', default='Not_To_Be_Used_Default_Secret_Key')
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY DATA_WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', default=False)
 
 ALLOWED_HOSTS = ['*',]
@@ -52,7 +52,9 @@ INSTALLED_APPS = [
     # local apps
     'rm.apps.RmConfig',
     'users.apps.UsersConfig',
-    'pages.apps.PagesConfig'
+    'pages.apps.PagesConfig',
+    'bdata.apps.BdataConfig',
+    'stage.apps.StageConfig',
 ]
 
 MIDDLEWARE = [

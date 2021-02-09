@@ -1,6 +1,6 @@
 /*!* static/css/custom.css *!*/
 
-h1{
+h1, h2, h3{
     color: orange;
 }
 
@@ -30,6 +30,11 @@ Change the cursor in a hand when on a clickable row
 }
 
 #system_info{
+    font-family: Arial;
+    font-size: 0.8rem;
+}
+
+#datasettype-select{
     font-family: Arial;
     font-size: 0.8rem;
 }
