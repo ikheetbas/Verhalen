@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.8 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- [RM-110](https://aesset.atlassian.net/browse/RM-XXX) Start Dataset Screen
 
 
 0.2.7 (2021-02-01)
