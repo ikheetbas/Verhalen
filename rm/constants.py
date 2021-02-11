@@ -1,5 +1,8 @@
 from enum import Enum
 
+URL_NAME_CONTRACTEN_UPLOAD = "contracten_upload"
+
+
 #
 # STATUS VALUES
 #
