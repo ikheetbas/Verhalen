@@ -6,14 +6,13 @@ from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
-from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from rm.constants import FileStatus
 from rm.forms import UploadFileForm
-from rm.models import InterfaceCall, DataPerOrgUnit
+from rm.models import InterfaceCall
 from rm.interface_file_util import check_file_and_interface_type
-from rm.view_util import get_datasets_for_user
+from rm.view_util import get_datasets_for_user, get_active_datasets_per_interface_for_users_org_units
 
 logger = logging.getLogger(__name__)
 
@@ -107,9 +106,15 @@ class DataSetListView(ListView):
         context = super().get_context_data(**kwargs)
         logger.debug(f"get_context_data {self.request.GET} ")
         params = self.request.GET
+
         active = params.get('active', 'True')
-        logger.debug(f"active: {active}")
+        dataset_type = params.get('dataset_type_contracten', 'All')
+        my_datasets = params.get('my_datasets', 'False')
+
         context["active"] = active
+        context["dataset"] = dataset_type
+        context["my_datasets"] = my_datasets
+
         return context
 
     def get_queryset(self):
@@ -122,16 +127,59 @@ class DataSetListView(ListView):
             record = {"system": dpou.interface_call.interface_definition.system.name,
                       "dataset_type": dpou.interface_call.interface_definition.data_set_type.name,
                       "interface_type": dpou.interface_call.interface_definition.get_interface_type_display(),
-                      "status": dpou.active,
+                      "status": "Actief" if dpou.active else "Inactief",
                       "username": dpou.interface_call.username,
                       "date_time": dpou.interface_call.date_time_creation,
                       "org_unit": dpou.org_unit.name,
-                      "data_rows_ok": dpou.number_of_data_rows_ok,
-                      "data_rows_warning": dpou.number_of_data_rows_warning
+                      "data_rows_ok": dpou.number_of_data_rows_ok if dpou.number_of_data_rows_ok > 0 else "",
+                      "data_rows_warning": dpou.number_of_data_rows_warning if dpou.number_of_data_rows_warning > 0 else "",
                       }
             datasets.append(record)
         return datasets
 
 
-class RefreshDataSets(View):
-    pass
+class InterfaceListView(ListView):
+    context_object_name = 'interface_list'
+    template_name = 'rm/interface_list.html'
+
+    def get_queryset(self):
+
+        rows = get_active_datasets_per_interface_for_users_org_units(self.request.user)
+
+        return rows
+
+        # row1 = [1, "Upload", "https://baseneelco.nl", "Contracten", "Negometrix", "01-01-2021 12:12", "Pieter@npo.nl", "Pt: IaaS", 45, 1]
+        # row2 = [2, "", "", "", "", "", "", "Pt: Dataservices", 3, 0]
+        # row3 = [3, "", "", "", "", "", "", "Cluster Backend", 15, 3]
+        # row3 = [4, "", "", "", "", "02-02-2021 09:01", "Pieter@npo.nl", "Cluster Xxxxxx", 12, 3]
+        # row4 = [5, "API", "https://baseneelco.nl", "Producten", "Blue Dolphin", "01-02-2021 2:12", "Joop@npo.nl", "Pt: IaaS", 9, 0]
+        # row5 = [6, "", "", "", "", "", "", "Pt: Dataservices", 3, 0]
+        # row6 = [7, "", "", "", "", "", "", "Cluster Backend", 15, 3]
+        # row7 = [8, "", "", "", "", "02-02-2021 09:01", "Sarah@npo.nl", "Cluster Xxxxxx", 12, 3]
+        # row8 = [9, "Upload", "", "Risico's", "Handmatig", "01-02-2021 15:09", "Tineke@npo.nl", "Pt: IaaS", 9, 0]
+        #
+        # rows = [self.create_record_from_row(row1),
+        #         self.create_record_from_row(row2),
+        #         self.create_record_from_row(row3),
+        #         self.create_record_from_row(row4),
+        #         self.create_record_from_row(row5),
+        #         self.create_record_from_row(row6),
+        #         self.create_record_from_row(row7),
+        #         self.create_record_from_row(row8),
+        #         ]
+        #
+        # return rows
+
+    def create_record_from_row(self, input):
+       row = {"nr": input[0],
+              "type": input[1],
+              "url": input[2],
+              "dataset_type": input[3],
+              "system": input[4],
+              "date_time": input[5],
+              "user_email": input[6],
+              "org_unit": input[7],
+              "rows_ok": input[8],
+              "rows_warning": input[9]
+       }
+       return row

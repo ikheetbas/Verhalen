@@ -9,14 +9,14 @@
         <h2>Datasets</h2>
       </div>
       {%  if active == 'True' %}
-          <a href="?active=All" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Actief</a>
+          <a href="?active=All&my_datasets={{ my_datasets }}" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Actief</a>
       {% else %}
-          <a href="?active=True"  class="btn btn-outline-secondary navbar-btn btn-sm">Actief</a>
+          <a href="?active=True&my_datasets={{ my_datasets }}"  class="btn btn-outline-secondary navbar-btn btn-sm">Actief</a>
       {% endif %}
       {%  if my_datasets == 'True' %}
-          <a href="?my_datasets=False" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Mijn Datasets</a>
+          <a href="?active={{ active }}&my_datasets=False" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Mijn Datasets</a>
       {% else %}
-          <a href="?my_datasets=True"  class="btn btn-outline-secondary navbar-btn btn-sm">Mijn Datasets</a>
+          <a href="?active={{ active }}&my_datasets=True"  class="btn btn-outline-secondary navbar-btn btn-sm">Mijn Datasets</a>
       {% endif %}
       <div class="navbar-header">
       <select class="custom-select" id="datasettype-select">
@@ -30,16 +30,15 @@
     <table class="table table-sm table-hover table-striped table-bordered" id="interface_call_table">
     <thead class="thead-dark ">
     <tr>
-        <th>system</th>
-        <th>dataset_type</th>
-        <th>interface_type</th>
-        <th>status</th>
-        <th>gebruiker</th>
-        <th>date</th>
-        <th>time</th>
-        <th>org_unit</th>
-        <th>ok</th>
-        <th>warning</th>
+        <th>System</th>
+        <th>Dataset Type</th>
+        <th>Interface Type</th>
+        <th>Status</th>
+        <th>Gebruiker</th>
+        <th>Datum/tijd</th>
+        <th>Organisatie</th>
+        <th># rows ok</th>
+        <th># rows warning</th>
     </tr>
     </thead>
     {% for dataset in dataset_list %}
@@ -53,8 +52,7 @@
         <td>{{  dataset.interface_type}}</td>
         <td>{{  dataset.status}}</td>
         <td>{{  dataset.username}}</td>
-        <td>{{  dataset.date_time |date:'Y-m-d' }}</td>
-        <td>{{  dataset.date_time |date:'H:i' }}</td>
+        <td>{{  dataset.date_time |date:'Y-m-d H:i' }}</td>
         <td>{{  dataset.org_unit }}</td>
         <td>{{  dataset.data_rows_ok }}</td>
         <td>{{  dataset.data_rows_warning }}</td>

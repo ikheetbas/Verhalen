@@ -8,7 +8,7 @@ from rm.interface_file_util import check_file_and_interface_type
 from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping
 from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
 from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, set_up_user, \
-    set_up_static_data
+    set_up_static_data, _create_user
 from rm.views import process_file
 from users.models import OrganizationalUnit, CustomUser
 
@@ -167,7 +167,7 @@ class NegometrixCountTests(TestCase):
 
     def setUp(self):
         # Create Superuser and Login
-        self.user = _create_superuser()
+        self.user = _create_user()
         self.client.force_login(self.user)
 
         # STATIC TOTAL_DATA_ROWS_RECEIVED
@@ -254,13 +254,33 @@ class FileWithContractTests(TestCase):
 class NegometrixFileUploadTests(TestCase):
 
     def setUp(self):
-        set_up_user_with_interface_call_and_contract(self, superuser=True)
-
-    def test_upload_a_valid_excel_file(self):
-        data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        InterfaceDefinition.objects.get_or_create(data_set_type=data_set_type_contracten,
+        self.system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
+        self.data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        InterfaceDefinition.objects.get_or_create(data_set_type=self.data_set_type_contracten,
                                                   system=self.system_negometrix,
                                                   interface_type=InterfaceDefinition.UPLOAD)
+
+        # ORG UNITS
+        self.org_unit_pt_iaas = OrganizationalUnit.objects.get_or_create(name="PT: IaaS",
+                                                                         type=OrganizationalUnit.TEAM)[0]
+        self.org_unit_data_services = OrganizationalUnit.objects.get_or_create(name="PT: Data Services",
+                                                                               type=OrganizationalUnit.TEAM)[0]
+        # MAPPINGS FOR NEGOMETRIX
+        Mapping.objects.get_or_create(name="NPO/Technology/IAAS",
+                                      org_unit=self.org_unit_pt_iaas,
+                                      system=self.system_negometrix)
+        Mapping.objects.get_or_create(name="NPO/Technology/Data Services",
+                                      org_unit=self.org_unit_data_services,
+                                      system=self.system_negometrix)
+
+
+    def test_upload_a_valid_excel_file_for_user_of_pt_iaas_with_2_rows_one_of_other_dept(self):
+
+        # Create user with organization
+        set_up_user(self, superuser=False)
+        self.user.org_units.add(self.org_unit_pt_iaas)
+
+        # PRE geen Interface Calls
         nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
@@ -272,15 +292,15 @@ class NegometrixFileUploadTests(TestCase):
         self.assertEqual(interface_call.filename, "rm/test/resources/a_valid_excel_file.xlsx")
         self.assertEqual(interface_call.status, FileStatus.OK.name, msg=interface_call.message)
         self.assertEqual(interface_call.message, "")
+        self.assertEqual(interface_call.rawdata_set.all().count(), 3)
+        self.assertEqual(len(interface_call.stage_contracts()), 1)
 
-    def test_upload_a_valid_excel_file(self):
-        system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
-        data_set_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN,
-                                                                              system=system_negometrix)
-        InterfaceDefinition.objects.get_or_create(data_set_type=data_set_type_contracten,
-                                                  system=system_negometrix,
-                                                  interface_type=InterfaceDefinition.UPLOAD)
+    def test_upload_a_valid_excel_file_for_superuser(self):
+        # ADD SUPER USER TO PT_IAAS
+        set_up_user(self, superuser=True)
+        self.user.org_units.add(self.org_unit_pt_iaas)
 
+        # PRE geen Interface Calls
         nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
@@ -292,6 +312,9 @@ class NegometrixFileUploadTests(TestCase):
         self.assertEqual(interface_call.filename, "rm/test/resources/a_valid_excel_file.xlsx")
         self.assertEqual(interface_call.status, FileStatus.OK.name, msg=interface_call.message)
         self.assertEqual(interface_call.message, "")
+        self.assertEqual(interface_call.rawdata_set.all().count(), 3)
+        self.assertEqual(len(interface_call.stage_contracts()), 2)
+
 
 
 class HandleNegometrixFileRowTests(TestCase):

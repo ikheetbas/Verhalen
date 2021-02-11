@@ -1,5 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
+
+from rm.models import InterfaceCall
+from users.models import CustomUser
 
 
 class CustomUserTests(TestCase):
@@ -31,4 +36,25 @@ class CustomUserTests(TestCase):
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
 
+class CustomUserGetUrlNameForRmFunctionIfHasPermission(TestCase):
 
+    def setUp(self):
+        self.user: CustomUser = get_user_model().objects.create(
+                                               username="TestUser",
+                                               is_superuser=False,
+                                               is_active=True)
+        content_type_interfaceCall = ContentType.objects.get_for_model(InterfaceCall)
+        self.perm, created = Permission.objects.get_or_create(codename='contracten_upload',
+                                                         defaults=dict(name="Contracten upload",
+                                                                       content_type=content_type_interfaceCall))
+        self.user.save()
+
+    def test_get_url_name_for_rm_function_if_has_permission_none(self):
+
+        self.assertEqual(self.user.get_url_name_for_rm_function_if_has_permission("Contracten upload"), None)
+
+    def test_get_url_name_for_rm_function_if_has_permission(self):
+        self.user.user_permissions.add(self.perm)
+
+        self.assertEqual(self.user.get_url_name_for_rm_function_if_has_permission("Contracten upload"),
+                         "contracten_upload")

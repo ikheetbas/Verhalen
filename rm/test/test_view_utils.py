@@ -1,11 +1,15 @@
+from unittest.mock import patch, Mock
+
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 
-from rm.constants import NEGOMETRIX, CONTRACTEN
+from rm.constants import NEGOMETRIX, CONTRACTEN, URL_NAME_CONTRACTEN_UPLOAD
 from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall
-from rm.view_util import create_addition_dataset_filter, get_datasets_for_user
+from rm.view_util import create_addition_dataset_filter, get_datasets_for_user, \
+    get_active_datasets_per_interface_for_users_org_units, InterfaceListRecord
 from users.models import CustomUser
 from users.models import OrganizationalUnit
 
@@ -42,10 +46,11 @@ class CreateAdditionalDatasetFilterSystem(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create(username="TestUser1")
         self.system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        self.dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
 
     def test_create_addition_dataset_filter_negometrix(self):
-        params = {'system': 'Negometrix'}
-        expected_filter = {'interface_call__interface_definition__system_id': self.system_negometrix.id}
+        params = {'dataset_type_contracten': 'Contracten'}
+        expected_filter = {'interface_call__interface_definition__data_set_type_id=': self.dataset_type_contracten.id}
 
         result_filter = create_addition_dataset_filter(self.user, params)
         self.assertEqual(result_filter, expected_filter)
@@ -71,7 +76,7 @@ class CreateAdditionalDatasetFilterResponsibility(TestCase):
         self.system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
 
     def test_create_addition_dataset_filter_responsibility_user(self):
-        params = {'responsibility': 'user'}
+        params = {'my_datasets': 'True'}
         user_responsible_interface_names = ['Contracten upload', ]
         expected_filter = {'interface_call__interface_definition__name__in': user_responsible_interface_names}
 
@@ -79,7 +84,7 @@ class CreateAdditionalDatasetFilterResponsibility(TestCase):
         self.assertEqual(result_filter, expected_filter)
 
     def test_create_addition_dataset_filter_responsibility_no_permissions(self):
-        params = {'responsibility': 'user'}
+        params = {'my_datasets': 'True'}
         user_responsible_interface_names = []
         expected_filter = {'interface_call__interface_definition__name__in': user_responsible_interface_names}
 
@@ -155,8 +160,8 @@ class ViewUtilTests(TestCase):
 
         # POST: now 2:
         self.assertEqual(len(datasets), 2)
-        self.assertEqual(datasets[0].id, self.dpou_1.id)     # Failed a couple of times when I ran all tests
-        self.assertEqual(datasets[1].id, self.dpou_3.id)     # But suddenly went ok again.
+        self.assertEqual(datasets[0].id, self.dpou_1.id)  # Failed a couple of times when I ran all tests
+        self.assertEqual(datasets[1].id, self.dpou_3.id)  # But suddenly went ok again.
 
         # PRE-ACTION: add another dpou, for the team (under cluster1, so visible)
         self.dpou_4 = DataPerOrgUnit.objects.create(org_unit=self.org_unit_t1,
@@ -268,7 +273,7 @@ class ViewUtilTests(TestCase):
 
         # Retrieve the datasets for which the user is responsible:
         # - only the Contracten upload, considering the users permissions
-        datasets = get_datasets_for_user(self.user, {'responsibility': 'user'})
+        datasets = get_datasets_for_user(self.user, {'my_datasets': 'True'})
         self.assertEqual(len(datasets), 1)
         self.assertEqual(datasets[0].id, self.dpou_contracten_upload.id)
 
@@ -283,7 +288,7 @@ class ViewUtilTests(TestCase):
         self.user = get_object_or_404(CustomUser, pk=self.user.id)
 
         # now the user should see 2 datasets, one for the Contracten Upload, and 1 for the Contracten API
-        datasets = get_datasets_for_user(self.user, {'responsibility': 'user'})
+        datasets = get_datasets_for_user(self.user, {'my_datasets': 'True'})
         self.assertEqual(len(datasets), 2)
         self.assertEqual(datasets[0].id, self.dpou_contracten_upload.id)
         self.assertEqual(datasets[1].id, self.dpou_contracten_api.id)
@@ -292,11 +297,571 @@ class ViewUtilTests(TestCase):
         self.dpou_contracten_upload.active = False
         self.dpou_contracten_upload.save()
 
-        datasets = get_datasets_for_user(self.user, {'responsibility': 'user', 'active': 'All'})
+        datasets = get_datasets_for_user(self.user, {'my_datasets': 'True', 'active': 'All'})
         self.assertEqual(len(datasets), 2)
         self.assertEqual(datasets[0].id, self.dpou_contracten_upload.id)
         self.assertEqual(datasets[1].id, self.dpou_contracten_api.id)
 
-        datasets = get_datasets_for_user(self.user, {'responsibility': 'user', 'active': 'True'})
+        datasets = get_datasets_for_user(self.user, {'my_datasets': 'True', 'active': 'True'})
         self.assertEqual(len(datasets), 1)
         self.assertEqual(datasets[0].id, self.dpou_contracten_api.id)
+
+
+class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
+
+    def setUp(self):
+        pass
+
+    @patch('rm.view_util.user_utils')
+    def test_empty_no_org_interface_defs(self, mock_user_utils):
+        result = get_active_datasets_per_interface_for_users_org_units(None)
+        self.assertEqual(result, [])
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_no_interface_defs(self, mock_user_utils):
+        org_unit = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit, ]
+        result = get_active_datasets_per_interface_for_users_org_units(None)
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas, ]
+
+        expected_record = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name)
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected_record)
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas, ]
+        expected_record = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl")
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected_record)
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call_one_dpou(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+        dpou = DataPerOrgUnit.objects.create(interface_call=call,
+                                             org_unit=org_unit_iaas,
+                                             number_of_data_rows_ok=10,
+                                             number_of_data_rows_warning=5,
+                                             active=True)
+
+        # return IaaS as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas, ]
+        expected_record = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl",
+            org_unit=org_unit_iaas.name,
+            rows_ok=10,
+            rows_warning=5)
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected_record)
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call_two_dpou_one_valid(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+        dpou = DataPerOrgUnit.objects.create(interface_call=call,
+                                             org_unit=org_unit_iaas,
+                                             number_of_data_rows_ok=10,
+                                             number_of_data_rows_warning=5,
+                                             active=True)
+        # A DPOU for a org unit not in users resp.
+        dpou_xxxx = DataPerOrgUnit.objects.create(interface_call=call,
+                                                  org_unit=org_unit_xxxx,
+                                                  number_of_data_rows_ok=20,
+                                                  number_of_data_rows_warning=25,
+                                                  active=True)
+
+        # return IaaS as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas, ]
+        expected_record = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl",
+            org_unit=org_unit_iaas.name,
+            rows_ok=10,
+            rows_warning=5)
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected_record)
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+        dpou = DataPerOrgUnit.objects.create(interface_call=call,
+                                             org_unit=org_unit_iaas,
+                                             number_of_data_rows_ok=10,
+                                             number_of_data_rows_warning=5,
+                                             active=True)
+
+        # A DPOU for a org unit not in users resp.
+        dpou_xxxx = DataPerOrgUnit.objects.create(interface_call=call,
+                                                  org_unit=org_unit_xxxx,
+                                                  number_of_data_rows_ok=20,
+                                                  number_of_data_rows_warning=25,
+                                                  active=True)
+
+        # return IaaS and XxxX as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas,
+                                                                  org_unit_xxxx]
+        expected_record_0 = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl",
+            org_unit=org_unit_iaas.name,
+            rows_ok=10,
+            rows_warning=5)
+        expected_record_1 = InterfaceListRecord(
+            nr=2,
+            interface_type="",
+            url_upload_page="",
+            dataset_type="",
+            system="",
+            date_time="",
+            user_email="",
+            org_unit=org_unit_xxxx.name,
+            rows_ok=20,
+            rows_warning=25)
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0], expected_record_0)
+        self.assertEqual(result[1], expected_record_1)
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid_one_inactive_call(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+
+        dpou = DataPerOrgUnit.objects.create(interface_call=call,
+                                             org_unit=org_unit_iaas,
+                                             number_of_data_rows_ok=10,
+                                             number_of_data_rows_warning=5,
+                                             active=True)
+
+        # A DPOU for a org unit not in users resp.
+        dpou_xxxx = DataPerOrgUnit.objects.create(interface_call=call,
+                                                  org_unit=org_unit_xxxx,
+                                                  number_of_data_rows_ok=20,
+                                                  number_of_data_rows_warning=25,
+                                                  active=True)
+        # Inactive Call
+        call_2 = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                              user_email="b.de.graaf@npo.nl",
+                                              status=InterfaceCall.INACTIVE)
+
+        # return IaaS and XxxX as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas,
+                                                                  org_unit_xxxx]
+        expected_record_0 = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl",
+            org_unit=org_unit_iaas.name,
+            rows_ok=10,
+            rows_warning=5)
+        expected_record_1 = InterfaceListRecord(
+            nr=2,
+            interface_type="",
+            url_upload_page="",
+            dataset_type="",
+            system="",
+            date_time="",
+            user_email="",
+            org_unit=org_unit_xxxx.name,
+            rows_ok=20,
+            rows_warning=25)
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0], expected_record_0)
+        self.assertEqual(result[1], expected_record_1)
+
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid_one_active_call(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+
+        dpou = DataPerOrgUnit.objects.create(interface_call=call,
+                                             org_unit=org_unit_iaas,
+                                             number_of_data_rows_ok=10,
+                                             number_of_data_rows_warning=5,
+                                             active=True)
+
+        # A DPOU for a org unit not in users resp.
+        dpou_xxxx = DataPerOrgUnit.objects.create(interface_call=call,
+                                                  org_unit=org_unit_xxxx,
+                                                  number_of_data_rows_ok=20,
+                                                  number_of_data_rows_warning=25,
+                                                  active=True)
+        # Inactive Call
+        call_2 = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                              user_email="b2.de.graaf@npo.nl",
+                                              status=InterfaceCall.ACTIVE)
+
+        # return IaaS and XxxX as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas,
+                                                                  org_unit_xxxx]
+        expected_record_0 = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl",
+            org_unit=org_unit_iaas.name,
+            rows_ok=10,
+            rows_warning=5)
+        expected_record_1 = InterfaceListRecord(
+            nr=2,
+            interface_type="",
+            url_upload_page="",
+            dataset_type="",
+            system="",
+            date_time="",
+            user_email="",
+            org_unit=org_unit_xxxx.name,
+            rows_ok=20,
+            rows_warning=25)
+        expected_record_2 = InterfaceListRecord(
+            nr=3,
+            interface_type="",
+            url_upload_page="",
+            dataset_type="",
+            system="",
+            date_time="",
+            user_email="b2.de.graaf@npo.nl",
+            org_unit="",
+            rows_ok="",
+            rows_warning="")
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0], expected_record_0)
+        self.assertEqual(result[1], expected_record_1)
+        self.assertEqual(result[2], expected_record_2)
+
+
+    @patch('rm.view_util.user_utils')
+    def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid_one_active_call_one_def(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+        # PROCESS
+        call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                            user_email="b.de.graaf@npo.nl",
+                                            status=InterfaceCall.ACTIVE)
+
+        dpou = DataPerOrgUnit.objects.create(interface_call=call,
+                                             org_unit=org_unit_iaas,
+                                             number_of_data_rows_ok=10,
+                                             number_of_data_rows_warning=5,
+                                             active=True)
+
+        # A DPOU for a org unit not in users resp.
+        dpou_xxxx = DataPerOrgUnit.objects.create(interface_call=call,
+                                                  org_unit=org_unit_xxxx,
+                                                  number_of_data_rows_ok=20,
+                                                  number_of_data_rows_warning=25,
+                                                  active=True)
+        # Inactive Call
+        call_2 = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
+                                              user_email="b2.de.graaf@npo.nl",
+                                              status=InterfaceCall.ACTIVE)
+
+        # A random system, dataset_type and int_def
+        system_test = System.objects.get_or_create(name="TestSystem")[0]
+        dataset_type_tests = DataSetType.objects.get_or_create(name="Tests")[0]
+        interface_def_test = InterfaceDefinition.objects. \
+            get_or_create(name="Tests upload",
+                          system=system_test,
+                          data_set_type=dataset_type_tests,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+
+        # return IaaS and XxxX as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas,
+                                                                  org_unit_xxxx]
+        expected_record_0 = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="b.de.graaf@npo.nl",
+            org_unit=org_unit_iaas.name,
+            rows_ok=10,
+            rows_warning=5)
+        expected_record_1 = InterfaceListRecord(
+            nr=2,
+            interface_type="",
+            url_upload_page="",
+            dataset_type="",
+            system="",
+            date_time="",
+            user_email="",
+            org_unit=org_unit_xxxx.name,
+            rows_ok=20,
+            rows_warning=25)
+        expected_record_2 = InterfaceListRecord(
+            nr=3,
+            interface_type="",
+            url_upload_page="",
+            dataset_type="",
+            system="",
+            date_time="",
+            user_email="b2.de.graaf@npo.nl",
+            org_unit="",
+            rows_ok="",
+            rows_warning="")
+        expected_record_3 = InterfaceListRecord(
+            nr=4,
+            interface_type=interface_def_test.get_interface_type_display(),
+            url_upload_page=reverse(URL_NAME_CONTRACTEN_UPLOAD),
+            dataset_type=interface_def_test.data_set_type.name,
+            system=interface_def_test.system.name)
+
+        mock_user = Mock()
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = URL_NAME_CONTRACTEN_UPLOAD
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result[0], expected_record_0)
+        self.assertEqual(result[1], expected_record_1)
+        self.assertEqual(result[2], expected_record_2)
+        self.assertEqual(result[3], expected_record_3)
+
+
+    @patch('rm.view_util.user_utils')
+    def test_no_permission(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+
+        # return IaaS and XxxX as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = []
+        expected_record_0 = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page="",
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="",
+            org_unit="",
+            rows_ok="",
+            rows_warning="")
+
+        mock_user = Mock()
+        # mock_user.is_superuser.return_value = False
+        # mock_user.has_perm_with_name.return_value = False
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = None
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected_record_0)
+
+    @patch('rm.view_util.user_utils')
+    def test_no_reverse_defined(self, mock_user_utils):
+        # STATIC
+        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
+        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects. \
+            get_or_create(name="Contracten upload",
+                          system=system_negometrix,
+                          data_set_type=dataset_type_contracten,
+                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
+        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+
+
+        # return IaaS and XxxX as org_unit of the user
+        mock_user_utils.get_all_org_units_of_user.return_value = []
+        expected_record_0 = InterfaceListRecord(
+            nr=1,
+            interface_type=interface_def_nego_contr.get_interface_type_display(),
+            url_upload_page="",
+            dataset_type=interface_def_nego_contr.data_set_type.name,
+            system=interface_def_nego_contr.system.name,
+            date_time="whatever, not checked",
+            user_email="",
+            org_unit="",
+            rows_ok="",
+            rows_warning="")
+
+        mock_user = Mock()
+        # mock_user.is_superuser.return_value = False
+        # mock_user.has_perm_with_name.return_value = False
+        mock_user.get_url_name_for_rm_function_if_has_permission.return_value = "UNKNOWN"
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected_record_0)

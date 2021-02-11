@@ -1,11 +1,12 @@
 import logging
+from typing import Dict, List
 
-from django.contrib.auth.models import Permission
+from django.urls import reverse, NoReverseMatch
 
-from rm.constants import NEGOMETRIX
-from rm.models import DataPerOrgUnit, System
+from rm.constants import CONTRACTEN
+from rm.models import DataPerOrgUnit, DataSetType, InterfaceDefinition, InterfaceCall
+from users import user_utils
 from users.models import CustomUser
-from users.user_utils import get_all_org_units_of_user, get_user_responsible_interface_names
 
 logger = logging.getLogger(__name__)
 
@@ -13,25 +14,35 @@ logger = logging.getLogger(__name__)
 def get_active_filter_value(value):
     if value.lower() == 'true':
         return 'active', 'True'
-    elif value.lower() == 'false':
+    if value.lower() == 'false':
         return 'active', 'False'
-    else:
-        logger.info(f"Received unknown filter options in url for 'action', value: '{value}'")
+    if value.lower() == 'all':
         return None, None
 
+    logger.info(f"Received unknown filter options in url for 'action', value: '{value}'")
+    return None, None
 
-def get_system_filter_value(value):
-    if value.lower() == NEGOMETRIX.lower():
-        system = System.objects.get(name=NEGOMETRIX)
-        return 'interface_call__interface_definition__system_id', system.id
-    else:
-        logger.info(f"Received unknown filter options in url for 'system', value: '{value}'")
+
+def get_dataset_type_filter_value(value):
+    if value.lower() == 'all':
         return None, None
+    if value.lower() == CONTRACTEN.lower():
+        dataset_type = DataSetType.objects.get(name=CONTRACTEN)
+        return 'interface_call__interface_definition__data_set_type_id=', dataset_type.id
+
+    logger.info(f"Received unknown filter options in url for 'system', value: '{value}'")
+    return None, None
 
 
-def get_filter_for_user_responsible_interfaces(user):
-    interface_permission_names = get_user_responsible_interface_names(user)
-    return 'interface_call__interface_definition__name__in', interface_permission_names
+def get_filter_for_user_responsible_interfaces(value, user):
+    if value.lower() == 'false':
+        return None, None
+    if value.lower() == 'true':
+        interface_permission_names = user_utils.get_user_responsible_interface_names(user)
+        return 'interface_call__interface_definition__name__in', interface_permission_names
+
+    logger.info(f"Received unknown filter options in url for 'my_datasets', value: '{value}'")
+    return None, None
 
 
 def create_addition_dataset_filter(user, kwargs) -> dict:
@@ -48,12 +59,11 @@ def create_addition_dataset_filter(user, kwargs) -> dict:
         logger.debug(f"Key: {key}, value: {value}")
         filter_key = None
         if key == 'active':
-            if value == 'true' or value == 'false':
-                filter_key, filter_value = get_active_filter_value(value)
-        elif key == 'system':
-            filter_key, filter_value = get_system_filter_value(value)
-        elif key == 'responsibility' and value == 'user':
-            filter_key, filter_value = get_filter_for_user_responsible_interfaces(user)
+            filter_key, filter_value = get_active_filter_value(value)
+        elif key == 'dataset_type_contracten':
+            filter_key, filter_value = get_dataset_type_filter_value(value)
+        elif key == 'my_datasets':
+            filter_key, filter_value = get_filter_for_user_responsible_interfaces(value, user)
         else:
             logger.info(f"Received unknown filter options in url, key: {key}, value: {value}")
         if filter_key:
@@ -63,18 +73,33 @@ def create_addition_dataset_filter(user, kwargs) -> dict:
 
 # filter(interface_call__interface_definition__name__in=user_interface_permissions)
 
-def set_defaults_for_page(kwargs):
+def set_defaults_for_not_available_params(kwargs) -> Dict[str, str]:
     """
-    When 'active' not present in the parameters, 'active' is set to 'True'
+    When parameters not present in the parms, add them with their default:
+        - active: True
+        - my_datasets: False
+        - dataset_type_contracten: All
     """
     params = {}
     active_present = False
+    my_datasets_present = False
+    dataset_type_present = False
+
     for key, value in kwargs.items():
         params[key] = value
         if key == 'active':
             active_present = True
+        if key == 'my_datasets':
+            my_datasets_present = True
+        if key == 'dataset_type_contracten':
+            dataset_type_present = True
+
     if not active_present:
         params['active'] = 'True'
+    if not my_datasets_present:
+        params['my_datasets'] = 'False'
+    if not dataset_type_present:
+        params['dataset_type_contracten'] = 'All'
     return params
 
 
@@ -84,24 +109,104 @@ def get_datasets_for_user(user: CustomUser, kwargs: dict):
     and organization unit.
     Value example of kwargs: {'active': 'True', 'system': 'Negometrix'}>
     """
-    org_based_authorization_filter = get_all_org_units_of_user(user)
-    params = set_defaults_for_page(kwargs)
+    list_of_all_org_units_of_user = user_utils.get_all_org_units_of_user(user)
+    params = set_defaults_for_not_available_params(kwargs)
     additional_filter = create_addition_dataset_filter(user, params)
 
-    dataset_filter = {}
     queryset = DataPerOrgUnit.objects. \
         select_related('interface_call', 'org_unit'). \
-        filter(org_unit__in=org_based_authorization_filter). \
-        filter(**additional_filter).filter()
-
-    # if kwargs.get('callable') == 'True':
-    #     logger.debug("Callable = True")
-    #     filtered_queryset = []
-    #     for dpou in queryset:
-    #         if user.has_perm_with_name("rm",
-    #                                    dpou.interface_call.interface_definition.name):
-    #             filtered_queryset.append(dpou)
-    #     return filtered_queryset
-    # else:
+        filter(org_unit__in=list_of_all_org_units_of_user). \
+        filter(**additional_filter)
 
     return queryset
+
+
+class InterfaceListRecord:
+
+    def __eq__(self, o: object) -> bool:
+        return self.nr == o.nr \
+        and self.interface_type == o.interface_type \
+        and self.url_upload_page == o.url_upload_page \
+        and self.dataset_type == o.dataset_type \
+        and self.system == o.system \
+        and self.user_email == o.user_email \
+        and self.org_unit == o.org_unit \
+        and self.rows_ok == o.rows_ok \
+        and self.rows_warning ==  o.rows_warning
+
+        # and self.date_time == o.date_time \  -> not checked, makes testing easier
+
+    def __init__(self, nr=None, interface_type="", url_upload_page="", dataset_type="", system="",
+                 date_time="", user_email="", org_unit="", rows_ok="", rows_warning=""):
+        self.nr = nr
+        self.interface_type = interface_type
+        self.url_upload_page = url_upload_page
+        self.dataset_type = dataset_type
+        self.system = system
+        self.date_time = date_time
+        self.user_email = user_email
+        self.org_unit = org_unit
+        self.rows_ok = rows_ok
+        self.rows_warning = rows_warning
+
+
+def get_active_datasets_per_interface_for_users_org_units(user: CustomUser) -> List[InterfaceListRecord]:
+    """
+    Returns overview of interfaces in a way to give the user insight
+    in the relations between system/dataset_type -> Interface Calls and DPOU.
+    To give the overview, the repeating fields are not filled on following rows.
+    To guarantee the right order, a row_nr is added.
+    """
+
+    list_of_all_org_units_of_user = user_utils.get_all_org_units_of_user(user)
+
+    records = []
+    nr = 1
+    for interface in InterfaceDefinition.objects.all():
+
+        interface_type = interface.get_interface_type_display()
+        logger.debug(f"Interface_type: {interface_type}")
+        dataset_type = interface.data_set_type.name
+
+        url_name_upload_page = user.get_url_name_for_rm_function_if_has_permission(interface.name)
+        if url_name_upload_page:
+            try:
+                url_upload_page = reverse(url_name_upload_page)
+            except NoReverseMatch:
+                logger.critical(f"Er is een Interface gedefinieerd waar geen "
+                                f"upload of api pagina bij hoort: {url_name_upload_page}")
+                url_upload_page = ""
+        else:
+            url_upload_page = ""
+
+        record = InterfaceListRecord(nr=nr,
+                                     interface_type=interface_type,
+                                     dataset_type=interface.data_set_type.name,
+                                     url_upload_page=url_upload_page,
+                                     system=interface.system.name)
+
+        if interface.interface_calls.all().filter(status=InterfaceCall.ACTIVE).count() > 0:
+            for call in interface.interface_calls.all().filter(status=InterfaceCall.ACTIVE):
+                record.date_time = call.date_time_creation
+                record.user_email = call.user_email
+                dpous_for_this_user = call.dataperorgunit_set.all().\
+                    filter(org_unit__in=list_of_all_org_units_of_user,
+                           active=True)
+                if dpous_for_this_user.count() > 0:
+                    for dpou in dpous_for_this_user:
+                        if dpou.org_unit in list_of_all_org_units_of_user:
+                            record.org_unit = dpou.org_unit.name
+                            record.rows_ok = dpou.number_of_data_rows_ok
+                            record.rows_warning = dpou.number_of_data_rows_warning
+                            records.append(record)
+                            nr += 1
+                            record = InterfaceListRecord(nr=nr)
+                else:
+                    records.append(record)
+                    nr += 1
+                    record = InterfaceListRecord(nr=nr)
+        else:
+            records.append(record)
+            nr += 1
+            record = InterfaceListRecord(nr=nr)
+    return records

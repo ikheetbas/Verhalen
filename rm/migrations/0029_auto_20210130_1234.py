@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RenameField(
             model_name='interfacedefinition',
-            old_name='dataset_type',
+            old_name='dataset_type_contracten',
             new_name='data_set_type',
         ),
         migrations.RenameField(
