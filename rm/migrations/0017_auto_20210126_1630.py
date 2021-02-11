@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 ('description', models.CharField(max_length=50, verbose_name='Omschrijving')),
                 ('interface_type', models.CharField(choices=[('API', 'API'), ('UPL', 'Upload')], max_length=3)),
                 ('url', models.URLField(blank=True)),
-                ('dataset_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rm.datasettype')),
+                ('dataset_type_contracten', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rm.datasettype')),
             ],
         ),
         migrations.CreateModel(

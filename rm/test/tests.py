@@ -194,7 +194,8 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         permissions = self.user.user_permissions.all()
         self.assertTrue(self.user.has_perm('rm.view_contract'))
         self.assertTrue(self.user.has_perm('rm.upload_contract_file'))
-        self.assertTrue(self.user.has_perm('rm.call_contract_interface'))
+        self.assertTrue(self.user.has_perm('rm.contracten_api'))
+        self.assertTrue(self.user.has_perm('rm.contracten_upload'))
 
     def test_buyer_sees_contracts_of_interfaceCall(self):
         response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
@@ -202,6 +203,11 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract 1')
         self.assertContains(response, 'T. Ester', count=1)
+
+    def test_buyer_sees_upload_button(self):
+        response = self.client.get(f'/interfacecalls')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload file')
 
 
 class OrgUnitTests(TestCase):

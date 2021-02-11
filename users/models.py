@@ -21,7 +21,7 @@ class OrganizationalUnit(models.Model):
 
 def convert_permission_name_to_id(app, permission_name):
     """
-
+    Coverts "app", "Something To Do" to "rm.something_to_do"
     """
     return app + "." + permission_name.lower().replace(" ", "_")
 
@@ -36,6 +36,8 @@ class CustomUser(AbstractUser):
     org_units = models.ManyToManyField(OrganizationalUnit)
 
     def is_authorized_for_org_unit(self, org_unit: OrganizationalUnit) -> bool:
+        if self.is_superuser:
+            return True
         if org_unit in self.org_units.all():
             return True
         i = 0
@@ -49,6 +51,21 @@ class CustomUser(AbstractUser):
         return False
 
     def has_perm_with_name(self, app, permission_name: str):
+        """
+        Checks if a user has permission for "app"."Something To Do" by converting
+        it to a permission codename: "app.something_to_do" and checking that codename.
+        """
         permission = convert_permission_name_to_id(app, permission_name)
         return self.has_perm(permission)
 
+    def get_url_name_for_rm_function_if_has_permission(self, permission_name):
+        """
+        If the user has rm.permission_name, than that permission_name
+        is returned to be used as url_name
+
+        """
+        if self.has_perm_with_name("rm", permission_name)\
+                or self.is_superuser:
+            return permission_name.lower().replace(" ", "_")
+        else:
+            return None

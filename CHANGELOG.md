@@ -1,10 +1,16 @@
 NPO Resource Manager Changelog 
 =============================
 
+0.2.9 (2021-02-11)
+------------------
+
+- [RM-110](https://aesset.atlassian.net/browse/RM-110) Interfaces scherm met actieve uploads en link naar upload/api scherm
+
+
 0.2.8 (2021-02-09)
 ------------------
 
-- [RM-110](https://aesset.atlassian.net/browse/RM-XXX) Start Dataset Screen
+- [RM-110](https://aesset.atlassian.net/browse/RM-110) Start Dataset Screen
 
 
 0.2.7 (2021-02-01)
