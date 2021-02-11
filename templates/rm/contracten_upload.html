@@ -1,0 +1,188 @@
+{% extends '_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}NPO-RM - Contracten upload{% endblock title %}
+{% block content %}
+
+<h1 class="mt-4">Contracten Upload</h1>
+<br>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-3 ">
+            <form action="{% url 'contracten_upload' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <input class="btn btn-outline-secondary btn-sm" type="submit" value="Submit">
+            </form>
+            <br>
+        </div>
+        <div class="col-lg-2 ">
+
+        </div>
+        <div class="col-lg-3">
+
+            <table  style="width: auto;"
+                    class="table table-sm table-hover table-striped table-bordered">
+                <thead class="thead-dark ">
+                    <tr>
+                        <th class="col-sm-3" colspan="2">Upload gegevens</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td>Datum/tijd</td>
+                    <td>{{  interface_call.date_time_creation |date:'Y-m-d H:i' }}</td>
+                </tr>
+                <tr>
+                    <td>System:</td>
+                    <td>{{  interface_call.interface_definition.system.name }}</td>
+                </tr>
+                <tr>
+                    <td>Type:</td>
+                    <td>{{  interface_call.interface_definition.get_interface_type_display }}</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td class="{{ interface_call.status.lower }}-messages">{{  interface_call.status }}</td>
+                </tr>
+                <tr>
+                    <td>Message:</td>
+                    <td>{{  interface_call.message }}</td>
+                </tr>
+
+            </table>
+
+        </div>
+
+        <div class="col-lg-3">
+
+            <table  style="width: auto;"
+                    class="table table-sm table-hover table-striped table-bordered">
+                <thead class="thead-dark ">
+                    <tr>
+                        <th class="col-sm-3" colspan="4">Rij statistieken</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td>Ontvangen</td>
+                    <td>{{  interface_call.number_of_rows_received }}</td>
+                    <td>Data ok</td>
+                    <td>{{  interface_call.number_of_data_rows_ok }}</td>
+                </tr>
+                <tr>
+                    <td>Header</td>
+                    <td>{{  interface_call.number_of_header_rows }}</td>
+                    <td>Waarschuwing</td>
+                    <td>{{  interface_call.number_of_data_rows_warning }}</td>
+                </tr>
+                <tr>
+                    <td>Leeg</td>
+                    <td>{{  interface_call.number_of_empty_rows}}</td>
+                    <td>Fout</td>
+                    <td>{{  interface_call.number_of_data_rows_error }}</td>
+                </tr>
+                <tr>
+                    <td>Data</td>
+                    <td>{{  interface_call.number_of_data_rows_received }}</td>
+                    <td>Genegeerd</td>
+                    <td>{{  interface_call.number_of_data_rows_ignored }}</td>
+                </tr>
+            </table>
+
+        </div>
+
+    </div>
+</div>
+
+<br>
+
+ <ul class="nav nav-tabs">
+  {% for org_unit in stage_contract_dict.keys %}
+      <li class="nav-item">
+        <a class="nav-link active" href="#stage_contracts_{{ org_unit|cut:" "|cut:":" }}">
+            Contracten <strong>{{ org_unit }}</strong></a>
+      </li>
+  {% endfor %}
+  <li class="nav-item">
+    <a class="nav-link" href="#received_data">Ontvangen data</a>
+  </li>
+</ul>
+
+  <div class="tab-content border mb-3">
+
+  {% for org_unit, stage_contract_list in stage_contract_dict.items %}
+
+    <div id="stage_contracts_{{ org_unit|cut:" "|cut:":" }}" class="container-fluid tab-pane active"><br>
+
+        <table class="table table-sm table-hover table-striped table-bordered">
+            <thead class="thead-dark ">
+            <tr>
+                <th>Seq.nr.</th>
+                <th>Contract nr</th>
+                <th>Status</th>
+                <th>Contract naam</th>
+                <th>Omschrijving</th>
+                <th>Categorie</th>
+                <th>Eigenaar</th>
+                <th>Eigenaar email</th>
+            </tr>
+            </thead>
+            {% for contract in stage_contract_list %}
+                <tr>
+                    <td>{{  contract.seq_nr }}</td>
+                    <td>{{  contract.contract_nr }}</td>
+                    <td>{{  contract.contract_status }}</td>
+                    <td>{{  contract.contract_name }}</td>
+                    <td>{{  contract.description }}</td>
+                    <td>{{  contract.category }}</td>
+                    <td>{{  contract.contract_owner }}</td>
+                    <td>{{  contract.contract_owner_email }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+  {% endfor %}
+
+    <div id="received_data" class="container-fluid tab-pane fade"><br>
+
+        <table class="table table-sm table-hover table-striped table-bordered">
+            <thead class="thead-dark ">
+            <tr>
+                <th>Seq.nr.</th>
+                <th>Status</th>
+                <th>Melding</th>
+                <th>Veld 1</th>
+                <th>Veld 2</th>
+                <th>Veld 3</th>
+                <th>Veld 4</th>
+                <th>Veld 5</th>
+                <th>Veld 6</th>
+                <th>Veld 7</th>
+                <th>Veld 8</th>
+                <th>Veld 9</th>
+                <th>Veld 10</th>
+            </tr>
+            </thead>
+            {% for received_row in received_data %}
+                <tr>
+                    <td>{{  received_row.seq_nr }}</td>
+                    <td>{{  received_row.status }}</td>
+                    <td>{{  received_row.message }}</td>
+                    <td>{{  received_row.field_01 }}</td>
+                    <td>{{  received_row.field_02 }}</td>
+                    <td>{{  received_row.field_03 }}</td>
+                    <td>{{  received_row.field_04 }}</td>
+                    <td>{{  received_row.field_05 }}</td>
+                    <td>{{  received_row.field_06 }}</td>
+                    <td>{{  received_row.field_07 }}</td>
+                    <td>{{  received_row.field_08 }}</td>
+                    <td>{{  received_row.field_09 }}</td>
+                    <td>{{  received_row.field_10 }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+  </div>
+
+{% endblock content %}}

@@ -277,11 +277,11 @@ class ExcelInterfaceFile(ABC):
     """
     interfaceCall: InterfaceCall = None
 
-    row_statistics = RowStatistics()
 
     def __init__(self,
                  file):
         self.file = file
+        self.row_statistics = RowStatistics()
 
     def process(self, interfaceCall: InterfaceCall):
         self.interfaceCall = interfaceCall

@@ -1,12 +1,12 @@
 import logging
 
 from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
-from django.views.generic import ListView, TemplateView
+from django.views.generic import ListView, TemplateView, DetailView
 
 from rm.constants import FileStatus
 from rm.forms import UploadFileForm
@@ -21,37 +21,6 @@ class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
 
 
-def process_file(file, user):
-    """
-    Process the file, register it with the user, find out the type
-
-    """
-    # First things first, create the InterfaceCall, with the user
-    interface_call = InterfaceCall(filename=file.name,
-                                   status=FileStatus.NEW,
-                                   date_time_creation=Now(),
-                                   user=user,
-                                   username=user.username,
-                                   user_email=user.email)
-    try:
-        # check the file and try to find out what type it is
-        interface_file = check_file_and_interface_type(file)
-
-        # register InterfaceDefinition
-        interface_call.interface_definition = interface_file.get_interface_definition()
-        interface_call.save()
-
-        # process the file!
-        interface_file.process(interface_call)
-
-    except Exception as ex:
-
-        interface_call.status = FileStatus.ERROR.name
-        interface_call.message = ex.__str__()
-        interface_call.save()
-        return "ERROR", ex.__str__()
-
-    return "OK", "File has been processed"
 
 
 @permission_required('rm.upload_contract_file', raise_exception=True)
@@ -80,20 +49,25 @@ class InterfaceCallListView(ListView):
     # ordering = ['-date_time_creation'] is done through DataTables in JavaScript (see custom.css)
 
 
-@permission_required('rm.view_contract', raise_exception=True)
-def interface_call_details(request, pk: int):
+def create_contracten_interface_context(pk):
     logger.debug(f"interface_call_details: pk: {pk}")
     interface_call = InterfaceCall.objects.get(pk=pk)
     logger.debug("interface_call: " + interface_call.__str__())
 
-    stage_contracts = interface_call.stage_contracts()
+    stage_contracts_dict = interface_call.stage_contracts_per_org()
 
     raw_data = interface_call.rawdata_set.all()
     context = {
         'interface_call': interface_call,
-        'stage_contract_list': stage_contracts,
+        'stage_contract_dict': stage_contracts_dict,
         'received_data': raw_data,
     }
+    return context
+
+
+@permission_required('rm.view_contract', raise_exception=True)
+def interface_call_details(request, pk: int):
+    context = create_contracten_interface_context(pk)
     template = loader.get_template('rm/interface_call_details.html')
     return HttpResponse(template.render(context, request))
 
@@ -143,43 +117,81 @@ class InterfaceListView(ListView):
     template_name = 'rm/interface_list.html'
 
     def get_queryset(self):
-
         rows = get_active_datasets_per_interface_for_users_org_units(self.request.user)
-
         return rows
 
-        # row1 = [1, "Upload", "https://baseneelco.nl", "Contracten", "Negometrix", "01-01-2021 12:12", "Pieter@npo.nl", "Pt: IaaS", 45, 1]
-        # row2 = [2, "", "", "", "", "", "", "Pt: Dataservices", 3, 0]
-        # row3 = [3, "", "", "", "", "", "", "Cluster Backend", 15, 3]
-        # row3 = [4, "", "", "", "", "02-02-2021 09:01", "Pieter@npo.nl", "Cluster Xxxxxx", 12, 3]
-        # row4 = [5, "API", "https://baseneelco.nl", "Producten", "Blue Dolphin", "01-02-2021 2:12", "Joop@npo.nl", "Pt: IaaS", 9, 0]
-        # row5 = [6, "", "", "", "", "", "", "Pt: Dataservices", 3, 0]
-        # row6 = [7, "", "", "", "", "", "", "Cluster Backend", 15, 3]
-        # row7 = [8, "", "", "", "", "02-02-2021 09:01", "Sarah@npo.nl", "Cluster Xxxxxx", 12, 3]
-        # row8 = [9, "Upload", "", "Risico's", "Handmatig", "01-02-2021 15:09", "Tineke@npo.nl", "Pt: IaaS", 9, 0]
-        #
-        # rows = [self.create_record_from_row(row1),
-        #         self.create_record_from_row(row2),
-        #         self.create_record_from_row(row3),
-        #         self.create_record_from_row(row4),
-        #         self.create_record_from_row(row5),
-        #         self.create_record_from_row(row6),
-        #         self.create_record_from_row(row7),
-        #         self.create_record_from_row(row8),
-        #         ]
-        #
-        # return rows
 
-    def create_record_from_row(self, input):
-       row = {"nr": input[0],
-              "type": input[1],
-              "url": input[2],
-              "dataset_type": input[3],
-              "system": input[4],
-              "date_time": input[5],
-              "user_email": input[6],
-              "org_unit": input[7],
-              "rows_ok": input[8],
-              "rows_warning": input[9]
-       }
-       return row
+def handle_uploaded_file(param):
+    pass
+
+@permission_required("rm.contracten_upload", raise_exception=True)
+def contracten_upload(request, pk):
+    if request.method == 'POST':
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES['file']
+
+            call_id, status, msg = process_file(file, request.user)
+
+            return HttpResponseRedirect(f'/interfacecalls/{call_id}')
+    else:
+        form = UploadFileForm()
+
+    return render(request, 'rm/contracten_upload.html', {'form': form})
+
+
+class ContractenUploadView(PermissionRequiredMixin, TemplateView):
+    model = InterfaceCall
+    permission_required = "rm.contracten_upload"
+    context_object_name = 'interface_list'
+    template_name = 'rm/contracten_upload.html'
+    form_class = UploadFileForm
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES['file']
+
+            call_id, status, msg = process_file(file, request.user)
+
+            return HttpResponseRedirect(f'/contracten_upload/{call_id}')
+
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        form = self.form_class()
+        context = {'form': form}
+        if pk:
+            context = {**context, **create_contracten_interface_context(pk)}
+        return render(request, self.template_name, context)
+
+def process_file(file, user):
+    """
+    Process the file, register it with the user, find out the type
+
+    """
+    # First things first, create the InterfaceCall, with the user
+    interface_call = InterfaceCall(filename=file.name,
+                                   status=FileStatus.NEW,
+                                   date_time_creation=Now(),
+                                   user=user,
+                                   username=user.username,
+                                   user_email=user.email)
+    try:
+        # check the file and try to find out what type it is
+        interface_file = check_file_and_interface_type(file)
+
+        # register InterfaceDefinition (System & DataSetType)
+        interface_call.interface_definition = interface_file.get_interface_definition()
+        interface_call.save()
+
+        # process the file!
+        interface_file.process(interface_call)
+
+    except Exception as ex:
+
+        interface_call.status = FileStatus.ERROR.name
+        interface_call.message = ex.__str__()
+        interface_call.save()
+        return interface_call.id, "ERROR", ex.__str__()
+
+    return interface_call.id, "OK", "File has been processed"

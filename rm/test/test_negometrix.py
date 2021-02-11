@@ -284,7 +284,7 @@ class NegometrixFileUploadTests(TestCase):
         nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
-        status, msg = process_file(file, self.user)
+        id, status, msg = process_file(file, self.user)
         nr_int_calls_after = InterfaceCall.objects.all().count()
         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
 
@@ -304,7 +304,7 @@ class NegometrixFileUploadTests(TestCase):
         nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
-        status, msg = process_file(file, self.user)
+        id, status, msg = process_file(file, self.user)
         nr_int_calls_after = InterfaceCall.objects.all().count()
         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
 

@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction, IntegrityError
@@ -149,6 +150,14 @@ class InterfaceCall(models.Model):
             contracts_per_org_unit = data_per_org_unit.stagecontract_set.all()
             contracts = contracts.union(contracts_per_org_unit)
         return contracts
+
+    def stage_contracts_per_org(self) -> Dict[str, StageContract]:
+        contracts = {}
+        for data_per_org_unit in self.dataperorgunit_set.all():
+            contracts_per_org_unit = data_per_org_unit.stagecontract_set.all()
+            contracts[data_per_org_unit.org_unit.name] = contracts_per_org_unit
+        return contracts
+
 
     def contracts(self):
         contracts = Contract.objects.none()

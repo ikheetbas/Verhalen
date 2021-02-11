@@ -1,16 +1,12 @@
-from django.db.models.functions import Now
 from django.test import TestCase
-from django.urls import reverse
 
 from rm.interface_file import get_org_unit
 from rm.models import Mapping, System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
 from stage.models import StageContract
 
-from django.db.utils import IntegrityError
-
 from users.models import CustomUser, OrganizationalUnit
 from .test_util import set_up_user_with_interface_call_and_contract
-from ..constants import CONTRACTEN, NEGOMETRIX
+from ..constants import CONTRACTEN
 
 
 class DataModelTest(TestCase):
@@ -64,150 +60,6 @@ class DataPerOrgUnitTest(TestCase):
                                                             active=True)
 
         self.assertTrue(data_per_org_unit_y.active)
-
-
-class WebPagesTest(TestCase):
-
-    def setUp(self):
-        set_up_user_with_interface_call_and_contract(self)
-
-    def test_homepage(self):
-        c = self.client
-        response = c.get("/")
-        self.assertEqual(response.status_code, 200)
-
-    def test_one_interface_call_on_page(self):
-        response = self.client.get('/interfacecalls')
-        self.assertContains(response, 'TestStatus')
-
-    def test_one_contract_on_interface_call_page(self):
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
-        self.assertContains(response, 'NL-123')
-        self.assertContains(response, 'Test Contract')
-        self.assertContains(response, 'T. Ester')
-
-    def test_two_contract_on_interface_call_page(self):
-        StageContract.objects.create(contract_nr='NL-345',
-                                     seq_nr=1,
-                                     description='Test Contract 2',
-                                     contract_owner='T. Ester',
-                                     data_per_org_unit=self.data_per_org_unit)
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
-        self.assertContains(response, 'NL-123')
-        self.assertContains(response, 'Test Contract')
-        self.assertContains(response, 'T. Ester', count=2)
-
-        self.assertContains(response, 'NL-345')
-        self.assertContains(response, 'Test Contract 2')
-
-    def test_create_contract_without_parent(self):
-        try:
-            StageContract.objects.create(seq_nr=0, contract_nr="NL-123", data_per_org_unit=self.data_per_org_unit)
-        except IntegrityError as exception:
-            expected = "null value in column \"interface_call_id\" " \
-                       "violates not-null constraint"
-            self.assertTrue(expected in exception.__str__())
-
-
-class LoginRequiredTests(TestCase):
-    """
-    All pages require login, except the login page
-    """
-
-    def test_login_required_home_page(self):
-        response = self.client.get(reverse("home"))
-        self.assertRedirects(response, reverse('account_login') + "?next=/")
-
-    def test_login_required_upload_page(self):
-        response = self.client.get(reverse("upload"))
-        self.assertRedirects(response, reverse('account_login') + "?next=/upload/")
-
-    def test_inloggen_text(self):
-        response = self.client.get(reverse("account_login"))
-        self.assertContains(response, 'Inloggen')
-
-
-class RoleBasedAuthorizationSuperuserTests(TestCase):
-
-    def setUp(self):
-        set_up_user_with_interface_call_and_contract(self, superuser=True)
-
-    def test_superuser_sees_upload_button(self):
-        response = self.client.get(reverse("interface_call_list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload file')
-
-    def test_superuser_can_access_upload_form(self):
-        response = self.client.get(reverse("upload"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_superuser_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'NL-123')
-        self.assertContains(response, 'Test Contract')
-        self.assertContains(response, 'T. Ester', count=1)
-
-
-class RoleBasedAuthorizationClusterLeadTests(TestCase):
-
-    def setUp(self):
-        set_up_user_with_interface_call_and_contract(self, superuser=False, group_name="Cluster Lead")
-        # print_permissions_and_groups()
-
-    def test_cluster_lead_sees_no_upload_button(self):
-        response = self.client.get(reverse("interface_call_list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Upload file</a>')
-
-    def test_cluster_lead_can_not_access_upload_form(self):
-        response = self.client.get(reverse("upload"))
-        self.assertEqual(response.status_code, 403)
-
-    def test_cluster_lead_has_view_contract_permissions(self):
-        permissions = self.user.user_permissions.all()
-        self.assertTrue(self.user.has_perm('rm.view_contract'))
-
-    def test_cluster_lead_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'NL-123')
-        self.assertContains(response, 'Test Contract')
-        self.assertContains(response, 'T. Ester', count=1)
-
-
-class RoleBasedAuthorizationBuyerTests(TestCase):
-
-    def setUp(self):
-        set_up_user_with_interface_call_and_contract(self, superuser=False, group_name="Buyer")
-
-    def test_buyer_sees_upload_button(self):
-        response = self.client.get(reverse("interface_call_list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload file')
-
-    def test_buyer_can_access_upload_form(self):
-        response = self.client.get(reverse("upload"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_buyer_has_the_right_permissions(self):
-        permissions = self.user.user_permissions.all()
-        self.assertTrue(self.user.has_perm('rm.view_contract'))
-        self.assertTrue(self.user.has_perm('rm.upload_contract_file'))
-        self.assertTrue(self.user.has_perm('rm.contracten_api'))
-        self.assertTrue(self.user.has_perm('rm.contracten_upload'))
-
-    def test_buyer_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'NL-123')
-        self.assertContains(response, 'Test Contract 1')
-        self.assertContains(response, 'T. Ester', count=1)
-
-    def test_buyer_sees_upload_button(self):
-        response = self.client.get(f'/interfacecalls')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload file')
 
 
 class OrgUnitTests(TestCase):
