@@ -1,0 +1,166 @@
+{% extends '_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}NPO-RM - Contracten Dataset Details{% endblock title %}
+{% block content %}
+
+<h1 class="mt-4">Contracten Dataset Details</h1>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-light">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Datasets</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Contracten Dataset Details</li>
+  </ol>
+</nav>
+
+    <div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-3 ">
+            {% if perms.rm.contracten_upload %}
+                {% if dpou.active %}
+                    <form action="{% url 'contracten_dataset_details' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="dpou_id" value="{{ dpou.id }}" />
+                        <input type="submit" class="btn btn-danger" name="deactivate" value="De-activeer dataset" />
+                    </form>
+                {% else %}
+                    <form action="{% url 'contracten_dataset_details' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="dpou_id" value="{{ dpou.id }}" />
+                        <input type="submit" class="btn btn-success" name="activate" value="Activeer dataset" />
+                    </form>
+                {% endif %}
+            {% endif %}
+            <br>
+        </div>
+        <div class="col-lg-2 ">
+
+        </div>
+        <div class="col-lg-3">
+
+            <table  style="width: auto;"
+                    class="table table-sm table-hover table-striped table-bordered">
+                <thead class="thead-dark ">
+                    <tr>
+                        <th class="col-sm-3" colspan="2">Dataset gegevens</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td class="col-sm-2">Datum/tijd</td>
+                    <td class="col-sm-6">{{  dpou.interface_call.date_time_creation |date:'Y-m-d H:i' }}</td>
+                </tr>
+                <tr>
+                    <td>System:</td>
+                    <td>{{  dpou.interface_call.interface_definition.system.name }}</td>
+                </tr>
+                <tr>
+                    <td>Type:</td>
+                    <td>{{  dpou.interface_call.interface_definition.get_interface_type_display }}</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td>{% if dpou.active %} Actief {% else %} Inactief {% endif %}</td>
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+</div>
+
+<br>
+
+ <ul class="nav nav-tabs">
+      <li class="nav-item">
+            <a class="nav-link active" href="#stage_contracts">
+                Contracten <strong>{{ org_unit|first }}</strong></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#received_data">Ontvangen data</a>
+      </li>
+</ul>
+
+  <div class="tab-content border mb-3">
+
+    {% ifnotequal stage_contract_list|length 0 %}
+        <div id="stage_contracts" class="container-fluid tab-pane active">
+
+          <br>
+            <table class="table table-sm table-hover table-striped table-bordered">
+                <thead class="thead-dark ">
+                <tr>
+                    <th>Rij</th>
+                    <th>Contract nr</th>
+                    <th>Status</th>
+                    <th>Contract naam</th>
+                    <th>Omschrijving</th>
+                    <th>Categorie</th>
+                    <th>Eigenaar</th>
+                    <th>Eigenaar email</th>
+                </tr>
+                </thead>
+                {% for contract in stage_contract_list %}
+                    <tr>
+                        <td>{{  contract.seq_nr }}</td>
+                        <td>{{  contract.contract_nr }}</td>
+                        <td>{{  contract.contract_status }}</td>
+                        <td>{{  contract.contract_name }}</td>
+                        <td>{{  contract.description }}</td>
+                        <td>{{  contract.category }}</td>
+                        <td>{{  contract.contract_owner }}</td>
+                        <td>{{  contract.contract_owner_email }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+        </div>
+    {% endifnotequal %}
+
+    {% ifequal stage_contract_list|length 0 %}
+        <div id="received_data" class="container-fluid tab-pane active"><br>
+    {% else %}
+        <div id="received_data" class="container-fluid tab-pane fade"><br>
+    {% endifequal %}
+        <table class="table table-sm table-hover table-striped table-bordered">
+            <thead class="thead-dark ">
+            <tr>
+                <th>Rij</th>
+                <th>Status</th>
+                <th>Melding</th>
+                <th>Veld 1</th>
+                <th>Veld 2</th>
+                <th>Veld 3</th>
+                <th>Veld 4</th>
+                <th>Veld 5</th>
+                <th>Veld 6</th>
+                <th>Veld 7</th>
+                <th>Veld 8</th>
+                <th>Veld 9</th>
+                <th>Veld 10</th>
+            </tr>
+            </thead>
+            {% for received_row in raw_data %}
+                <tr>
+                    <td>{{  received_row.seq_nr }}</td>
+                    <td>{{  received_row.status }}</td>
+                    <td>{{  received_row.message }}</td>
+                    <td>{{  received_row.field_01 }}</td>
+                    <td>{{  received_row.field_02 }}</td>
+                    <td>{{  received_row.field_03 }}</td>
+                    <td>{{  received_row.field_04 }}</td>
+                    <td>{{  received_row.field_05 }}</td>
+                    <td>{{  received_row.field_06 }}</td>
+                    <td>{{  received_row.field_07 }}</td>
+                    <td>{{  received_row.field_08 }}</td>
+                    <td>{{  received_row.field_09 }}</td>
+                    <td>{{  received_row.field_10 }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+  </div>
+
+{% endblock content %}}

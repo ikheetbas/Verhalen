@@ -22,13 +22,9 @@ class WebPagesTest(TestCase):
         response = self.client.get('/interfaces')
         self.assertContains(response, 'Interfaces')
 
-    def test_one_interface_call_on_page(self):
-        response = self.client.get('/interfacecalls')
-        self.assertContains(response, 'TestStatus')
-
 
     def test_one_contract_on_interface_call_page(self):
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
+        response = self.client.get(f'/contracten_upload_details/{self.interface_call_1.pk}/')
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract')
         self.assertContains(response, 'T. Ester')
@@ -130,8 +126,8 @@ class LoginRequiredTests(TestCase):
         self.assertRedirects(response, reverse('account_login') + "?next=/")
 
     def test_login_required_upload_page(self):
-        response = self.client.get(reverse("upload"))
-        self.assertRedirects(response, reverse('account_login') + "?next=/upload/")
+        response = self.client.get(reverse("contracten_upload"))
+        self.assertRedirects(response, reverse('account_login') + "?next=/contracten_upload/")
 
     def test_inloggen_text(self):
         response = self.client.get(reverse("account_login"))
@@ -144,12 +140,13 @@ class RoleBasedAuthorizationSuperuserTests(TestCase):
         set_up_user_with_interface_call_and_contract(self, superuser=True)
 
     def test_superuser_sees_upload_button(self):
-        response = self.client.get(reverse("interface_call_list"))
+        self.assertTrue(self.user.is_superuser)
+        response = self.client.get(reverse("interface_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload file')
+        self.assertContains(response, 'Upload</a>')
 
     def test_superuser_can_access_upload_form(self):
-        response = self.client.get(reverse("upload"))
+        response = self.client.get(reverse("contracten_upload_details"))
         self.assertEqual(response.status_code, 200)
 
     def test_superuser_sees_contracts_of_interfaceCall(self):
@@ -167,12 +164,12 @@ class RoleBasedAuthorizationClusterLeadTests(TestCase):
         # print_permissions_and_groups()
 
     def test_cluster_lead_sees_no_upload_button(self):
-        response = self.client.get(reverse("interface_call_list"))
+        response = self.client.get(reverse("uploads_list"))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Upload file</a>')
 
     def test_cluster_lead_can_not_access_upload_form(self):
-        response = self.client.get(reverse("upload"))
+        response = self.client.get(reverse("contracten_upload"))
         self.assertEqual(response.status_code, 403)
 
     def test_cluster_lead_has_view_contract_permissions(self):
@@ -193,13 +190,14 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         set_up_user_with_interface_call_and_contract(self, superuser=False, group_name="Buyer")
 
     def test_buyer_sees_upload_button(self):
-        response = self.client.get(reverse("interface_call_list"))
+        response = self.client.get(reverse("interface_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload file')
+        self.assertContains(response, 'Upload</a>')
 
     def test_buyer_can_access_upload_form(self):
-        response = self.client.get(reverse("upload"))
+        response = self.client.get(reverse("contracten_upload"))
         self.assertEqual(response.status_code, 200)
+
 
     def test_buyer_has_the_right_permissions(self):
         permissions = self.user.user_permissions.all()
@@ -209,13 +207,9 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         self.assertTrue(self.user.has_perm('rm.contracten_upload'))
 
     def test_buyer_sees_contracts_of_interfaceCall(self):
-        response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
+        response = self.client.get(f'/contracten_upload_details/{self.interface_call_1.pk}/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'NL-123')
         self.assertContains(response, 'Test Contract 1')
         self.assertContains(response, 'T. Ester', count=1)
-
-    def test_buyer_sees_upload_button(self):
-        response = self.client.get(f'/interfacecalls')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload file')
+        self.assertContains(response, 'Activeer upload')

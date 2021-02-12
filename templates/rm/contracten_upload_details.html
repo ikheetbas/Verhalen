@@ -1,0 +1,219 @@
+{% extends '_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}NPO-RM - Contracten Upload Details{% endblock title %}
+{% block content %}
+
+<h1 class="mt-4">Contracten Upload Details</h1>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-light">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'uploads_list' %}">Uploads</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Contracten Upload Details</li>
+  </ol>
+</nav>
+
+    <div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-3 ">
+            {% if perms.rm.contracten_upload %}
+                {% if interface_call.status == "OK" or interface_call.status == "INACTIVE" %}
+                    <form action="{% url 'contracten_upload_details' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="interface_call_id" value="{{ interface_call.id }}" />
+                        <input type="submit" class="btn btn-success" name="activate" value="Activeer upload" />
+                    </form>
+                {% endif %}
+                {% if interface_call.status == "ACTIVE" %}
+                    <form action="{% url 'contracten_upload_details' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="interface_call_id" value="{{ interface_call.id }}" />
+                        <input type="submit" class="btn btn-danger" name="deactivate" value="Deactiveer upload" />
+                    </form>
+                {% endif %}
+            {% endif %}
+            <br>
+        </div>
+        <div class="col-lg-2 ">
+
+        </div>
+        <div class="col-lg-3">
+
+            <table  style="width: auto;"
+                    class="table table-sm table-hover table-striped table-bordered">
+                <thead class="thead-dark ">
+                    <tr>
+                        <th class="col-sm-3" colspan="2">Upload gegevens</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td class="col-sm-2">Datum/tijd</td>
+                    <td class="col-sm-6">{{  interface_call.date_time_creation |date:'Y-m-d H:i' }}</td>
+                </tr>
+                <tr>
+                    <td>System:</td>
+                    <td>{{  interface_call.interface_definition.system.name }}</td>
+                </tr>
+                <tr>
+                    <td>Type:</td>
+                    <td>{{  interface_call.interface_definition.get_interface_type_display }}</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td class="{{ interface_call.status.lower }}-messages">{{  interface_call.status }}</td>
+                </tr>
+                <tr>
+                    <td>Message:</td>
+                    <td>{{  interface_call.message }}</td>
+                </tr>
+
+            </table>
+
+        </div>
+
+        <div class="col-lg-3">
+
+            <table  style="width: auto;"
+                    class="table table-sm table-hover table-striped table-bordered">
+                <thead class="thead-dark ">
+                    <tr>
+                        <th class="col-sm-3" colspan="4">Rij statistieken</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td class="col-sm-3">Ontvangen</td>
+                    <td class="col-sm-1">{{  interface_call.number_of_rows_received }}</td>
+                    <td class="col-sm-3">Data ok</td>
+                    <td class="col-sm-1">{{  interface_call.number_of_data_rows_ok }}</td>
+                </tr>
+                <tr>
+                    <td>Header</td>
+                    <td>{{  interface_call.number_of_header_rows }}</td>
+                    <td>Waarschuwing</td>
+                    <td>{{  interface_call.number_of_data_rows_warning }}</td>
+                </tr>
+                <tr>
+                    <td>Leeg</td>
+                    <td>{{  interface_call.number_of_empty_rows}}</td>
+                    <td>Fout</td>
+                    <td>{{  interface_call.number_of_data_rows_error }}</td>
+                </tr>
+                <tr>
+                    <td>Data</td>
+                    <td>{{  interface_call.number_of_data_rows_received }}</td>
+                    <td>Genegeerd</td>
+                    <td>{{  interface_call.number_of_data_rows_ignored }}</td>
+                </tr>
+            </table>
+
+        </div>
+
+    </div>
+</div>
+
+<br>
+
+ <ul class="nav nav-tabs">
+  {% for org_unit in stage_contract_dict.keys %}
+      <li class="nav-item">
+        {% if forloop.first %}
+            <a class="nav-link active" href="#stage_contracts_{{ org_unit|last }}">
+                Contracten <strong>{{ org_unit|first }}</strong></a>
+        {%  else %}
+            <a class="nav-link" href="#stage_contracts_{{ org_unit|last }}">
+                Contracten <strong>{{ org_unit|first }}</strong></a>
+       {% endif %}
+      </li>
+  {% endfor %}
+  <li class="nav-item">
+    <a class="nav-link" href="#received_data">Ontvangen data</a>
+  </li>
+</ul>
+
+  <div class="tab-content border mb-3">
+
+  {% for org_unit, stage_contract_list in stage_contract_dict.items %}
+
+    {% if forloop.first %}
+        <div id="stage_contracts_{{ org_unit|last }}" class="container-fluid tab-pane active">
+    {% else %}
+        <div id="stage_contracts_{{ org_unit|last }}" class="container-fluid tab-pane fade">
+    {% endif %}
+      <br>
+        <table class="table table-sm table-hover table-striped table-bordered">
+            <thead class="thead-dark ">
+            <tr>
+                <th>Rij</th>
+                <th>Contract nr</th>
+                <th>Status</th>
+                <th>Contract naam</th>
+                <th>Omschrijving</th>
+                <th>Categorie</th>
+                <th>Eigenaar</th>
+                <th>Eigenaar email</th>
+            </tr>
+            </thead>
+            {% for contract in stage_contract_list %}
+                <tr>
+                    <td>{{  contract.seq_nr }}</td>
+                    <td>{{  contract.contract_nr }}</td>
+                    <td>{{  contract.contract_status }}</td>
+                    <td>{{  contract.contract_name }}</td>
+                    <td>{{  contract.description }}</td>
+                    <td>{{  contract.category }}</td>
+                    <td>{{  contract.contract_owner }}</td>
+                    <td>{{  contract.contract_owner_email }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+  {% endfor %}
+
+    {% ifequal stage_contract_dict|length 0 %}
+        <div id="received_data" class="container-fluid tab-pane active"><br>
+    {% else %}
+        <div id="received_data" class="container-fluid tab-pane fade"><br>
+    {% endifequal %}
+        <table class="table table-sm table-hover table-striped table-bordered">
+            <thead class="thead-dark ">
+            <tr>
+                <th>Rij</th>
+                <th>Status</th>
+                <th>Melding</th>
+                <th>Veld 1</th>
+                <th>Veld 2</th>
+                <th>Veld 3</th>
+                <th>Veld 4</th>
+                <th>Veld 5</th>
+                <th>Veld 6</th>
+                <th>Veld 7</th>
+                <th>Veld 8</th>
+                <th>Veld 9</th>
+                <th>Veld 10</th>
+            </tr>
+            </thead>
+            {% for received_row in received_data %}
+                <tr>
+                    <td>{{  received_row.seq_nr }}</td>
+                    <td>{{  received_row.status }}</td>
+                    <td>{{  received_row.message }}</td>
+                    <td>{{  received_row.field_01 }}</td>
+                    <td>{{  received_row.field_02 }}</td>
+                    <td>{{  received_row.field_03 }}</td>
+                    <td>{{  received_row.field_04 }}</td>
+                    <td>{{  received_row.field_05 }}</td>
+                    <td>{{  received_row.field_06 }}</td>
+                    <td>{{  received_row.field_07 }}</td>
+                    <td>{{  received_row.field_08 }}</td>
+                    <td>{{  received_row.field_09 }}</td>
+                    <td>{{  received_row.field_10 }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+  </div>
+
+{% endblock content %}}

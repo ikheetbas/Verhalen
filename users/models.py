@@ -23,6 +23,8 @@ def convert_permission_name_to_id(app, permission_name):
     """
     Coverts "app", "Something To Do" to "rm.something_to_do"
     """
+    if permission_name == "":
+        raise ValueError("permission name empty")
     return app + "." + permission_name.lower().replace(" ", "_")
 
 
@@ -62,7 +64,6 @@ class CustomUser(AbstractUser):
         """
         If the user has rm.permission_name, than that permission_name
         is returned to be used as url_name
-
         """
         if self.has_perm_with_name("rm", permission_name)\
                 or self.is_superuser:

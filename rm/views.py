@@ -2,17 +2,17 @@ import logging
 
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.db.models.functions import Now
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.template import loader
-from django.views.generic import ListView, TemplateView, DetailView
+from django.urls import reverse
+from django.views.generic import ListView, TemplateView
 
-from rm.constants import FileStatus, NEGOMETRIX
-from rm.forms import UploadFileForm
-from rm.models import InterfaceCall, InterfaceDefinition
-from rm.interface_file_util import check_file_and_interface_type
-from rm.view_util import get_datasets_for_user, get_active_datasets_per_interface_for_users_org_units
+from rm.constants import NEGOMETRIX, CONTRACTEN
+from rm.forms import UploadFileForm, DatasetForm
+from rm.models import InterfaceCall, DataPerOrgUnit
+from rm.view_util import get_datasets_for_user, get_active_datasets_per_interface_for_users_org_units, process_file
+from users.models import CustomUser
 
 logger = logging.getLogger(__name__)
 
@@ -22,29 +22,10 @@ class HomePageView(LoginRequiredMixin, TemplateView):
 
 
 
-
-@permission_required('rm.upload_contract_file', raise_exception=True)
-def upload_file(request):
-    if request.method == 'POST':
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            file = request.FILES['file']
-            status, msg = process_file(file, request.user)
-
-            if status == "ERROR":
-                form.add_error("file", msg)
-                return render(request, 'rm/upload.html', {'form': form})
-            else:
-                return HttpResponseRedirect('/interfacecalls')
-    else:
-        form = UploadFileForm()
-    return render(request, 'rm/upload.html', {'form': form})
-
-
-class InterfaceCallListView(ListView):
+class UploadsListView(ListView):
     model = InterfaceCall
-    context_object_name = 'interface_call_list'
-    template_name = 'rm/interface_call_list.html'
+    context_object_name = 'uploads_list'
+    template_name = 'rm/uploads_list.html'
     # ordering = ['-date_time_creation'] is done through DataTables in JavaScript (see custom.css)
 
 
@@ -82,6 +63,16 @@ def interface_call_details(request, pk: int):
     return HttpResponse(template.render(context, request))
 
 
+def get_dataset_details_url(dataset_type_name: str, user: CustomUser, id) -> str:
+    """
+    Depending the permission and dataset type this returns a string with the url or not.
+    It would be nice to make this more generic, but for the moment it's hard coded.
+    And since the screens differ per dataset_type as well it's not that big issue.
+    """
+    if dataset_type_name.lower() == CONTRACTEN.lower() and user.has_perm("rm.view_contract"):
+        return f"/contracten_dataset_details/{id}"
+    return None
+
 class DataSetListView(ListView):
     context_object_name = 'dataset_list'
     template_name = 'rm/dataset_list.html'
@@ -108,7 +99,14 @@ class DataSetListView(ListView):
 
         datasets = []
         for dpou in queryset:
-            record = {"system": dpou.interface_call.interface_definition.system.name,
+
+            details_url = get_dataset_details_url(dataset_type_name=dpou.interface_call.interface_definition.data_set_type.name,
+                                                  user=self.request.user,
+                                                  id=dpou.id)
+            logger.debug(f"details_url = {details_url}")
+
+            record = {"id": dpou.id,
+                      "system": dpou.interface_call.interface_definition.system.name,
                       "dataset_type": dpou.interface_call.interface_definition.data_set_type.name,
                       "interface_type": dpou.interface_call.interface_definition.get_interface_type_display(),
                       "status": "Actief" if dpou.active else "Inactief",
@@ -117,6 +115,7 @@ class DataSetListView(ListView):
                       "org_unit": dpou.org_unit.name,
                       "data_rows_ok": dpou.number_of_data_rows_ok if dpou.number_of_data_rows_ok > 0 else "",
                       "data_rows_warning": dpou.number_of_data_rows_warning if dpou.number_of_data_rows_warning > 0 else "",
+                      "details_url": details_url
                       }
             datasets.append(record)
         return datasets
@@ -131,23 +130,6 @@ class InterfaceListView(ListView):
         return rows
 
 
-def handle_uploaded_file(param):
-    pass
-
-@permission_required("rm.contracten_upload", raise_exception=True)
-def contracten_upload(request, pk):
-    if request.method == 'POST':
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            file = request.FILES['file']
-
-            call_id, status, msg = process_file(file, request.user)
-
-            return HttpResponseRedirect(f'/interfacecalls/{call_id}')
-    else:
-        form = UploadFileForm()
-
-    return render(request, 'rm/contracten_upload.html', {'form': form})
 
 
 class ContractenUploadView(PermissionRequiredMixin, TemplateView):
@@ -189,38 +171,79 @@ class ContractenUploadView(PermissionRequiredMixin, TemplateView):
             context = {**context, **create_contracten_interface_context(pk)}
         return render(request, self.template_name, context)
 
-def process_file(file, user, expected_system=None):
-    """
-    Process the file, register it with the user, find out the type
 
-    """
-    # First things first, create the InterfaceCall, with the user
-    interface_call = InterfaceCall(filename=file.name,
-                                   status=FileStatus.NEW,
-                                   date_time_creation=Now(),
-                                   user=user,
-                                   username=user.username,
-                                   user_email=user.email)
-    try:
-        # check the file and try to find out what type it is
-        interface_file = check_file_and_interface_type(file)
+class ContractenUploadDetailsView(PermissionRequiredMixin, TemplateView):
+    model = InterfaceCall
+    permission_required = "rm.view_contract"
+    context_object_name = 'interface_list'
+    template_name = 'rm/contracten_upload_details.html'
+    form_class = UploadFileForm
 
-        # register InterfaceDefinition (System & DataSetType)
-        found_interface_definition: InterfaceDefinition = interface_file.get_interface_definition()
-        if not found_interface_definition.system_name == expected_system:
-            raise Exception(f"Er werd een {expected_system} bestand verwacht, "
-                            f"maar dit is een {found_interface_definition.system_name} bestand")
-        interface_call.interface_definition = interface_file.get_interface_definition()
-        interface_call.save()
+    def post(self, request, *args, **kwargs):
+        logger.debug("POST")
+        if request.POST.get("activate"):
+            call_id = request.POST.get("interface_call_id")
+            call = InterfaceCall.objects.get(pk=int(call_id))
+            call.activate_interface_call(start_transaction=True, cascading=True)
+            logger.debug(f"Call: {call_id} activated")
+            return HttpResponseRedirect(f'/contracten_upload_details/{call_id}')
+        if request.POST.get("deactivate"):
+            call_id = request.POST.get("interface_call_id")
+            call = InterfaceCall.objects.get(pk=int(call_id))
+            call.deactivate_interface_call(start_transaction=True)
+            logger.debug(f"Call: {call_id} deactivated")
+            return HttpResponseRedirect(f'/contracten_upload_details/{call_id}')
+        return render(request, reverse("contracten_dataset_details"))
 
-        # process the file!
-        interface_file.process(interface_call)
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        form = self.form_class()
+        context = {'form': form}
+        if pk:
+            context = {**context, **create_contracten_interface_context(pk)}
+        return render(request, self.template_name, context)
 
-    except Exception as ex:
 
-        interface_call.status = FileStatus.ERROR.name
-        interface_call.message = ex.__str__()
-        interface_call.save()
-        return interface_call.id, "ERROR", ex.__str__()
+def create_contracten_dataset_context(pk):
+    dpou = DataPerOrgUnit.objects.get(pk=pk)
+    stage_contracts_list = dpou.stagecontract_set.all().order_by("seq_nr")
+    raw_data = dpou.interface_call.rawdata_set.all().order_by("seq_nr")
+    context = {
+        'dpou': dpou,
+        'stage_contract_list': stage_contracts_list,
+        'raw_data': raw_data,
+    }
+    return context
 
-    return interface_call.id, "OK", "File has been processed"
+
+class ContractenDatasetDetailsView(PermissionRequiredMixin, TemplateView):
+    model = DataPerOrgUnit
+    permission_required = "rm.view_contract"
+    context_object_name = 'dataset'
+    template_name = 'rm/contracten_dataset_details.html'
+    form_class = DatasetForm
+
+    def post(self, request, *args, **kwargs):
+        logger.debug("POST")
+        if request.POST.get("activate"):
+            dpou_id = request.POST.get("dpou_id")
+            dpou = DataPerOrgUnit.objects.get(pk=int(dpou_id))
+            dpou.activate_dataset(start_transaction=True)
+            logger.debug(f"DPOU: {dpou_id} activated")
+            return HttpResponseRedirect(f'/contracten_dataset_details/{dpou_id}')
+        if request.POST.get("deactivate"):
+            dpou_id = request.POST.get("dpou_id")
+            dpou = DataPerOrgUnit.objects.get(pk=int(dpou_id))
+            dpou.deactivate_dataset(start_transaction=True)
+            logger.debug(f"DPOU: {dpou_id} deactivated")
+            return HttpResponseRedirect(f'/contracten_dataset_details/{dpou_id}')
+        return render(request, reverse("contracten_dataset_details"))
+
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        form = self.form_class()
+        context = {'form': form}
+        if pk:
+            context = {**context, **create_contracten_dataset_context(pk)}
+        return render(request, self.template_name, context)
+

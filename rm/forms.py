@@ -6,3 +6,8 @@ class UploadFileForm(forms.Form):
     interface_call = None
     stage_contract_list = None
     received_data = None
+
+class DatasetForm(forms.Form):
+    dpou_id = None
+    stage_contract_list = None
+    received_data = None
