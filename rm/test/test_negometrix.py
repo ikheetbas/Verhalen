@@ -5,7 +5,7 @@ from openpyxl import Workbook, load_workbook
 import rm
 from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus, FileStatus
 from rm.interface_file_util import check_file_and_interface_type
-from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping
+from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping, DataPerOrgUnit
 from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
 from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, set_up_user, \
     set_up_static_data, _create_user
@@ -151,11 +151,15 @@ class NegometrixFileTests(TestCase):
             date_time_creation=Now(),
             status='TestStatus',
             filename='test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx',
-            interface_definition=self.interface_definition)
+            interface_definition=self.interface_definition,
+            user=self.user)
 
         file = "rm/test/resources/test_upload_valid_negometrix_excel_file_2_valid_rows.xlsx"
         excel_interface_file = check_file_and_interface_type(file)
         excel_interface_file.process(interface_call)
+
+        for row in interface_call.rawdata_set.all().order_by("seq_nr"):
+            print(f"Rij: {row.seq_nr} status: {row.status} msg: {row.message}")
 
         response = self.client.get(f'/interfacecall/{interface_call.pk}/')
         self.assertEqual(response.status_code, 200)
@@ -284,7 +288,9 @@ class NegometrixFileUploadTests(TestCase):
         nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
-        status, msg = process_file(file, self.user)
+        id, status, msg = process_file(file=file,
+                                       user=self.user,
+                                       expected_system=NEGOMETRIX)
         nr_int_calls_after = InterfaceCall.objects.all().count()
         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
 
@@ -295,6 +301,11 @@ class NegometrixFileUploadTests(TestCase):
         self.assertEqual(interface_call.rawdata_set.all().count(), 3)
         self.assertEqual(len(interface_call.stage_contracts()), 1)
 
+        self.assertEqual(interface_call.dataperorgunit_set.all().count(), 1)
+        dpou: DataPerOrgUnit = interface_call.dataperorgunit_set.all()[0]
+        self.assertEqual(dpou.number_of_data_rows_ok, 1)
+        self.assertEqual(dpou.number_of_data_rows_warning, 0)
+
     def test_upload_a_valid_excel_file_for_superuser(self):
         # ADD SUPER USER TO PT_IAAS
         set_up_user(self, superuser=True)
@@ -304,7 +315,9 @@ class NegometrixFileUploadTests(TestCase):
         nr_int_calls_before = InterfaceCall.objects.all().count()
         file = open("rm/test/resources/a_valid_excel_file.xlsx", "rb")
 
-        status, msg = process_file(file, self.user)
+        id, status, msg = process_file(file=file,
+                                       user=self.user,
+                                       expected_system=NEGOMETRIX)
         nr_int_calls_after = InterfaceCall.objects.all().count()
         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
 

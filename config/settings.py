@@ -157,7 +157,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 LANGUAGE_CODE = 'nl-nl'
 
-TIME_ZONE = 'UTC'
+USE_TZ = True
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 

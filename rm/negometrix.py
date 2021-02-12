@@ -5,7 +5,7 @@ import rm
 from rm.constants import NEGOMETRIX, MISSING_ONE_OR_MORE_MANDATORY_FIELDS, CONTRACTEN, RowStatus
 from rm.interface_file import ExcelInterfaceFile, row_is_empty, get_fields_with_their_position, \
     mandatory_fields_present, get_org_unit, fill_fields_in_record_from_row_values
-from rm.models import InterfaceCall, System, DataSetType, InterfaceDefinition
+from rm.models import InterfaceCall, System, DataSetType, InterfaceDefinition, DataPerOrgUnit
 from stage.models import StageContract
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,9 @@ def handle_negometrix_file_row(row_nr: int,
 
     # find and set data_per_org_unit
     data_per_org_unit, created = interface_call.dataperorgunit_set.get_or_create(org_unit=org_unit)
+    data_per_org_unit.increase_row_count(1, RowStatus.DATA_OK)
+    data_per_org_unit.save()
+
     contract.data_per_org_unit = data_per_org_unit
 
     contract.save()

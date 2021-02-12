@@ -1,6 +1,12 @@
 NPO Resource Manager Changelog 
 =============================
 
+0.2.10 (2021-02-12)
+-------------------
+
+- [RM-110](https://aesset.atlassian.net/browse/RM-110) Schermen: Interface scherm en Contracten upload
+
+
 0.2.9 (2021-02-11)
 ------------------
 
