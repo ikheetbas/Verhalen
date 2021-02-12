@@ -2,14 +2,16 @@
 
 {% block title %}NPO-RM - Interfaces{% endblock title %}
 {% block content %}
-    <br>
-<nav class="navbar navbar-default">
-  <div class="container-fluid">
-      <div class="navbar-header">
-        <h2>Interfaces</h2>
-      </div>
-  </div>
+
+<h1 class="mt-4">Interfaces</h1>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-light">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Interfaces</li>
+  </ol>
 </nav>
+
     <table class="table table-sm table-hover" id="interface_table">
     <thead class="thead-dark">
     <tr>

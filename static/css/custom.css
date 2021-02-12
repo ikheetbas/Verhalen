@@ -38,3 +38,11 @@ Change the cursor in a hand when on a clickable row
     font-family: Arial;
     font-size: 0.8rem;
 }
+
+.error-messages {
+  color: red;
+  font-weight: bold}
+
+.ok-messages {
+  color: green;
+  font-weight: bold}

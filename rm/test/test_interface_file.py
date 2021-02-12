@@ -254,7 +254,7 @@ class GenericFileUploadTests(TestCase):
     def test_upload_empty_file_with_xls(self):
         nr_int_calls_before = len(InterfaceCall.objects.all())
         file = open("rm/test/resources/EmptyFileWithXLSExtension.xls", "rb")
-        status, msg = process_file(file, self.user)
+        id, status, msg = process_file(file, self.user)
         nr_int_calls_after = len(InterfaceCall.objects.all())
         self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
 
