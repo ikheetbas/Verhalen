@@ -9,7 +9,7 @@ from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, M
 from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
 from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, set_up_user, \
     set_up_static_data, _create_user
-from rm.views import process_file
+from rm.view_util import process_file
 from users.models import OrganizationalUnit, CustomUser
 
 

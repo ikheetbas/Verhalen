@@ -153,13 +153,15 @@ class InterfaceCall(models.Model):
 
     def stage_contracts_per_org(self) -> Dict[str, StageContract]:
         """
-        Delivers a Dict per DataOrgPerUnit with StageContracts
+        Delivers a Dict per DataOrgPerUnit with StageContracts for display on tabs
         """
         contracts = {}
         for data_per_org_unit in self.dataperorgunit_set.all():
             contracts_per_org_unit = data_per_org_unit.stagecontract_set.all().order_by("seq_nr")
-            name_and_id_tuple = (data_per_org_unit.org_unit.name, data_per_org_unit.org_unit.id)
-            contracts[name_and_id_tuple] = contracts_per_org_unit
+            tab_label_and_id_tuple = (data_per_org_unit.org_unit.name +
+                                      " (Actief)" if data_per_org_unit.active else " (Inactief)",
+                                      data_per_org_unit.org_unit.id)
+            contracts[tab_label_and_id_tuple] = contracts_per_org_unit
         return contracts
 
 

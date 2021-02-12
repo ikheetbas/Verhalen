@@ -89,14 +89,15 @@ def set_up_static_data(self):
     self.data_set_type = DataSetType.objects.create(name=CONTRACTEN)
     self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
                                                                    data_set_type=self.data_set_type,
-                                                                   interface_type=InterfaceDefinition.UPLOAD)
+                                                                   interface_type=InterfaceDefinition.UPLOAD,
+                                                                   name="Contracten upload")
     self.org_unit = OrganizationalUnit.objects.create(name="MyTeam",
                                                       type=OrganizationalUnit.TEAM)
     self.user.org_units.add(self.org_unit)
 
 def set_up_process_contract_data(self):
     self.interface_call_1 = InterfaceCall.objects.create(date_time_creation=Now(),
-                                                         status='TestStatus',
+                                                         status='OK',
                                                          filename='Text.xls',
                                                          interface_definition=self.interface_definition,
                                                          user=self.user,

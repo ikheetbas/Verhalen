@@ -1,0 +1,53 @@
+{% extends '_base.html' %}
+
+{% block title %}NPO-RM - Contracts{% endblock title %}
+{% block content %}
+<h1 class="mt-4">Uploads</h1>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-light">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Uploads</li>
+  </ol>
+</nav>
+
+<table class="table table-sm table-hover table-striped table-bordered" id="uploads_table">
+    <thead class="thead-dark ">
+    <tr>
+        <th>Id</th>
+        <th>Gegevens</th>
+        <th>Systeem</th>
+        <th>Type</th>
+        <th class="col-2">Datum/tijd</th>
+        <th class="col-3">Door</th>
+{#        <th>File</th>#}
+        <th class="col-3">Org onderdelen</th>
+        <th>Status</th>
+        <th>Data rijen</th>
+        <th class="col-3">Melding</th>
+    </tr>
+    </thead>
+    {% for upload in uploads_list %}
+    {%  if perms.rm.view_contract %}
+        <tr class='clickable-row' data-url='/contracten_upload_details/{{ upload.pk }}'>
+    {% else %}
+        <tr>
+    {% endif %}
+        <td>{{  upload.pk }}</td>
+        <td>{{  upload.interface_definition.data_set_type.name }}</td>
+        <td>{{  upload.interface_definition.system.name }}</td>
+        <td>{{  upload.interface_definition.get_interface_type_display }}</td>
+        <td>{{  upload.date_time_creation |date:'Y-m-d H:i' }}</td>
+        <td>{{  upload.user_email }}</td>
+{#        <td>{{  upload.filename }}</td>#}
+        <td>
+            {% for dpou in upload.dataperorgunit_set.all %} {{ dpou.org_unit.name }} <br>{% endfor %}
+        </td>
+        <td class="{{ upload.status.lower }}-upload-status">{{  upload.status }}</td>
+        <td class="text-right">{{  upload.number_of_data_rows_ok }}</td>
+        <td>{{  upload.message }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock content %}}
