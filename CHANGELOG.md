@@ -1,7 +1,7 @@
 NPO Resource Manager Changelog 
 =============================
 
-0.2.11 (unreleased)
+0.2.11 (2021-02-12)
 -------------------
 
 - [RM-110](https://aesset.atlassian.net/browse/RM-110) Uploaden, Activeren en Deactiveren geïmplementeerd
