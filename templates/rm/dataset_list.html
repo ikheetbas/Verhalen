@@ -2,22 +2,40 @@
 
 {% block title %}NPO-RM - Datasets{% endblock title %}
 {% block content %}
-    <br>
-<nav class="navbar navbar-default">
-  <div class="container-fluid">
-      <div class="navbar-header">
-        <h2>Datasets</h2>
-      </div>
+
+<h1 class="mt-4">Datasets</h1>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-light">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Datasets</li>
+  </ol>
+</nav>
+
+<nav class="navbar navbar-expand-lg ">
+ <ul class="navbar-nav">
+    <li class="nav-item">
       {%  if active == 'True' %}
-          <a href="?active=All&my_datasets={{ my_datasets }}" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Actief</a>
+          <a href="?active=All&my_datasets={{ my_datasets }}" class="btn btn-outline-secondary navbar-btn btn-sm active"
+             aria-pressed="true">
+              Actief</a>
       {% else %}
-          <a href="?active=True&my_datasets={{ my_datasets }}"  class="btn btn-outline-secondary navbar-btn btn-sm">Actief</a>
+          <a href="?active=True&my_datasets={{ my_datasets }}"  class="btn btn-outline-secondary navbar-btn btn-sm">
+              Actief</a>
       {% endif %}
-      {%  if my_datasets == 'True' %}
-          <a href="?active={{ active }}&my_datasets=False" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true">Mijn Datasets</a>
+    </li>
+    <li class="nav-item">
+        {%  if my_datasets == 'True' %}
+          <a href="?active={{ active }}&my_datasets=False" class="btn btn-outline-secondary navbar-btn btn-sm active" aria-pressed="true"
+             data-toggle="tooltip" title="Toont de datasets waar jij, vanuit je rol en afd/cluster/team indeling verantwoordelijk voor bent.">
+          Mijn Datasets</a>
       {% else %}
-          <a href="?active={{ active }}&my_datasets=True"  class="btn btn-outline-secondary navbar-btn btn-sm">Mijn Datasets</a>
+          <a href="?active={{ active }}&my_datasets=True"  class="btn btn-outline-secondary navbar-btn btn-sm"
+             data-toggle="tooltip" title="Toont de datasets waar jij, vanuit je rol en afd/cluster/team indeling verantwoordelijk voor bent.">
+          Mijn Datasets</a>
       {% endif %}
+        </li>
+    <li class="nav-item">
       <div class="navbar-header">
       <select class="custom-select" id="datasettype-select">
           <option selected>Dataset...</option>
@@ -25,11 +43,17 @@
           <option value="2">Risks</option>
       </select>
       </div>
-  </div>
+    </li>
+ </ul>
 </nav>
-    <table class="table table-sm table-hover table-striped table-bordered" id="interface_call_table">
+
+
+
+
+    <table class="table table-sm table-hover table-striped table-bordered" id="datasets_table">
     <thead class="thead-dark ">
     <tr>
+        <th>Id</th>
         <th>System</th>
         <th>Dataset Type</th>
         <th>Interface Type</th>
@@ -42,11 +66,12 @@
     </tr>
     </thead>
     {% for dataset in dataset_list %}
-{#    {%  if perms.rm.view_contract %}#}
-{#        <tr class='clickable-row' data-url='/interfacecall/{{ interface_call.pk }}'>#}
-{#    {% else %}#}
-        <tr>
-{#    {% endif %}#}
+        {%  if dataset.details_url %}
+            <tr class='clickable-row' data-url={{ dataset.details_url }}>
+        {% else %}
+            <tr>
+        {% endif %}
+        <td>{{  dataset.id }}</td>
         <td>{{  dataset.system }}</td>
         <td>{{  dataset.dataset_type}}</td>
         <td>{{  dataset.interface_type}}</td>

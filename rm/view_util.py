@@ -1,9 +1,11 @@
 import logging
 from typing import Dict, List
 
+from django.db.models.functions import Now
 from django.urls import reverse, NoReverseMatch
 
-from rm.constants import CONTRACTEN
+from rm.constants import CONTRACTEN, FileStatus
+from rm.interface_file_util import check_file_and_interface_type
 from rm.models import DataPerOrgUnit, DataSetType, InterfaceDefinition, InterfaceCall
 from users import user_utils
 from users.models import CustomUser
@@ -210,3 +212,40 @@ def get_active_datasets_per_interface_for_users_org_units(user: CustomUser) -> L
             nr += 1
             record = InterfaceListRecord(nr=nr)
     return records
+
+
+def process_file(file, user, expected_system=None):
+    """
+    Process the file, register it with the user, find out the type
+
+    """
+    # First things first, create the InterfaceCall, with the user
+    interface_call = InterfaceCall(filename=file.name,
+                                   status=FileStatus.NEW,
+                                   date_time_creation=Now(),
+                                   user=user,
+                                   username=user.username,
+                                   user_email=user.email)
+    try:
+        # check the file and try to find out what type it is
+        interface_file = check_file_and_interface_type(file)
+
+        # register InterfaceDefinition (System & DataSetType)
+        found_interface_definition: InterfaceDefinition = interface_file.get_interface_definition()
+        if not found_interface_definition.system_name == expected_system:
+            raise Exception(f"Er werd een {expected_system} bestand verwacht, "
+                            f"maar dit is een {found_interface_definition.system_name} bestand")
+        interface_call.interface_definition = interface_file.get_interface_definition()
+        interface_call.save()
+
+        # process the file!
+        interface_file.process(interface_call)
+
+    except Exception as ex:
+
+        interface_call.status = FileStatus.ERROR.name
+        interface_call.message = ex.__str__()
+        interface_call.save()
+        return interface_call.id, "ERROR", ex.__str__()
+
+    return interface_call.id, "OK", "File has been processed"

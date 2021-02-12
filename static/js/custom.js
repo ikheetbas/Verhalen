@@ -23,10 +23,25 @@ jQuery(document).ready(function($) {
     });
 });
 
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
+//
+// // Disable search and ordering by default
+// $.extend( $.fn.dataTable.defaults, {
+//     searching: false,
+//     ordering:  false
+// } );
+
 $(document).ready( function () {
     $('#contract_table').DataTable();
-    $('#interface_call_table').DataTable( {
+    $('#uploads_table').DataTable( {
+        "order": [[ 0, "desc" ]]
+    } )
+    $('#datasets_table').DataTable( {
         "order": [[ 0, "desc" ]]
     } );
+
 } );
 

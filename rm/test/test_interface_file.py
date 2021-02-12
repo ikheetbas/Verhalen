@@ -9,7 +9,7 @@ from rm.interface_file import RowStatistics, check_file_has_excel_extension, che
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import InterfaceCall
 from rm.test.test_util import set_up_user
-from rm.views import process_file
+from rm.view_util import process_file
 
 
 class RowStatisticTests(TestCase):
