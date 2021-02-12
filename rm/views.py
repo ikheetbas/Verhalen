@@ -67,7 +67,18 @@ def create_contracten_interface_context(pk):
 
 @permission_required('rm.view_contract', raise_exception=True)
 def interface_call_details(request, pk: int):
-    context = create_contracten_interface_context(pk)
+    logger.debug(f"interface_call_details: pk: {pk}")
+    interface_call = InterfaceCall.objects.get(pk=pk)
+    logger.debug("interface_call: " + interface_call.__str__())
+
+    stage_contracts_list = interface_call.stage_contracts()
+
+    raw_data = interface_call.rawdata_set.all()
+    context = {
+        'interface_call': interface_call,
+        'stage_contract_list': stage_contracts_list,
+        'received_data': raw_data,
+    }
     template = loader.get_template('rm/interface_call_details.html')
     return HttpResponse(template.render(context, request))
 
