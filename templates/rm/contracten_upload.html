@@ -5,15 +5,31 @@
 {% block content %}
 
 <h1 class="mt-4">Contracten Upload</h1>
-<br>
-<div class="container-fluid">
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-light">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'interface_list' %}">Interfaces</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Contracten Upload</li>
+  </ol>
+</nav>
+
+    <div class="container-fluid">
     <div class="row">
         <div class="col-lg-3 ">
+            {% if interface_call.status == "OK" %}
+            <form action="{% url 'contracten_upload' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="interface_call_id" value="{{ interface_call.id }}" />
+                <input type="submit" class="btn btn-success" name="activate" value="Activeer upload" />
+            </form>
+            {% else %}
             <form action="{% url 'contracten_upload' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form|crispy }}
                 <input class="btn btn-outline-secondary btn-sm" type="submit" value="Submit">
             </form>
+            {% endif %}
             <br>
         </div>
         <div class="col-lg-2 ">
@@ -29,8 +45,8 @@
                     </tr>
                 </thead>
                 <tr>
-                    <td>Datum/tijd</td>
-                    <td>{{  interface_call.date_time_creation |date:'Y-m-d H:i' }}</td>
+                    <td class="col-sm-2">Datum/tijd</td>
+                    <td class="col-sm-6">{{  interface_call.date_time_creation |date:'Y-m-d H:i' }}</td>
                 </tr>
                 <tr>
                     <td>System:</td>
@@ -63,10 +79,10 @@
                     </tr>
                 </thead>
                 <tr>
-                    <td>Ontvangen</td>
-                    <td>{{  interface_call.number_of_rows_received }}</td>
-                    <td>Data ok</td>
-                    <td>{{  interface_call.number_of_data_rows_ok }}</td>
+                    <td class="col-sm-3">Ontvangen</td>
+                    <td class="col-sm-1">{{  interface_call.number_of_rows_received }}</td>
+                    <td class="col-sm-3">Data ok</td>
+                    <td class="col-sm-1">{{  interface_call.number_of_data_rows_ok }}</td>
                 </tr>
                 <tr>
                     <td>Header</td>
@@ -98,8 +114,13 @@
  <ul class="nav nav-tabs">
   {% for org_unit in stage_contract_dict.keys %}
       <li class="nav-item">
-        <a class="nav-link active" href="#stage_contracts_{{ org_unit|cut:" "|cut:":" }}">
-            Contracten <strong>{{ org_unit }}</strong></a>
+        {% if forloop.first %}
+            <a class="nav-link active" href="#stage_contracts_{{ org_unit|last }}">
+                Contracten <strong>{{ org_unit|first }}</strong></a>
+        {%  else %}
+            <a class="nav-link" href="#stage_contracts_{{ org_unit|last }}">
+                Contracten <strong>{{ org_unit|first }}</strong></a>
+       {% endif %}
       </li>
   {% endfor %}
   <li class="nav-item">
@@ -111,12 +132,16 @@
 
   {% for org_unit, stage_contract_list in stage_contract_dict.items %}
 
-    <div id="stage_contracts_{{ org_unit|cut:" "|cut:":" }}" class="container-fluid tab-pane active"><br>
-
+    {% if forloop.first %}
+        <div id="stage_contracts_{{ org_unit|last }}" class="container-fluid tab-pane active">
+    {% else %}
+        <div id="stage_contracts_{{ org_unit|last }}" class="container-fluid tab-pane fade">
+    {% endif %}
+      <br>
         <table class="table table-sm table-hover table-striped table-bordered">
             <thead class="thead-dark ">
             <tr>
-                <th>Seq.nr.</th>
+                <th>Rij</th>
                 <th>Contract nr</th>
                 <th>Status</th>
                 <th>Contract naam</th>
@@ -143,12 +168,15 @@
     </div>
   {% endfor %}
 
-    <div id="received_data" class="container-fluid tab-pane fade"><br>
-
+    {% ifequal stage_contract_dict|length 0 %}
+        <div id="received_data" class="container-fluid tab-pane active"><br>
+    {% else %}
+        <div id="received_data" class="container-fluid tab-pane fade"><br>
+    {% endifequal %}
         <table class="table table-sm table-hover table-striped table-bordered">
             <thead class="thead-dark ">
             <tr>
-                <th>Seq.nr.</th>
+                <th>Rij</th>
                 <th>Status</th>
                 <th>Melding</th>
                 <th>Veld 1</th>

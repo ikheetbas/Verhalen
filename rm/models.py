@@ -7,7 +7,7 @@ from django.db import models, transaction, IntegrityError
 import rm
 import users
 from bdata.models import Contract
-from rm.constants import CONTRACTEN
+from rm.constants import CONTRACTEN, RowStatus, FileStatus
 from rm.exceptions import OtherActiveDataPerOrgUnitException, DuplicateKeyException
 from stage.models import StageContract
 from users.models import OrganizationalUnit, CustomUser
@@ -152,10 +152,14 @@ class InterfaceCall(models.Model):
         return contracts
 
     def stage_contracts_per_org(self) -> Dict[str, StageContract]:
+        """
+        Delivers a Dict per DataOrgPerUnit with StageContracts
+        """
         contracts = {}
         for data_per_org_unit in self.dataperorgunit_set.all():
-            contracts_per_org_unit = data_per_org_unit.stagecontract_set.all()
-            contracts[data_per_org_unit.org_unit.name] = contracts_per_org_unit
+            contracts_per_org_unit = data_per_org_unit.stagecontract_set.all().order_by("seq_nr")
+            name_and_id_tuple = (data_per_org_unit.org_unit.name, data_per_org_unit.org_unit.id)
+            contracts[name_and_id_tuple] = contracts_per_org_unit
         return contracts
 
 
@@ -234,7 +238,9 @@ class InterfaceCall(models.Model):
                 logger.exception(f"Exception tijdens het activeren van Interface Call: "
                                  f"id={self.id} {self.filename} {self.date_time_creation}", ex)
                 # re raise so we can show it to the user
-                raise
+                self.status = FileStatus.ERROR.name
+                self.message = f"Activeren is mislukt: {ex.__str__()}"
+                self.save()
         else:
             self._activate_interface_call(cascading)
 
@@ -509,6 +515,15 @@ class DataPerOrgUnit(models.Model):
 
     def myself(self, data_per_org_unit):
         return data_per_org_unit.id == self.id
+
+    def increase_row_count(self, count, status):
+        if status == RowStatus.DATA_OK:
+            self.number_of_data_rows_ok += 1
+        elif status == RowStatus.DATA_WARNING:
+            self.number_of_data_rows_warning += 1
+        else:
+            raise ValueError(f"Increasing rowcount for DataPerOrgUnit is only valid for status {RowStatus.DATA_OK} "
+                             f"and {RowStatus.DATA_WARNING}, not for {status}")
 
 
 def copy_stage_data_to_bdata(self):

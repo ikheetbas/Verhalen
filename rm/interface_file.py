@@ -9,7 +9,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 import rm
 from rm.constants import ERROR_MSG_FILE_DEFINITION_ERROR, TOTAL_ROWS_RECEIVED, TOTAL_DATA_ROWS_RECEIVED, \
-    RowStatus, FileStatus
+    RowStatus, FileStatus, ERROR_MSG_FILE_CONTAINS_NO_VALID_DATAROWS
 from rm.models import InterfaceCall, RawData, System, Mapping
 
 logger = logging.getLogger(__name__)
@@ -309,6 +309,10 @@ class ExcelInterfaceFile(ABC):
         self.interfaceCall.number_of_data_rows_error = self.row_statistics.get_total_data_error_rows()
         self.interfaceCall.number_of_data_rows_received = self.row_statistics.get_total_data_rows_received()
         self.interfaceCall.number_of_data_rows_warning = self.row_statistics.get_total_data_warning_rows()
+
+        if self.interfaceCall.number_of_data_rows_ok == 0:
+            self.interfaceCall.status = FileStatus.ERROR.name
+            self.interfaceCall.message = ERROR_MSG_FILE_CONTAINS_NO_VALID_DATAROWS
 
         self.interfaceCall.save()
 

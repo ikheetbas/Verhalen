@@ -8,9 +8,9 @@ from django.shortcuts import render
 from django.template import loader
 from django.views.generic import ListView, TemplateView, DetailView
 
-from rm.constants import FileStatus
+from rm.constants import FileStatus, NEGOMETRIX
 from rm.forms import UploadFileForm
-from rm.models import InterfaceCall
+from rm.models import InterfaceCall, InterfaceDefinition
 from rm.interface_file_util import check_file_and_interface_type
 from rm.view_util import get_datasets_for_user, get_active_datasets_per_interface_for_users_org_units
 
@@ -29,7 +29,6 @@ def upload_file(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             file = request.FILES['file']
-
             status, msg = process_file(file, request.user)
 
             if status == "ERROR":
@@ -56,7 +55,7 @@ def create_contracten_interface_context(pk):
 
     stage_contracts_dict = interface_call.stage_contracts_per_org()
 
-    raw_data = interface_call.rawdata_set.all()
+    raw_data = interface_call.rawdata_set.all().order_by("seq_nr")
     context = {
         'interface_call': interface_call,
         'stage_contract_dict': stage_contracts_dict,
@@ -159,13 +158,28 @@ class ContractenUploadView(PermissionRequiredMixin, TemplateView):
     form_class = UploadFileForm
 
     def post(self, request, *args, **kwargs):
-        form = self.form_class(request.POST, request.FILES)
-        if form.is_valid():
-            file = request.FILES['file']
-
-            call_id, status, msg = process_file(file, request.user)
-
+        logger.debug("POST")
+        if request.POST.get("activate"):
+            call_id = request.POST.get("interface_call_id")
+            call = InterfaceCall.objects.get(pk=int(call_id))
+            call.activate_interface_call(start_transaction=True, cascading=True)
+            logger.debug(f"Call: {call_id} activated")
             return HttpResponseRedirect(f'/contracten_upload/{call_id}')
+        else:
+            logger.debug("Upload contracten file")
+            form: UploadFileForm = self.form_class(request.POST, request.FILES)
+            logger.debug(f"Upload contracten file, form: {form}")
+            if form.is_valid():
+                logger.debug("Upload contracten file, form.is.valid()")
+                file = request.FILES['file']
+                logger.debug(f"Upload contracten file, file = {file}")
+                call_id, status, msg = process_file(file=file,
+                                                    user=request.user,
+                                                    expected_system=NEGOMETRIX)
+                return HttpResponseRedirect(f'/contracten_upload/{call_id}')
+            else:
+                logger.debug("Upload contracten file, not form.is.valid()")
+                return render(request, self.template_name, {'form': form})
 
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -175,7 +189,7 @@ class ContractenUploadView(PermissionRequiredMixin, TemplateView):
             context = {**context, **create_contracten_interface_context(pk)}
         return render(request, self.template_name, context)
 
-def process_file(file, user):
+def process_file(file, user, expected_system=None):
     """
     Process the file, register it with the user, find out the type
 
@@ -192,6 +206,10 @@ def process_file(file, user):
         interface_file = check_file_and_interface_type(file)
 
         # register InterfaceDefinition (System & DataSetType)
+        found_interface_definition: InterfaceDefinition = interface_file.get_interface_definition()
+        if not found_interface_definition.system_name == expected_system:
+            raise Exception(f"Er werd een {expected_system} bestand verwacht, "
+                            f"maar dit is een {found_interface_definition.system_name} bestand")
         interface_call.interface_definition = interface_file.get_interface_definition()
         interface_call.save()
 
