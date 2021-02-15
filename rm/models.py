@@ -104,10 +104,12 @@ class InterfaceCall(models.Model):
     READY_LOADING = "READY_LOADING"
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
+    OK = "OK"
     INTERFACE_CALL_STATUS = (
         (NEW, "NEW"),
         (LOADING, "LOADING"),
         (ERROR, "ERROR"),
+        (OK, "OK"),
         (READY_LOADING, "READY_LOADING"),
         (ACTIVE, "ACTIVE"),
         (INACTIVE, "INACTIVE"),
@@ -117,6 +119,7 @@ class InterfaceCall(models.Model):
         permissions = [
             ("contracten_api", "Contracten API"),
             ("contracten_upload", "Contracten upload"),
+            ("contracten_view", "Contracten view")
         ]
 
     date_time_creation = models.DateTimeField(auto_now=False, auto_now_add=True)

@@ -85,12 +85,9 @@ def _create_user(username="john",
 def set_up_static_data(self):
     # Set up static data
     self.system_a = System.objects.create(name="SYSTEM_A")
-    self.system = System.objects.create(name="Negometrix")
-    self.data_set_type = DataSetType.objects.create(name=CONTRACTEN)
-    self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
-                                                                   data_set_type=self.data_set_type,
-                                                                   interface_type=InterfaceDefinition.UPLOAD,
-                                                                   name="Contracten upload")
+    self.system=  System.objects.get(name="Negometrix")
+    self.data_set_type = DataSetType.objects.get_or_create(name=CONTRACTEN)
+    self.interface_definition = InterfaceDefinition.objects.get(name="Contracten upload")
     self.org_unit = OrganizationalUnit.objects.create(name="MyTeam",
                                                       type=OrganizationalUnit.TEAM)
     self.user.org_units.add(self.org_unit)

@@ -143,7 +143,7 @@ class RoleBasedAuthorizationSuperuserTests(TestCase):
         self.assertTrue(self.user.is_superuser)
         response = self.client.get(reverse("interface_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload</a>')
+        self.assertContains(response, 'href="/contracten_upload/"')
 
     def test_superuser_can_access_upload_form(self):
         response = self.client.get(reverse("contracten_upload_details"))
@@ -192,7 +192,7 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
     def test_buyer_sees_upload_button(self):
         response = self.client.get(reverse("interface_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload</a>')
+        self.assertContains(response, 'href="/contracten_upload/"')
 
     def test_buyer_can_access_upload_form(self):
         response = self.client.get(reverse("contracten_upload"))
@@ -205,6 +205,7 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
         self.assertTrue(self.user.has_perm('rm.upload_contract_file'))
         self.assertTrue(self.user.has_perm('rm.contracten_api'))
         self.assertTrue(self.user.has_perm('rm.contracten_upload'))
+        self.assertTrue(self.user.has_perm('rm.contracten_view'))
 
     def test_buyer_sees_contracts_of_interfaceCall(self):
         response = self.client.get(f'/contracten_upload_details/{self.interface_call_1.pk}/')

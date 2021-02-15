@@ -27,7 +27,7 @@ class CreateAdditionalDatasetFilterActive(TestCase):
         self.assertEqual(result_filter, expected_filter)
 
     def test_create_addition_dataset_filter_inactive(self):
-        params = {'active': 'FAlse'}
+        params = {'active': 'False'}
         expected_filter = {'active': 'False'}
 
         result_filter = create_addition_dataset_filter(self.user, params)
@@ -96,15 +96,13 @@ class ViewUtilTests(TestCase):
 
     def setUp(self):
         self.content_type_interface_call = ContentType.objects.get_for_model(InterfaceCall)
-        permission_contracten_upload = Permission.objects.get_or_create(codename="contracten_upload",
-                                                                        name="Contracten upload",
-                                                                        content_type=self.content_type_interface_call)
+        permission_contracten_upload = Permission.objects.get_or_create(name="Contracten upload")
         self.user = CustomUser.objects.create(username="TestUser1")
         self.user.user_permissions.add(permission_contracten_upload[0])
 
         # STATICS: System, DatasetType
-        self.system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
-        self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        self.system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
+        self.data_set_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
 
     def test_get_datasets_for_user_on_org_authorization(self):
         # Interface Definition
@@ -200,10 +198,7 @@ class ViewUtilTests(TestCase):
         self.user.org_units.add(self.org_unit_cluster1)
 
         # Interface Definition for Contracten upload & Contracten API
-        self.int_def_contracten_upload = InterfaceDefinition.objects.create(name="Contracten upload",
-                                                                            system=self.system_negometrix,
-                                                                            data_set_type=self.data_set_type,
-                                                                            interface_type=InterfaceDefinition.UPLOAD)
+        self.int_def_contracten_upload = InterfaceDefinition.objects.get(name="Contracten upload")
 
         self.int_def_contracten_api = InterfaceDefinition.objects.create(name="Contracten API",
                                                                          system=self.system_negometrix,
@@ -228,7 +223,7 @@ class ViewUtilTests(TestCase):
                                                                  interface_call=self.int_call_contracten_api,
                                                                  active=True)
 
-        # Test System for uploadin Tests
+        # Test System for uploading Tests
         self.system_a_test = System.objects.create(name="Test System")
         self.data_set_type_a_test = DataSetType.objects.create(name="Tests")
 
@@ -314,25 +309,19 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
 
     @patch('rm.view_util.user_utils')
     def test_empty_no_org_interface_defs(self, mock_user_utils):
-        result = get_active_datasets_per_interface_for_users_org_units(None)
-        self.assertEqual(result, [])
+        mock_user = Mock()
+        mock_user_utils.get_all_org_units_of_user.return_value = []
+        result = get_active_datasets_per_interface_for_users_org_units(mock_user)
+        self.assertEqual(result[0].system, "Negometrix")
+        self.assertEqual(result[0].dataset_type, "Contracten")
 
-    @patch('rm.view_util.user_utils')
-    def test_one_org_no_interface_defs(self, mock_user_utils):
-        org_unit = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
-        mock_user_utils.get_all_org_units_of_user.return_value = [org_unit, ]
-        result = get_active_datasets_per_interface_for_users_org_units(None)
 
     @patch('rm.view_util.user_utils')
     def test_one_org_one_interfaces_def(self, mock_user_utils):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
 
         mock_user_utils.get_all_org_units_of_user.return_value = [org_unit_iaas, ]
@@ -356,11 +345,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
 
         # PROCESS
@@ -390,11 +375,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
 
         # PROCESS
@@ -433,11 +414,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
         org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
 
@@ -483,11 +460,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
         org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
 
@@ -547,11 +520,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
         org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
 
@@ -617,11 +586,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
         org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
 
@@ -697,15 +662,11 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
     @patch('rm.view_util.user_utils')
     def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid_one_active_call_one_def(self, mock_user_utils):
         # STATIC
-        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
-        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
-        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
-        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+        system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
+        dataset_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
+        org_unit_iaas, created = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")
+        org_unit_xxxx, created = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")
 
         # PROCESS
         call = InterfaceCall.objects.create(interface_definition=interface_def_nego_contr,
@@ -795,15 +756,11 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
     @patch('rm.view_util.user_utils')
     def test_no_permission(self, mock_user_utils):
         # STATIC
-        system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
-        dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
-        org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
-        org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
+        system_negometrix, created = System.objects.get_or_create(name=NEGOMETRIX)
+        dataset_type_contracten, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
+        org_unit_iaas, created = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")
+        org_unit_xxxx, created = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")
 
 
         # return IaaS and XxxX as org_unit of the user
@@ -834,11 +791,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         # STATIC
         system_negometrix = System.objects.get_or_create(name=NEGOMETRIX)[0]
         dataset_type_contracten = DataSetType.objects.get_or_create(name=CONTRACTEN)[0]
-        interface_def_nego_contr = InterfaceDefinition.objects. \
-            get_or_create(name="Contracten upload",
-                          system=system_negometrix,
-                          data_set_type=dataset_type_contracten,
-                          interface_type=InterfaceDefinition.UPLOAD)[0]
+        interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
         org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
 

@@ -18,40 +18,40 @@ class GetInterfaceDefinitionTests(TestCase):
     def test_get_interface_definition_fail_Negometrix_not_found(self):
         # static data (wrong)
         system = System.objects.create(name="FOUTGESPELD")
-        data_set_type = DataSetType.objects.create(name=CONTRACTEN)
+        data_set_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
         interface_definition = InterfaceDefinition.objects.create(system=system,
                                                                   data_set_type=data_set_type,
                                                                   interface_type=InterfaceDefinition.UPLOAD)
 
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
-        with self.assertRaises(rm.models.System.DoesNotExist):
+        with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
             interface_definition = negometrix_file.get_interface_definition()
 
     def test_get_interface_definition_fail_Foute_dataset(self):
         # static data (wrong)
-        system = System.objects.create(name=NEGOMETRIX)
+        system = System.objects.get(name=NEGOMETRIX)
         data_set_type = DataSetType.objects.create(name="Foute Dataset")
-        interface_definition = InterfaceDefinition.objects.create(system=system,
+        interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
                                                                   data_set_type=data_set_type,
                                                                   interface_type=InterfaceDefinition.UPLOAD)
 
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
-        with self.assertRaises(rm.models.DataSetType.DoesNotExist):
+        with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
             interface_definition = negometrix_file.get_interface_definition()
 
     def test_get_interface_definition_fail_no_interface_definition_forgot_UPLOAD_in_GET(self):
-        system = System.objects.create(name=NEGOMETRIX)
-        data_set_type = DataSetType.objects.create(name=CONTRACTEN)
-        interface_definition = InterfaceDefinition.objects.create(system=system,
+        system = System.objects.get(name=NEGOMETRIX)
+        data_set_type = DataSetType.objects.get(name=CONTRACTEN)
+        interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
                                                                   data_set_type=data_set_type)
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
             interface_definition = negometrix_file.get_interface_definition()
 
     def test_get_interface_definition_happy(self):
-        system = System.objects.create(name=NEGOMETRIX)
-        data_set_type = DataSetType.objects.create(name=CONTRACTEN)
-        interface_definition = InterfaceDefinition.objects.create(system=system,
+        system = System.objects.get(name=NEGOMETRIX)
+        data_set_type = DataSetType.objects.get(name=CONTRACTEN)
+        interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
                                                                   data_set_type=data_set_type,
                                                                   interface_type=InterfaceDefinition.UPLOAD)
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
