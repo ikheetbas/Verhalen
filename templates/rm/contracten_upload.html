@@ -1,34 +1,46 @@
 {% extends '_base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}NPO-RM - Contracten upload{% endblock title %}
+{% block title %}NPO-RM - {{ page_title }}{% endblock title %}
 {% block content %}
 
-<h1 class="mt-4">Contracten Upload</h1>
+<h1 class="mt-4">{{ page_title }}</h1>
 
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'interface_list' %}">Interfaces</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Contracten Upload</li>
+      {%  for url_name, text in breadcrumbs.items %}
+          {% if not url_name == 'active' %}
+             <li class="breadcrumb-item"><a href="{% url url_name %}">{{ text }}</a></li>
+          {% else %}
+            <li class="breadcrumb-item active" aria-current="page">{{ text }}</li>
+          {% endif %}
+      {%  endfor %}
   </ol>
 </nav>
 
     <div class="container-fluid">
     <div class="row">
-        <div class="col-lg-3 ">
-            {% if interface_call.status == "OK" %}
-            <form action="{% url 'contracten_upload' %}" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="interface_call_id" value="{{ interface_call.id }}" />
-                <input type="submit" class="btn btn-success" name="activate" value="Activeer upload" />
-            </form>
-            {% else %}
-            <form action="{% url 'contracten_upload' %}" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                {{ form|crispy }}
-                <input class="btn btn-outline-secondary btn-sm" type="submit" value="Submit">
-            </form>
+        <div class="col-lg-3">
+            {% if has_permission_for_upload %}
+                {% if interface_call.status == "OK" or interface_call.status == "INACTIVE" %}
+                    <form action="{% url url_name %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="interface_call_id" value="{{ interface_call.id }}" />
+                        <input type="submit" class="btn btn-success" name="activate" value="Activeer upload" />
+                    </form>
+                {% endif %}
+                {% if interface_call.status == "ACTIVE" %}
+                    <form action="{% url url_name %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="interface_call_id" value="{{ interface_call.id }}" />
+                        <input type="submit" class="btn btn-danger" name="deactivate" value="Deactiveer upload" />
+                    </form>
+                {% endif %}
+                <form action="{% url url_name %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <input class="btn btn-outline-secondary btn-sm" type="submit" value="Submit">
+                </form>
             {% endif %}
             <br>
         </div>

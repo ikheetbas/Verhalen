@@ -29,6 +29,7 @@
     </thead>
     {% for upload in uploads_list %}
     {%  if perms.rm.view_contract %}
+{#        TODO permission depends on datasettype, rol, status and owner, so this has to be improved #}
         <tr class='clickable-row' data-url='/contracten_upload_details/{{ upload.pk }}'>
     {% else %}
         <tr>

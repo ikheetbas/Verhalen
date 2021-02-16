@@ -10,6 +10,8 @@ urlpatterns = [
     path('uploads', UploadsListView.as_view(), name='uploads_list'),
     re_path(r'^datasets/$', DataSetListView.as_view(), name="dataset_list"),
     path('interfacecall/<int:pk>/', views.interface_call_details),
+
+    # CONTRACTEN UPLOAD PAGES
     path('contracten_upload/', ContractenUploadView.as_view(), name="contracten_upload"),
     path('contracten_upload/<int:pk>/', ContractenUploadView.as_view(), name="contracten_upload"),
     path('contracten_upload_details/', ContractenUploadDetailsView.as_view(), name="contracten_upload_details"),
