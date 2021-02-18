@@ -21,7 +21,7 @@
     <div class="container-fluid">
     <div class="row">
         <div class="col-lg-3">
-            {% if has_permission_for_upload %}
+            {% if user_has_permission_for_upload %}
                 {% if interface_call.status == "OK" or interface_call.status == "INACTIVE" %}
                     <form action="{% url url_name %}" method="post">
                         {% csrf_token %}
@@ -128,10 +128,10 @@
       <li class="nav-item">
         {% if forloop.first %}
             <a class="nav-link active" href="#stage_contracts_{{ org_unit|last }}">
-                Contracten <strong>{{ org_unit|first }}</strong></a>
+                Contracten {{ org_unit|first }}</a>
         {%  else %}
             <a class="nav-link" href="#stage_contracts_{{ org_unit|last }}">
-                Contracten <strong>{{ org_unit|first }}</strong></a>
+                Contracten {{ org_unit|first }}</a>
        {% endif %}
       </li>
   {% endfor %}

@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from rm.constants import NEGOMETRIX, CONTRACTEN, URL_NAME_CONTRACTEN_UPLOAD
 from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall
-from rm.test.test_util import set_up_user
+from rm.test.test_util import set_up_user_and_login
 from rm.view_util import create_addition_dataset_filter, get_datasets_for_user, \
     get_active_datasets_per_interface_for_users_org_units, InterfaceListRecord, process_file
 from users.models import CustomUser
@@ -819,7 +819,7 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
 class GenericFileUploadTests(TestCase):
 
     def setUp(self):
-        set_up_user(self, superuser=True)
+        set_up_user_and_login(self, superuser=True)
 
     def test_upload_empty_file_with_xls(self):
         nr_int_calls_before = len(InterfaceCall.objects.all())

@@ -127,8 +127,8 @@ class InterfaceListView(ListView):
         return rows
 
 
-def allowed_to_show_this_interface_call_with_this_view(interface_call,
-                                                       view_datatype) -> bool:
+def has_interface_call_the_right_datatype(interface_call,
+                                          view_datatype) -> bool:
     """
     If the datatype is not known (then it has no data either) or when the datatype
     of the interface_call is the same as the view, it is allowed to show it.
@@ -197,23 +197,24 @@ class GenericUploadView(PermissionRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
+        user: CustomUser = request.user
         if pk:
             call: InterfaceCall = get_object_or_404(InterfaceCall, pk=pk)
-            if allowed_to_show_this_interface_call_with_this_view(interface_call=call,
-                                                                  view_datatype=self.data_set_type_name):
-                pass
-            else:
+            if not has_interface_call_the_right_datatype(interface_call=call,
+                                                         view_datatype=self.data_set_type_name):
+                raise PermissionDenied
+            if not user.has_perm_for_org_unit(*call.org_units):
                 raise PermissionDenied
 
-        has_permission_for_upload = request.user.is_superuser or \
-                                    request.user.has_perm(self.permission_required_for_upload)
+        user_has_permission_for_upload = user.is_superuser or \
+                                         user.has_perm(self.permission_required_for_upload)
 
         form = self.form_class()
         context = {'form': form,
                    'url_name': self.url_name,
                    'page_title': self.page_title,
                    'breadcrumbs': self.breadcrumbs,
-                   'has_permission_for_upload': has_permission_for_upload}
+                   'user_has_permission_for_upload': user_has_permission_for_upload}
 
         if pk:
             context = {**context,

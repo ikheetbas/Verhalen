@@ -2,14 +2,14 @@ from django.test import TestCase
 
 from rm.constants import CONTRACTEN, RowStatus
 from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, DataPerOrgUnit
-from rm.test.test_util import set_up_user_with_interface_call_and_contract
+from rm.test.test_util import set_up_user_login_with_interface_call_and_contract
 from users.models import OrganizationalUnit
 
 
 class DataPerOrgUnitTest(TestCase):
 
     def setUp(self):
-        set_up_user_with_interface_call_and_contract(self)
+        set_up_user_login_with_interface_call_and_contract(self)
 
     def test_get_data_set_type_happy(self):
         data_set_type = self.data_per_org_unit.get_data_set_type()

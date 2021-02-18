@@ -1,14 +1,14 @@
 from django.test import TestCase
 
 from rm.models import InterfaceCall, DataPerOrgUnit
-from rm.test.test_util import set_up_user
+from rm.test.test_util import set_up_user_and_login
 from users.models import OrganizationalUnit
 
 
 class InterfaceCallTests(TestCase):
 
     def setUp(self):
-        set_up_user(self)
+        set_up_user_and_login(self)
 
     def test_org_units_none(self):
         interface_call_1 = InterfaceCall.objects.create()

@@ -7,8 +7,8 @@ from rm.constants import CONTRACTEN, NEGOMETRIX, RowStatus, FileStatus
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import System, DataSetType, InterfaceDefinition, InterfaceCall, Mapping, DataPerOrgUnit
 from rm.negometrix import NegometrixInterfaceFile, handle_negometrix_file_row
-from rm.test.test_util import set_up_user_with_interface_call_and_contract, _create_superuser, set_up_user, \
-    set_up_static_data, _create_user
+from rm.test.test_util import set_up_user_login_with_interface_call_and_contract, create_superuser, set_up_user_and_login, \
+    set_up_static_data, create_user
 from rm.view_util import process_file
 from users.models import OrganizationalUnit, CustomUser
 
@@ -67,7 +67,7 @@ class GetInterfaceDefinitionTests(TestCase):
 class NegometrixFileTests(TestCase):
 
     def setUp(self):
-        set_up_user(self, superuser=True)
+        set_up_user_and_login(self, superuser=True)
         set_up_static_data(self)
 
     def test_check_valid_negometrix_excel_file(self):
@@ -176,7 +176,7 @@ class NegometrixCountTests(TestCase):
 
     def setUp(self):
         # Create Superuser and Login
-        self.user = _create_user()
+        self.user = create_user()
         self.client.force_login(self.user)
 
         # STATIC TOTAL_DATA_ROWS_RECEIVED
@@ -219,7 +219,7 @@ class NegometrixCountTests(TestCase):
 class FileWithContractTests(TestCase):
 
     def setUp(self):
-        set_up_user_with_interface_call_and_contract(self)
+        set_up_user_login_with_interface_call_and_contract(self)
 
     def test_register_contract(self):
         row_nr = 4
@@ -285,7 +285,7 @@ class NegometrixFileUploadTests(TestCase):
 
     def test_upload_a_valid_excel_file_for_user_of_pt_iaas_with_2_rows_one_of_other_dept(self):
         # Create user with organization
-        set_up_user(self, superuser=False)
+        set_up_user_and_login(self, superuser=False)
         self.user.org_units.add(self.org_unit_pt_iaas)
 
         # PRE geen Interface Calls
@@ -312,7 +312,7 @@ class NegometrixFileUploadTests(TestCase):
 
     def test_upload_a_valid_excel_file_for_superuser(self):
         # ADD SUPER USER TO PT_IAAS
-        set_up_user(self, superuser=True)
+        set_up_user_and_login(self, superuser=True)
         self.user.org_units.add(self.org_unit_pt_iaas)
 
         # PRE geen Interface Calls
@@ -336,7 +336,7 @@ class NegometrixFileUploadTests(TestCase):
 class HandleNegometrixFileRowTests(TestCase):
 
     def setUp(self):
-        set_up_user_with_interface_call_and_contract(self)
+        set_up_user_login_with_interface_call_and_contract(self)
         self.mandatory_field_positions = (0, 2)
         self.fields_with_position = {"contract_nr": 1, 'contract_status': 2, "category": 3}
 

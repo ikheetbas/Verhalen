@@ -2,13 +2,13 @@ from django.test import TestCase
 
 from stage.models import StageContract
 
-from .test_util import set_up_user_with_interface_call_and_contract
+from .test_util import set_up_user_login_with_interface_call_and_contract
 
 
 class DataModelTest(TestCase):
 
     def setUp(self):
-        set_up_user_with_interface_call_and_contract(self)
+        set_up_user_login_with_interface_call_and_contract(self)
 
     def test_stage_contract(self):
         expected = 'StageContract: NL-123: Test contract naam'
