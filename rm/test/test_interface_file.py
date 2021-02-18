@@ -8,8 +8,6 @@ from rm.interface_file import RowStatistics, check_file_has_excel_extension, che
     get_headers_from_sheet
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import InterfaceCall
-from rm.test.test_util import set_up_user
-from rm.view_util import process_file
 
 
 class RowStatisticTests(TestCase):
@@ -246,19 +244,3 @@ class GenericExcelTests(TestCase):
             self.assertTrue(False, "No Exception, while expected because file has no headers")
 
 
-class GenericFileUploadTests(TestCase):
-
-    def setUp(self):
-        set_up_user(self, superuser=True)
-
-    def test_upload_empty_file_with_xls(self):
-        nr_int_calls_before = len(InterfaceCall.objects.all())
-        file = open("rm/test/resources/EmptyFileWithXLSExtension.xls", "rb")
-        id, status, msg = process_file(file, self.user)
-        nr_int_calls_after = len(InterfaceCall.objects.all())
-        self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
-
-        interface_call: InterfaceCall = InterfaceCall.objects.last()
-        self.assertEqual(interface_call.filename, "rm/test/resources/EmptyFileWithXLSExtension.xls")
-        self.assertTrue(interface_call.message.__contains__('Het openen van dit bestand als excel bestand '
-                                                            'geeft een foutmelding: File is not a zip file'))

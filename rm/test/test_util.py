@@ -8,38 +8,44 @@ from stage.models import StageContract
 from users.models import OrganizationalUnit
 
 
-def set_up_user_with_interface_call_and_contract(self,
-                                                 superuser=True,
-                                                 group_name=None,
-                                                 username="John",
-                                                 name_in_negometrix="John"):
-    set_up_user(self,
-                superuser,
-                group_name,
-                username,
-                name_in_negometrix)
+
+def login_user(client, user):
+        client.logout()
+        client.force_login(user)
+
+def set_up_user_login_with_interface_call_and_contract(self,
+                                                       superuser=True,
+                                                       group_name=None,
+                                                       username="John",
+                                                       name_in_negometrix="John"):
+    set_up_user_and_login(self,
+                          superuser,
+                          group_name,
+                          username,
+                          name_in_negometrix)
     set_up_static_data(self)
     set_up_process_contract_data(self)
 
-def set_up_user(self,
-                superuser=True,
-                group_name=None,
-                username="John",
-                name_in_negometrix="John"):
+def set_up_user_and_login(self,
+                          superuser=False,
+                          group_name=None,
+                          username="John",
+                          name_in_negometrix="John"):
     """
     When called without parameters, you get a superuser
     """
     if superuser:
-        self.user = _create_superuser()
+        self.user = create_superuser()
     else:
-        self.user = _create_user(group_name=group_name,
-                                 username=username,
-                                 name_in_negometrix=name_in_negometrix,
-                                 )
+        self.user = create_user(group_name=group_name,
+                                username=username,
+                                name_in_negometrix=name_in_negometrix,
+                                )
     self.client.force_login(self.user)
 
 
-def _create_superuser(username="john", password="doe", **kwargs):
+def create_superuser(username="john", password="doe", **kwargs):
+
     user = get_user_model().objects.create(username=username,
                                            is_superuser=True,
                                            is_active=True,
@@ -53,11 +59,11 @@ def _create_superuser(username="john", password="doe", **kwargs):
     return user
 
 
-def _create_user(username="john",
-                 password="doe",
-                 group_name=None,
-                 name_in_negometrix="J. Doe",
-                 **kwargs):
+def create_user(username="john",
+                password="doe",
+                group_name=None,
+                name_in_negometrix="J. Doe",
+                **kwargs)-> get_user_model():
     user = get_user_model().objects.create(username=username,
                                            is_active=True,
                                            **kwargs
@@ -85,12 +91,9 @@ def _create_user(username="john",
 def set_up_static_data(self):
     # Set up static data
     self.system_a = System.objects.create(name="SYSTEM_A")
-    self.system = System.objects.create(name="Negometrix")
-    self.data_set_type = DataSetType.objects.create(name=CONTRACTEN)
-    self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
-                                                                   data_set_type=self.data_set_type,
-                                                                   interface_type=InterfaceDefinition.UPLOAD,
-                                                                   name="Contracten upload")
+    self.system = System.objects.get(name="Negometrix")
+    self.data_set_type = DataSetType.objects.get_or_create(name=CONTRACTEN)
+    self.interface_definition = InterfaceDefinition.objects.get(name="Contracten upload")
     self.org_unit = OrganizationalUnit.objects.create(name="MyTeam",
                                                       type=OrganizationalUnit.TEAM)
     self.user.org_units.add(self.org_unit)

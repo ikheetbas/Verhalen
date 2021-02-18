@@ -30,9 +30,10 @@ class ActivateAndDeactivateTest(TestCase):
 
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
+
 
     def test_activate_and_deactivate_interface_call(self):
         # PRE 1: InActive InterfaceCall with 2 inactive data_per_org_unit

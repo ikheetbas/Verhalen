@@ -1,10 +1,16 @@
 NPO Resource Manager Changelog 
 =============================
 
-0.2.12 (unreleased)
+0.2.13 (unreleased)
 -------------------
 
 - Nothing changed yet.
+
+
+0.2.12 (2021-02-18)
+-------------------
+
+- [RM-110](https://aesset.atlassian.net/browse/RM-110) Dataverversen: Beheer -> Interfaces, Uploads en Datasets incl uploaden, activeren en deactiveren op 2 niveaus: Upload en Dataset
 
 
 0.2.11 (2021-02-12)

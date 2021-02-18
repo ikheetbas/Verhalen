@@ -39,6 +39,10 @@ Change the cursor in a hand when on a clickable row
     font-size: 0.8rem;
 }
 
+
+/*
+ Activate/Deactivate status layout
+ */
 .error-messages {
   color: red;
   font-weight: bold}
@@ -53,6 +57,18 @@ Change the cursor in a hand when on a clickable row
   font-weight: bold
 }
 
+.actief-upload-status {
+  color: green;
+  font-weight: bold
+}
+
 .error-upload-status {
+    color: red
+}
+
+/*
+ django messages
+ */
+.error {
     color: red
 }
