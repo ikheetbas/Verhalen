@@ -8,7 +8,7 @@ from stage.models import StageContract
 
 
 class StageContractListView(PermissionRequiredMixin, ListView):
-    permission_required = 'rm.view_contract'
+    permission_required = 'rm.contracten_view'
     raise_exception = True
 
     model = StageContract

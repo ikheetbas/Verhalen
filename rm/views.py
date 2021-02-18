@@ -41,7 +41,7 @@ class UploadsListView(ListView):
         return result
 
 
-@permission_required('rm.view_contract', raise_exception=True)
+@permission_required('rm.contracten_view', raise_exception=True)
 def interface_call_details(request, pk: int):
     logger.debug(f"interface_call_details: pk: {pk}")
     interface_call = InterfaceCall.objects.get(pk=pk)
@@ -65,7 +65,7 @@ def get_dataset_details_url(dataset_type_name: str, user: CustomUser, id) -> str
     It would be nice to make this more generic, but for the moment it's hard coded.
     And since the screens differ per dataset_type as well it's not that big issue.
     """
-    if dataset_type_name.lower() == CONTRACTEN.lower() and user.has_perm("rm.view_contract"):
+    if dataset_type_name.lower() == CONTRACTEN.lower() and user.has_perm("rm.contracten_view"):
         return f"/contracten_dataset_details/{id}"
     return None
 
@@ -292,7 +292,7 @@ def create_contracten_dataset_context(dpou):
 
 class ContractenDatasetDetailsView(PermissionRequiredMixin, DetailView):
     model = DataPerOrgUnit
-    permission_required = "rm.view_contract"
+    permission_required = "rm.contracten_view"
     context_object_name = 'dataset'
     template_name = 'rm/contracten_dataset_details.html'
     form_class = DatasetForm
