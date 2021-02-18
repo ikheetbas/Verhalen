@@ -27,17 +27,13 @@
     </tr>
     </thead>
     {% for interface in interface_list %}
-{#    {%  if perms.rm.view_contract %}#}
-{#        <tr class='clickable-row' data-url='/interfacecall/{{ interface_call.pk }}'>#}
-{#    {% else %}#}
         <tr>
-{#    {% endif %}#}
-        <td  hidden>{{  interface.nr}}</td>
-        <td>{{  interface.dataset_type}}</td>
-        <td>{{  interface.system }}</td>
-        <td>{{  interface.date_time}}</td>
-        <td>{{  interface.user_email}}</td>
-        <td>{{  interface.org_unit }}</td>
+        <td hidden>{{ interface.nr}}</td>
+        <td>{{ interface.dataset_type}}</td>
+        <td>{{ interface.system }}</td>
+        <td>{{ interface.date_time}}</td>
+        <td>{{ interface.user_email}}</td>
+        <td>{{ interface.org_unit }}</td>
         <td class="text-right">{{  interface.rows_ok }}</td>
         <td class="text-right">{{  interface.rows_warning }}</td>
         {%  if interface.url_upload_page %}

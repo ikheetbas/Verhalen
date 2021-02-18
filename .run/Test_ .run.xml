@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test: " type="DjangoTestsConfigurationType">
+    <module name="npo-rm" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="TARGET" value="" />
+    <option name="SETTINGS_FILE" value="$PROJECT_DIR$/config/settings_pycharm.py" />
+    <option name="CUSTOM_SETTINGS" value="true" />
+    <option name="USE_OPTIONS" value="true" />
+    <option name="OPTIONS" value="--noinput" />
+    <method v="2" />
+  </configuration>
+</component>

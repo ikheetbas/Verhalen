@@ -68,14 +68,15 @@
     {% for dataset in dataset_list %}
         {%  if dataset.details_url %}
             <tr class='clickable-row' data-url={{ dataset.details_url }}>
+            <td><a href="{{ dataset.details_url }}">{{  dataset.id }}</a></td>
         {% else %}
             <tr>
+            <td>{{  dataset.id }}</td>
         {% endif %}
-        <td>{{  dataset.id }}</td>
         <td>{{  dataset.system }}</td>
         <td>{{  dataset.dataset_type}}</td>
         <td>{{  dataset.interface_type}}</td>
-        <td>{{  dataset.status}}</td>
+        <td class="{{ dataset.status.lower }}-upload-status">{{  dataset.status }}</td>
         <td>{{  dataset.username}}</td>
         <td>{{  dataset.date_time |date:'Y-m-d H:i' }}</td>
         <td>{{  dataset.org_unit }}</td>

@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 
-from rm.test.test_util import _create_user
+from rm.test.test_util import create_user
 from users.models import OrganizationalUnit, CustomUser, convert_permission_name_to_id
 from users.user_utils import all_org_units_of_org_unit, get_all_org_units_of_user, get_user_responsible_interface_names
 
@@ -103,13 +103,13 @@ class UserPermissionTests(TestCase):
         self.assertTrue(user.has_perm_with_name("rm", "Contracten upload"))
 
     def test_get_user_responsible_interface_names_with_zero_interface_permissions(self):
-        self.user = _create_user(username="No Body")
+        self.user = create_user(username="No Body")
         permission_names = get_user_responsible_interface_names(self.user)
         self.assertTrue(len(permission_names) == 0)
 
     def test_get_user_responsible_interface_names_with_contract_api_and_upload(self):
-        self.user = _create_user(group_name="Buyer",
-                                 username="I. koper")
+        self.user = create_user(group_name="Buyer",
+                                username="I. koper")
         permission_names = get_user_responsible_interface_names(self.user)
         self.assertTrue("Contracten API" in permission_names)
         self.assertTrue("Contracten upload" in permission_names)

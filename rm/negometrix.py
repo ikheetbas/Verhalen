@@ -10,6 +10,10 @@ from stage.models import StageContract
 
 logger = logging.getLogger(__name__)
 
+"""
+In defined_header the spreadsheet-column-headers are mapped to the attributes, 
+where it is stored in the Business Object.
+"""
 defined_headers = dict(
     database_nr="Database nr.",
     contract_nr="Contract nr.",
@@ -79,7 +83,7 @@ def handle_negometrix_file_row(row_nr: int,
         logger.error(f"{msg} bij interface_call.id:{interface_call.pk}")
         return RowStatus.DATA_ERROR, msg
 
-    if not interface_call.user.is_authorized_for_org_unit(org_unit):
+    if not interface_call.user.has_perm_for_org_unit(org_unit):
         return RowStatus.DATA_IGNORED, \
                f"Gebruiker is niet geautoriseerd voor het organisatieonderdeel van dit contract ({org_unit.name})"
 

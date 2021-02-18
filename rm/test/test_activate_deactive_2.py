@@ -12,7 +12,7 @@ class IsCompletelyActiveInactiveTests(TestCase):
     def setUp(self):
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
         self.org_unit_IAAS = OrganizationalUnit.objects.create(name="IAAS", type=OrganizationalUnit.TEAM)
@@ -78,9 +78,10 @@ class GetDataPerOrgUnitTests(TestCase):
         self.org_unit_YYY = OrganizationalUnit.objects.create(name="YYY", type=OrganizationalUnit.TEAM)
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
+
         self.interface_call: InterfaceCall = create_interface_call(active=False,
                                                                    interface_definition=self.interface_definition)
         add_data_per_org_unit(interface_call=self.interface_call, org_unit=self.org_unit_XXX, active=False)
@@ -121,9 +122,10 @@ class ActivateInterfaceCallTests(TestCase):
 
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
+
 
     def test_1_activate_simple_interface_call(self):
 
@@ -229,7 +231,7 @@ class ActivateDataPerOrgUnitTests(TestCase):
 
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
 
@@ -335,9 +337,10 @@ class DeactivateInterfaceCallTests(TestCase):
 
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
+
 
     def test_1_call_with_one_dpou(self):
         # PRE 1: Active InterfaceCall with 1 active data_per_org_unit
@@ -385,9 +388,10 @@ class DeactivateDataPerOrgUnitTest(TestCase):
 
         self.system, create = System.objects.get_or_create(name=NEGOMETRIX)
         self.data_set_type, create = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system,
+        self.interface_definition, created = InterfaceDefinition.objects.get_or_create(system=self.system,
                                                                        data_set_type=self.data_set_type,
                                                                        interface_type=InterfaceDefinition.UPLOAD)
+
     def test_1_deactivate_only_dpou_of_a_call(self):
         # PRE 1: Active InterfaceCall with 1 active data_per_org_unit
         interface_call_1: InterfaceCall = create_interface_call(active=True,

@@ -13,7 +13,8 @@ class OrganizationalUnit(models.Model):
     )
     name = models.CharField("Naam", max_length=50, blank=False, null=True, unique=True)
     type = models.CharField(max_length=3, choices=ORG_UNIT_TYPE)
-    parent_org_unit = models.ForeignKey('self', blank=True, null=True, on_delete=models.CASCADE, related_name='child_org_units')
+    parent_org_unit = models.ForeignKey('self', blank=True, null=True, on_delete=models.CASCADE,
+                                        related_name='child_org_units')
 
     def __str__(self):
         return f"{self.get_type_display()} - {self.name}"
@@ -37,20 +38,25 @@ class CustomUser(AbstractUser):
     # Django Generally, ManyToManyField instances should go in the object that’s going to be edited on a form.
     org_units = models.ManyToManyField(OrganizationalUnit)
 
-    def is_authorized_for_org_unit(self, org_unit: OrganizationalUnit) -> bool:
+    def has_perm_for_org_unit(self, *org_units: OrganizationalUnit) -> bool:
+        """
+        Does the user have rights for ALL given org_units?
+        """
         if self.is_superuser:
             return True
-        if org_unit in self.org_units.all():
-            return True
-        i = 0
-        while org_unit.parent_org_unit and i<15:
-            i += 1
-            org_unit = org_unit.parent_org_unit
+        found_org_units_of_user = 0
+        for org_unit in org_units:
             if org_unit in self.org_units.all():
-                return True
-        if i == 15:
-            raise Exception("Exit i.v.m. endless-loopbeveiliging")
-        return False
+                found_org_units_of_user += 1
+            i = 0
+            while org_unit.parent_org_unit and i < 15:
+                i += 1
+                org_unit = org_unit.parent_org_unit
+                if org_unit in self.org_units.all():
+                    found_org_units_of_user += 1
+            if i == 15:
+                raise Exception("Exit i.v.m. endless-loopbeveiliging")
+        return len(org_units) == found_org_units_of_user
 
     def has_perm_with_name(self, app, permission_name: str):
         """
@@ -65,7 +71,7 @@ class CustomUser(AbstractUser):
         If the user has rm.permission_name, than that permission_name
         is returned to be used as url_name
         """
-        if self.has_perm_with_name("rm", permission_name)\
+        if self.has_perm_with_name("rm", permission_name) \
                 or self.is_superuser:
             return permission_name.lower().replace(" ", "_")
         else:
