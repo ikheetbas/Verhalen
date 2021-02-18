@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -23,10 +24,21 @@ class HomePageView(LoginRequiredMixin, TemplateView):
 
 
 class UploadsListView(ListView):
-    model = InterfaceCall
+    # model = InterfaceCall
     context_object_name = 'uploads_list'
     template_name = 'rm/uploads_list.html'
     # ordering = ['-date_time_creation'] is done through DataTables in JavaScript (see custom.css)
+
+    def get_queryset(self):
+        result = []
+        user: CustomUser = self.request.user
+        for call in InterfaceCall.objects.all():
+            if user.has_perm_for_org_unit(*call.org_units):
+                call.user_has_perm_for_org_units = True
+            else:
+                call.user_has_perm_for_org_units = False
+            result.append(call)
+        return result
 
 
 @permission_required('rm.view_contract', raise_exception=True)
@@ -115,6 +127,20 @@ class InterfaceListView(ListView):
         return rows
 
 
+def allowed_to_show_this_interface_call_with_this_view(interface_call,
+                                                       view_datatype) -> bool:
+    """
+    If the datatype is not known (then it has no data either) or when the datatype
+    of the interface_call is the same as the view, it is allowed to show it.
+    """
+    if not interface_call.interface_definition:
+        return True
+    if interface_call.datatype == view_datatype:
+        return True
+    else:
+        return False
+
+
 class GenericUploadView(PermissionRequiredMixin, TemplateView):
     """
     A base class for uploading files and/or displaying the content of an upload.
@@ -173,24 +199,16 @@ class GenericUploadView(PermissionRequiredMixin, TemplateView):
         pk = kwargs.get('pk')
         if pk:
             call: InterfaceCall = get_object_or_404(InterfaceCall, pk=pk)
-            if call.user == request.user or request.user.is_superuser:
-                # if it is your own upload, you are allowed to see it
+            if allowed_to_show_this_interface_call_with_this_view(interface_call=call,
+                                                                  view_datatype=self.data_set_type_name):
                 pass
             else:
-                if call.interface_definition:
-                    if not call.interface_definition.data_set_type.name == self.data_set_type_name:
-                        raise PermissionDenied
-                else:
-                    raise PermissionDenied
+                raise PermissionDenied
+
+        has_permission_for_upload = request.user.is_superuser or \
+                                    request.user.has_perm(self.permission_required_for_upload)
 
         form = self.form_class()
-
-        has_permission_for_upload = False
-        if request.user.has_perm(self.permission_required_for_upload):
-            has_permission_for_upload = True
-        if request.user.is_superuser:
-            has_permission_for_upload = True
-
         context = {'form': form,
                    'url_name': self.url_name,
                    'page_title': self.page_title,
@@ -198,11 +216,12 @@ class GenericUploadView(PermissionRequiredMixin, TemplateView):
                    'has_permission_for_upload': has_permission_for_upload}
 
         if pk:
-            context = {**context, **create_interface_context(pk, self.data_set_type_name)}
+            context = {**context,
+                       **create_interface_call_context(pk, self.data_set_type_name)}
         return render(request, self.template_name, context)
 
 
-def create_interface_context(pk, datasettype_name):
+def create_interface_call_context(pk, datasettype_name):
     """
     create the context for this interface_call, depending on datasettype_name
     """
@@ -284,9 +303,11 @@ class ContractenDatasetDetailsView(PermissionRequiredMixin, DetailView):
         if request.POST.get("activate"):
             dpou_id = request.POST.get("dpou_id")
             dpou = DataPerOrgUnit.objects.get(pk=int(dpou_id))
-            dpou.activate_dataset(start_transaction=True)
+            errormessage = dpou.activate_dataset(start_transaction=True)
+            if errormessage:
+                messages.add_message(request, messages.ERROR, errormessage)
             logger.debug(f"DPOU: {dpou_id} activated")
-            return HttpResponseRedirect(f'/contracten_dataset_details/{dpou_id}')
+            return HttpResponseRedirect(reverse('contracten_dataset_details', args=(dpou_id,)))
 
         # DEACTIVATE
         if request.POST.get("deactivate"):
@@ -294,14 +315,20 @@ class ContractenDatasetDetailsView(PermissionRequiredMixin, DetailView):
             dpou = DataPerOrgUnit.objects.get(pk=int(dpou_id))
             dpou.deactivate_dataset(start_transaction=True)
             logger.debug(f"DPOU: {dpou_id} deactivated")
-            return HttpResponseRedirect(f'/contracten_dataset_details/{dpou_id}')
+            return HttpResponseRedirect(reverse('contracten_dataset_details', args=(dpou_id,)))
+
         return render(request, reverse("contracten_dataset_details"))
 
     def get(self, request, *args, **kwargs):
         dpou = self.get_object()
+        errormessage = None
+        if len(args) == 2:
+            errormessage = args[1]
+
         if not dpou.get_data_set_type().name == CONTRACTEN:
             raise PermissionDenied
         form = self.form_class()
-        context = {'form': form}
+        context = {'form': form,
+                   'errormessage': errormessage}
         context = {**context, **create_contracten_dataset_context(dpou)}
         return render(request, self.template_name, context)

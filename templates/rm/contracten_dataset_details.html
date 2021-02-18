@@ -14,6 +14,17 @@
   </ol>
 </nav>
 
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+        {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endif %}
+    {% endfor %}
+</ul>
+{% endif %}
+
+
     <div class="container-fluid">
     <div class="row">
         <div class="col-lg-3 ">
@@ -43,9 +54,13 @@
                     class="table table-sm table-hover table-striped table-bordered">
                 <thead class="thead-dark ">
                     <tr>
-                        <th class="col-sm-3" colspan="2">Dataset gegevens</th>
+                        <th class="col-sm-5" colspan="2">Dataset gegevens</th>
                     </tr>
                 </thead>
+                <tr>
+                    <td class="col-sm-5">Organisatie onderdeel:</td>
+                    <td>{{ dpou.org_unit.name}}</td>
+                </tr>
                 <tr>
                     <td class="col-sm-2">Datum/tijd</td>
                     <td class="col-sm-6">{{  dpou.interface_call.date_time_creation |date:'Y-m-d H:i' }}</td>

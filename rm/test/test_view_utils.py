@@ -8,8 +8,9 @@ from django.urls import reverse
 
 from rm.constants import NEGOMETRIX, CONTRACTEN, URL_NAME_CONTRACTEN_UPLOAD
 from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall
+from rm.test.test_util import set_up_user
 from rm.view_util import create_addition_dataset_filter, get_datasets_for_user, \
-    get_active_datasets_per_interface_for_users_org_units, InterfaceListRecord
+    get_active_datasets_per_interface_for_users_org_units, InterfaceListRecord, process_file
 from users.models import CustomUser
 from users.models import OrganizationalUnit
 
@@ -106,9 +107,10 @@ class ViewUtilTests(TestCase):
 
     def test_get_datasets_for_user_on_org_authorization(self):
         # Interface Definition
-        self.interface_definition = InterfaceDefinition.objects.create(system=self.system_negometrix,
-                                                                       data_set_type=self.data_set_type,
-                                                                       interface_type=InterfaceDefinition.UPLOAD)
+        self.interface_definition, created = \
+            InterfaceDefinition.objects.get_or_create(system=self.system_negometrix,
+                                                      data_set_type=self.data_set_type,
+                                                      interface_type=InterfaceDefinition.UPLOAD)
 
         # ADMIN: User, Organization
         self.org_unit_1 = OrganizationalUnit.objects.create(name="Cluster1")
@@ -158,8 +160,8 @@ class ViewUtilTests(TestCase):
 
         # POST: now 2:
         self.assertEqual(len(datasets), 2)
-        self.assertEqual(datasets[0].id, self.dpou_1.id)  # Failed a couple of times when I ran all tests
-        self.assertEqual(datasets[1].id, self.dpou_3.id)  # But suddenly went ok again.
+        self.assertIn(self.dpou_1, datasets)
+        self.assertIn(self.dpou_3, datasets)
 
         # PRE-ACTION: add another dpou, for the team (under cluster1, so visible)
         self.dpou_4 = DataPerOrgUnit.objects.create(org_unit=self.org_unit_t1,
@@ -171,18 +173,18 @@ class ViewUtilTests(TestCase):
 
         # POST: now 3:
         self.assertEqual(len(datasets), 3)
-        self.assertEqual(datasets[0].id, self.dpou_1.id)
-        self.assertEqual(datasets[1].id, self.dpou_3.id)
-        self.assertEqual(datasets[2].id, self.dpou_4.id)
+        self.assertIn(self.dpou_1, datasets)
+        self.assertIn(self.dpou_3, datasets)
+        self.assertIn(self.dpou_4, datasets)
 
         # ACTION: get datasets visible for this user ACTIVE
         datasets = get_datasets_for_user(self.user, {'active': 'True'})
 
         # POST: now 2:
         self.assertEqual(len(datasets), 2)
-        self.assertEqual(datasets[0].id, self.dpou_1.id)
+        self.assertIn(self.dpou_1, datasets)
         # self.assertEqual(datasets[1].id, self.dpou_3.id)
-        self.assertEqual(datasets[1].id, self.dpou_4.id)
+        self.assertIn(self.dpou_4, datasets)
 
         # ACTION: get datasets visible for this user INACTIVE
         datasets = get_datasets_for_user(self.user, {'active': 'False'})
@@ -294,8 +296,8 @@ class ViewUtilTests(TestCase):
 
         datasets = get_datasets_for_user(self.user, {'my_datasets': 'True', 'active': 'All'})
         self.assertEqual(len(datasets), 2)
-        self.assertEqual(datasets[0].id, self.dpou_contracten_upload.id)
-        self.assertEqual(datasets[1].id, self.dpou_contracten_api.id)
+        self.assertIn(self.dpou_contracten_upload, datasets)
+        self.assertIn(self.dpou_contracten_api, datasets)
 
         datasets = get_datasets_for_user(self.user, {'my_datasets': 'True', 'active': 'True'})
         self.assertEqual(len(datasets), 1)
@@ -314,7 +316,6 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         result = get_active_datasets_per_interface_for_users_org_units(mock_user)
         self.assertEqual(result[0].system, "Negometrix")
         self.assertEqual(result[0].dataset_type, "Contracten")
-
 
     @patch('rm.view_util.user_utils')
     def test_one_org_one_interfaces_def(self, mock_user_utils):
@@ -580,7 +581,6 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         self.assertEqual(result[0], expected_record_0)
         self.assertEqual(result[1], expected_record_1)
 
-
     @patch('rm.view_util.user_utils')
     def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid_one_active_call(self, mock_user_utils):
         # STATIC
@@ -657,7 +657,6 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         self.assertEqual(result[0], expected_record_0)
         self.assertEqual(result[1], expected_record_1)
         self.assertEqual(result[2], expected_record_2)
-
 
     @patch('rm.view_util.user_utils')
     def test_one_org_one_interfaces_def_one_call_two_dpou_two_valid_one_active_call_one_def(self, mock_user_utils):
@@ -752,7 +751,6 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         self.assertEqual(result[2], expected_record_2)
         self.assertEqual(result[3], expected_record_3)
 
-
     @patch('rm.view_util.user_utils')
     def test_no_permission(self, mock_user_utils):
         # STATIC
@@ -761,7 +759,6 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         interface_def_nego_contr = InterfaceDefinition.objects.get(name="Contracten upload")
         org_unit_iaas, created = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")
         org_unit_xxxx, created = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")
-
 
         # return IaaS and XxxX as org_unit of the user
         mock_user_utils.get_all_org_units_of_user.return_value = []
@@ -795,7 +792,6 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
         org_unit_iaas = OrganizationalUnit.objects.get_or_create(name="Pt: IaaS")[0]
         org_unit_xxxx = OrganizationalUnit.objects.get_or_create(name="Pt: XxxX")[0]
 
-
         # return IaaS and XxxX as org_unit of the user
         mock_user_utils.get_all_org_units_of_user.return_value = []
         expected_record_0 = InterfaceListRecord(
@@ -818,3 +814,21 @@ class GetActiveDatasetsPerInterfaceForUsersOrgUnitsTests(TestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], expected_record_0)
+
+
+class GenericFileUploadTests(TestCase):
+
+    def setUp(self):
+        set_up_user(self, superuser=True)
+
+    def test_upload_empty_file_with_xls(self):
+        nr_int_calls_before = len(InterfaceCall.objects.all())
+        file = open("rm/test/resources/EmptyFileWithXLSExtension.xls", "rb")
+        id, status, msg = process_file(file, self.user)
+        nr_int_calls_after = len(InterfaceCall.objects.all())
+        self.assertEqual(nr_int_calls_after, nr_int_calls_before + 1)
+
+        interface_call: InterfaceCall = InterfaceCall.objects.last()
+        self.assertEqual(interface_call.filename, "rm/test/resources/EmptyFileWithXLSExtension.xls")
+        self.assertTrue(interface_call.message.__contains__('Het openen van dit bestand als excel bestand '
+                                                            'geeft een foutmelding: File is not a zip file'))

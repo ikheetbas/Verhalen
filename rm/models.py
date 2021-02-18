@@ -45,6 +45,17 @@ class System(models.Model):
     def __str__(self):
         return self.name
 
+    def get_org_unit_by_mapping(self, mapping_name):
+        """
+        Returns the OrganizationalUnit that can be found for this System with the mapping name
+        """
+        mappings = self.mapping_set.filter(name=mapping_name)
+        if len(mappings) == 0:
+            return None
+
+        org_unit = mappings[0].org_unit
+
+        return org_unit
 
 class InterfaceDefinition(models.Model):
     """
@@ -147,6 +158,32 @@ class InterfaceCall(models.Model):
                              on_delete=models.SET_NULL,
                              null=True)
 
+    @property
+    def datatype(self):
+        """
+        shortcut for interface_definition.data_set_type.name
+        """
+        if not self.interface_definition:
+            return None
+        return self.interface_definition.data_set_type.name
+
+    @property
+    def system_name(self):
+        """
+        shortcut for interface_definition.system.name
+        """
+        if not self.interface_definition:
+            return None
+        return self.interface_definition.system.name
+
+    @property
+    def org_units(self):
+        org_units = []
+        for dpou in self.dataperorgunit_set.all():
+            org_units.append(dpou.org_unit)
+        return org_units
+
+
     def stage_contracts(self):
         contracts = StageContract.objects.none()
         for data_per_org_unit in self.dataperorgunit_set.all():
@@ -161,8 +198,8 @@ class InterfaceCall(models.Model):
         contracts = {}
         for data_per_org_unit in self.dataperorgunit_set.all():
             contracts_per_org_unit = data_per_org_unit.stagecontract_set.all().order_by("seq_nr")
-            tab_label_and_id_tuple = (data_per_org_unit.org_unit.name +
-                                      " (Actief)" if data_per_org_unit.active else " (Inactief)",
+            status = " (Actief)" if data_per_org_unit.active else " (Inactief)"
+            tab_label_and_id_tuple = (data_per_org_unit.org_unit.name + status,
                                       data_per_org_unit.org_unit.id)
             contracts[tab_label_and_id_tuple] = contracts_per_org_unit
         return contracts
@@ -396,10 +433,14 @@ class DataPerOrgUnit(models.Model):
 
     def activate_dataset(self,
                          start_transaction: bool = False,
-                         activating_from_interface_call: bool = False):
-
+                         activating_from_interface_call: bool = False) -> str:
+        """
+        Activate the dataset, when activated from screen and error occurs, all is rolled back and
+        the errormessage is returned.
+        """
+        errormessage = None
         if self.active:
-            return
+            return errormessage
 
         if start_transaction:
             try:
@@ -408,10 +449,11 @@ class DataPerOrgUnit(models.Model):
             except Exception as ex:
                 logger.exception(f"Exception tijdens het activeren van DataPerOrgUnit: "
                                  f"id={self.id} {self.org_unit.name} {self.get_data_set_type().name}", ex)
-                # re raise so we can show it to the user
-                raise
+                errormessage = f"Activeren is mislukt: {ex.__str__()}"
+                return errormessage
         else:
             self._activate_dataset(activating_from_interface_call)
+        return errormessage
 
     def _activate_dataset(self,
                           activating_from_interface_call: bool):
@@ -442,8 +484,9 @@ class DataPerOrgUnit(models.Model):
         When already deactivated, no error, but directly exit.
         To prevent circular reactions as well.
         """
+        errormessage = None
         if not self.active:
-            return
+            return errormessage
 
         if start_transaction:
             try:
@@ -452,10 +495,12 @@ class DataPerOrgUnit(models.Model):
             except Exception as ex:
                 logger.exception(f"Exception tijdens het deactiveren van DataPerOrgUnit: "
                                  f"id={self.id} {self.org_unit.name} {self.get_data_set_type().name}", ex)
-                # re raise so we can show it to the user
-                raise
+                errormessage = f"Deactiveren is mislukt: {ex.__str__()}"
+                return errormessage
         else:
             self._deactivate_dataset()
+
+        return errormessage
 
     def _deactivate_dataset(self, ):
         self.active = False

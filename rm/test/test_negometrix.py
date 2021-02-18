@@ -14,14 +14,17 @@ from users.models import OrganizationalUnit, CustomUser
 
 
 class GetInterfaceDefinitionTests(TestCase):
+    """
+    See if we can see if it is a Negometrix file or not
+    """
 
     def test_get_interface_definition_fail_Negometrix_not_found(self):
         # static data (wrong)
-        system = System.objects.create(name="FOUTGESPELD")
-        data_set_type, created = DataSetType.objects.get_or_create(name=CONTRACTEN)
-        interface_definition = InterfaceDefinition.objects.create(system=system,
-                                                                  data_set_type=data_set_type,
-                                                                  interface_type=InterfaceDefinition.UPLOAD)
+        system = System.objects.get(name=NEGOMETRIX)
+        data_set_type = DataSetType.objects.get(name=CONTRACTEN)
+        interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
+                                                                                  data_set_type=data_set_type)
+        interface_definition.delete()
 
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
@@ -30,20 +33,22 @@ class GetInterfaceDefinitionTests(TestCase):
     def test_get_interface_definition_fail_Foute_dataset(self):
         # static data (wrong)
         system = System.objects.get(name=NEGOMETRIX)
-        data_set_type = DataSetType.objects.create(name="Foute Dataset")
+        data_set_type = DataSetType.objects.get(name=CONTRACTEN)
         interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
-                                                                  data_set_type=data_set_type,
-                                                                  interface_type=InterfaceDefinition.UPLOAD)
+                                                                                  data_set_type=data_set_type)
+        interface_definition.delete()
 
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
             interface_definition = negometrix_file.get_interface_definition()
 
-    def test_get_interface_definition_fail_no_interface_definition_forgot_UPLOAD_in_GET(self):
+    def test_get_interface_definition_fail_no_interface_definition_forgot_UPLOAD_in_interfacedefinition(self):
+        # static data (wrong)
         system = System.objects.get(name=NEGOMETRIX)
         data_set_type = DataSetType.objects.get(name=CONTRACTEN)
         interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
-                                                                  data_set_type=data_set_type)
+                                                                                  data_set_type=data_set_type)
+        interface_definition.delete()
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         with self.assertRaises(rm.models.InterfaceDefinition.DoesNotExist):
             interface_definition = negometrix_file.get_interface_definition()
@@ -52,8 +57,8 @@ class GetInterfaceDefinitionTests(TestCase):
         system = System.objects.get(name=NEGOMETRIX)
         data_set_type = DataSetType.objects.get(name=CONTRACTEN)
         interface_definition, created = InterfaceDefinition.objects.get_or_create(system=system,
-                                                                  data_set_type=data_set_type,
-                                                                  interface_type=InterfaceDefinition.UPLOAD)
+                                                                                  data_set_type=data_set_type,
+                                                                                  interface_type=InterfaceDefinition.UPLOAD)
         negometrix_file = NegometrixInterfaceFile("testfile.xlsx")
         interface_definition = negometrix_file.get_interface_definition()
         self.assertIsInstance(interface_definition, InterfaceDefinition)
@@ -210,6 +215,7 @@ class NegometrixCountTests(TestCase):
         self.assertEqual(interface_call.number_of_data_rows_ok, 1)
         self.assertEqual(interface_call.number_of_data_rows_ignored, 1)
 
+
 class FileWithContractTests(TestCase):
 
     def setUp(self):
@@ -277,9 +283,7 @@ class NegometrixFileUploadTests(TestCase):
                                       org_unit=self.org_unit_data_services,
                                       system=self.system_negometrix)
 
-
     def test_upload_a_valid_excel_file_for_user_of_pt_iaas_with_2_rows_one_of_other_dept(self):
-
         # Create user with organization
         set_up_user(self, superuser=False)
         self.user.org_units.add(self.org_unit_pt_iaas)
@@ -327,7 +331,6 @@ class NegometrixFileUploadTests(TestCase):
         self.assertEqual(interface_call.message, "")
         self.assertEqual(interface_call.rawdata_set.all().count(), 3)
         self.assertEqual(len(interface_call.stage_contracts()), 2)
-
 
 
 class HandleNegometrixFileRowTests(TestCase):
@@ -396,6 +399,5 @@ class HandleNegometrixFileRowTests(TestCase):
                                                      fields_with_position=self.fields_with_position,
                                                      mandatory_field_positions=self.mandatory_field_positions)
         self.assertEqual(row_status, RowStatus.DATA_IGNORED)
-        self.assertTrue(msg.__contains__("Gebruiker is niet geautoriseerd voor het organisatieonderdeel van dit contract"))
-
-
+        self.assertTrue(
+            msg.__contains__("Gebruiker is niet geautoriseerd voor het organisatieonderdeel van dit contract"))

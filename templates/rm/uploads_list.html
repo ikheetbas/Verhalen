@@ -28,13 +28,14 @@
     </tr>
     </thead>
     {% for upload in uploads_list %}
-    {%  if perms.rm.view_contract %}
-{#        TODO permission depends on datasettype, rol, status and owner, so this has to be improved #}
-        <tr class='clickable-row' data-url='/contracten_upload_details/{{ upload.pk }}'>
-    {% else %}
-        <tr>
-    {% endif %}
-        <td>{{  upload.pk }}</td>
+        {%  if upload.user_has_perm_for_org_units and perms.rm.contracten_view %}
+            <tr class='clickable-row' data-url='/contracten_upload_details/{{ upload.pk }}'>
+            <td><a href='/contracten_upload_details/{{ upload.pk }}'>{{  upload.pk }}</a></td>
+        {% else %}
+            <tr>
+            <td>{{  upload.pk }}</td>
+        {% endif %}
+
         <td>{{  upload.interface_definition.data_set_type.name }}</td>
         <td>{{  upload.interface_definition.system.name }}</td>
         <td>{{  upload.interface_definition.get_interface_type_display }}</td>

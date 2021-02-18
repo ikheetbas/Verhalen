@@ -4,11 +4,37 @@ from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 
-from rm.test.test_util import set_up_user_with_interface_call_and_contract
+from rm.constants import CONTRACTEN
+from rm.models import System, DataSetType, InterfaceDefinition
+from rm.test.test_util import set_up_user_with_interface_call_and_contract, set_up_user
 from stage.models import StageContract
 
 
-class WebPagesTest(TestCase):
+def _create_superuser():
+    user = get_user_model().objects.create(username="Admin",
+                                           is_superuser=True,
+                                           is_active=True)
+    user.save()
+    return user
+
+
+def _create_user(username, group_name=None):
+    user = get_user_model().objects.create(username=username,
+                                           is_active=True)
+
+    if group_name:
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            message = f"Group {group_name} can not be found"
+            raise Exception(message)
+        user.groups.add(group)
+
+    user.save()
+    return user
+
+
+class HomepageTest(TestCase):
 
     def setUp(self):
         set_up_user_with_interface_call_and_contract(self)
@@ -18,10 +44,53 @@ class WebPagesTest(TestCase):
         response = c.get("/")
         self.assertEqual(response.status_code, 200)
 
-    def test_interfaces_page(self):
+
+class InterfacesPageTest(TestCase):
+
+    def setUp(self):
+        self.system = System.objects.get(name="Negometrix")
+        self.data_set_type = DataSetType.objects.get_or_create(name=CONTRACTEN)
+        self.interface_definition = InterfaceDefinition.objects.get(name="Contracten upload")
+
+    def test_sanity(self):
+        self.assertTrue(self.interface_definition.interface_type, InterfaceDefinition.UPLOAD)
+
+    def test_interfaces_page_user_no_permissions_and_no_org_unit(self):
+        set_up_user(self, superuser=False)
+
+        # Must be able to load the page
         response = self.client.get('/interfaces')
         self.assertContains(response, 'Interfaces')
 
+        # Must see the Contracten and Negometrix and Upload text
+        self.assertContains(response, 'Contracten')
+        self.assertContains(response, 'Negometrix')
+        self.assertContains(response, 'Upload')
+
+        # Should not see an upload link
+        self.assertNotContains(response, 'Upload</a>')
+
+    def test_interfaces_page_buyer(self):
+        set_up_user(self, superuser=False, group_name="Buyer")
+
+        # Must be able to load the page and see an Upload button
+        response = self.client.get('/interfaces')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload</a>')
+
+    def test_interfaces_page_superuser(self):
+        set_up_user(self, superuser=True)
+
+        # Must be able to load the page and see an Upload button
+        response = self.client.get('/interfaces')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload</a>')
+
+
+class ContractenUploadDetailsPageTest(TestCase):
+
+    def setUp(self):
+        set_up_user_with_interface_call_and_contract(self)
 
     def test_one_contract_on_interface_call_page(self):
         response = self.client.get(f'/contracten_upload_details/{self.interface_call_1.pk}/')
@@ -52,28 +121,6 @@ class WebPagesTest(TestCase):
             self.assertTrue(expected in exception.__str__())
 
 
-def _create_superuser():
-    user = get_user_model().objects.create(username="Admin",
-                                           is_superuser=True,
-                                           is_active=True)
-    user.save()
-    return user
-
-
-def _create_user(username, group_name=None):
-    user = get_user_model().objects.create(username=username,
-                                           is_active=True)
-
-    if group_name:
-        try:
-            group = Group.objects.get(name=group_name)
-        except Group.DoesNotExist:
-            message = f"Group {group_name} can not be found"
-            raise Exception(message)
-        user.groups.add(group)
-
-    user.save()
-    return user
 
 
 class ContractenUploadPageTest(TestCase):

@@ -12,7 +12,8 @@ def create_negometrix_statics(apps, schema_editor):
     new_datasettype, created = DataSetType.objects.get_or_create(name= "Contracten")
     new_int_def, created = InterfaceDefinition.objects.get_or_create(name= "Contracten upload",
                                                                      system=new_system,
-                                                                     data_set_type=new_datasettype)
+                                                                     data_set_type=new_datasettype,
+                                                                     interface_type="UPL")
 
 
 class Migration(migrations.Migration):
