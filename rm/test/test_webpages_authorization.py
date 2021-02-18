@@ -42,9 +42,9 @@ class RoleBasedAuthorizationClusterLeadTests(TestCase):
         response = self.client.get(reverse("contracten_upload"))
         self.assertEqual(response.status_code, 403)
 
-    def test_cluster_lead_has_view_contract_permissions(self):
+    def test_cluster_lead_has_contracten_view_permissions(self):
         permissions = self.user.user_permissions.all()
-        self.assertTrue(self.user.has_perm('rm.view_contract'))
+        self.assertTrue(self.user.has_perm('rm.contracten_view'))
 
     def test_cluster_lead_sees_contracts_of_interfaceCall(self):
         response = self.client.get(f'/interfacecall/{self.interface_call_1.pk}/')
@@ -71,8 +71,8 @@ class RoleBasedAuthorizationBuyerTests(TestCase):
 
     def test_buyer_has_the_right_permissions(self):
         permissions = self.user.user_permissions.all()
-        self.assertTrue(self.user.has_perm('rm.view_contract'))
-        self.assertTrue(self.user.has_perm('rm.upload_contract_file'))
+        self.assertFalse(self.user.has_perm('rm.view_contract'))                # OLD
+        self.assertFalse(self.user.has_perm('rm.upload_contract_file'))         # OLD
         self.assertTrue(self.user.has_perm('rm.contracten_api'))
         self.assertTrue(self.user.has_perm('rm.contracten_upload'))
         self.assertTrue(self.user.has_perm('rm.contracten_view'))

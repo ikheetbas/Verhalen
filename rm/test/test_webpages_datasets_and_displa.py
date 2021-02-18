@@ -1,3 +1,4 @@
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
@@ -66,7 +67,7 @@ class DatasetPageTest(TestCase):
         self._login_user(self.user_no_role_no_org)
 
         # Should NOT be able to see page with IaaS contracts
-        response = self.client.get(reverse("contracten_dataset_details", args=(self.upload_iaas.id,)))
+        response = self.client.get(reverse("contracten_dataset_details", args=(self.dpou_iaas.id,)))
         self.assertEqual(response.status_code, 403)
 
 
@@ -80,14 +81,14 @@ class DatasetPageTest(TestCase):
         # Can see no uploads, since it has no org units
         self.assertContains(response, 'Negometrix')
         self.assertContains(response, '<td class="actief-upload-status">Actief</td>')
-        self.assertContains(response, f'a href="/contracten_dataset_details/{self.upload_iaas.id}">{self.upload_iaas.id}</a>')
+        self.assertContains(response, f'a href="/contracten_dataset_details/{self.dpou_iaas.id}">{self.dpou_iaas.id}</a>')
 
     def test_iaas_clusterlead_can_see_dataset_details_but_no_action_buttons(self):
         # Cluster lead from IaaS
         self._login_user(self.cluster_lead_iaas)
 
         # Should be able to see page with IaaS contracts
-        response = self.client.get(reverse("contracten_dataset_details", args=(self.upload_iaas.id,)))
+        response = self.client.get(reverse("contracten_dataset_details", args=(self.dpou_iaas.id,)))
         self.assertEqual(response.status_code, 200)
 
         # Should NOT see the Activate Button
@@ -106,14 +107,14 @@ class DatasetPageTest(TestCase):
         # Can see no uploads, since it has no org units
         self.assertContains(response, 'Negometrix')
         self.assertContains(response, '<td class="actief-upload-status">Actief</td>')
-        self.assertContains(response, f'a href="/contracten_dataset_details/{self.upload_iaas.id}">{self.upload_iaas.id}</a>')
+        self.assertContains(response, f'a href="/contracten_dataset_details/{self.dpou_iaas.id}">{self.dpou_iaas.id}</a>')
 
     def test_iaas_buyer_can_see_dataset_details_with_action_buttons(self):
         # Cluster lead from IaaS
         self._login_user(self.user_buyer_iaas)
 
         # Should be able to see page with IaaS contracts
-        response = self.client.get(reverse("contracten_dataset_details", args=(self.upload_iaas.id,)))
+        response = self.client.get(reverse("contracten_dataset_details", args=(self.dpou_iaas.id,)))
         self.assertEqual(response.status_code, 200)
 
         # Should NOT see the Activate Button
@@ -137,3 +138,7 @@ class DatasetPageTest(TestCase):
         self.assertContains(response, "Actief")
         self.assertContains(response, "De-activeer dataset")
         self.assertContains(response, "PT: IaaS")
+
+
+    # def test_dummy(self):
+    #     test_util.print_permissions_and_groups()
