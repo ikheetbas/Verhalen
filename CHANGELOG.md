@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.13 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- [RM-110](https://aesset.atlassian.net/browse/RM-110) Some tooltips on the screens and garbage-collection on the permissions
 
 
 0.2.12 (2021-02-18)
