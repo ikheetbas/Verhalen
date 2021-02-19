@@ -4,7 +4,7 @@ NPO Resource Manager Changelog
 0.2.14 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- [RM-89](https://aesset.atlassian.net/browse/RM-89) Verwijderen blokje 'onthouden' op inlogscherm
 
 
 0.2.13 (2021-02-18)
