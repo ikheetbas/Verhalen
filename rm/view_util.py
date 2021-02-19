@@ -128,14 +128,14 @@ class InterfaceListRecord:
 
     def __eq__(self, o: object) -> bool:
         return self.nr == o.nr \
-        and self.interface_type == o.interface_type \
-        and self.url_upload_page == o.url_upload_page \
-        and self.dataset_type == o.dataset_type \
-        and self.system == o.system \
-        and self.user_email == o.user_email \
-        and self.org_unit == o.org_unit \
-        and self.rows_ok == o.rows_ok \
-        and self.rows_warning ==  o.rows_warning
+               and self.interface_type == o.interface_type \
+               and self.url_upload_page == o.url_upload_page \
+               and self.dataset_type == o.dataset_type \
+               and self.system == o.system \
+               and self.user_email == o.user_email \
+               and self.org_unit == o.org_unit \
+               and self.rows_ok == o.rows_ok \
+               and self.rows_warning == o.rows_warning
 
         # and self.date_time == o.date_time \  -> not checked, makes testing easier
 
@@ -192,7 +192,7 @@ def get_active_datasets_per_interface_for_users_org_units(user: CustomUser) -> L
             for call in interface.interface_calls.all().filter(status=InterfaceCall.ACTIVE):
                 record.date_time = call.date_time_creation
                 record.user_email = call.user_email
-                dpous_for_this_user = call.dataperorgunit_set.all().\
+                dpous_for_this_user = call.dataperorgunit_set.all(). \
                     filter(org_unit__in=list_of_all_org_units_of_user,
                            active=True)
                 if dpous_for_this_user.count() > 0:
@@ -252,19 +252,22 @@ def process_file(file, user, expected_system=None):
     return interface_call.id, "OK", "File has been processed"
 
 
-def set_session_timeout_inactivity(request, minutes_timeout=5):
+def set_session_timeout_inactivity(request, minutes_timeout: str = "5"):
     """
     Sets the timeout of the session, defaults to 5 minutes.
     When set to NEVER, it will NEVER expire.
     """
     if not minutes_timeout:
-        minutes_timeout = 20
+        minutes_timeout = "20"
 
     if type(minutes_timeout) == str and minutes_timeout == 'NEVER':
         logger.debug("Not setting session.set_expiry because setting is: NEVER")
         return
 
-    if not type(minutes_timeout) == int:
+    try:
+        minutes_timeout = int(minutes_timeout)
+    except ValueError:
+        logger.error(f"Not a valid value for time-out minutes: {minutes_timeout}, using default: 20 minutes")
         minutes_timeout = 20
 
     seconds_timeout = minutes_timeout * 60
@@ -273,15 +276,16 @@ def set_session_timeout_inactivity(request, minutes_timeout=5):
     request.session.set_expiry(seconds_timeout)
 
 
-def get_minutes_timeout():
+def get_minutes_timeout_from_settings_or_default() -> str:
     """
     Gets the minutes_timeout from the settings.py or sets a default
     """
     try:
         minutes_timeout = settings.SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY
-        logger.info(f"Found setting SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY: {minutes_timeout}")
+        logger.info(
+            f"Found setting SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY: {minutes_timeout}")
     except AttributeError:
-        minutes_timeout = 20
+        minutes_timeout = "20"
         logger.warning(
             f"Found NO setting SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY, using default: {minutes_timeout} minutes")
     return minutes_timeout

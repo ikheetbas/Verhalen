@@ -11,12 +11,18 @@
     <h6>Weet je zeker dat je wilt uitloggen?</h6>
     <br>
     <form method="post" action="{% url 'account_logout' %}">
-      {% csrf_token %}
-      {{ form|crispy }}
-      <button class="btn btn-warning"
-              type="submit">
-          Ja, log me uit
-      </button>
+        {% csrf_token %}
+        {{ form|crispy }}
+        <div class="btn-group">
+            <button class="btn btn-success" type="submit">
+                Ja, log me uit
+            </button>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline-success" href="{% url "home" %}" role="button">Nee, toch maar niet</a>
+        </div>
     </form>
+
+
 
 {% endblock content %}
