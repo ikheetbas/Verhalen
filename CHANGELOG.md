@@ -1,7 +1,7 @@
 NPO Resource Manager Changelog 
 =============================
 
-0.2.15 (unreleased)
+0.2.15 (2021-02-19)
 -------------------
 
 - [RM-117](https://aesset.atlassian.net/browse/RM-117) Annuleer-knop op het uitlog-scherm
