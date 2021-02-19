@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
+from rm import view_util
 from rm.constants import NEGOMETRIX, CONTRACTEN, URL_NAME_CONTRACTEN_UPLOAD
 from rm.models import System, DataSetType, InterfaceDefinition, DataPerOrgUnit, InterfaceCall
 from rm.test.test_util import set_up_user_and_login
@@ -832,3 +833,35 @@ class GenericFileUploadTests(TestCase):
         self.assertEqual(interface_call.filename, "rm/test/resources/EmptyFileWithXLSExtension.xls")
         self.assertTrue(interface_call.message.__contains__('Het openen van dit bestand als excel bestand '
                                                             'geeft een foutmelding: File is not a zip file'))
+
+
+class SetSessionTimeoutInactivityTests(TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_set_session_timeout_no_arg(self):
+        mock_request = Mock()
+        view_util.set_session_timeout_inactivity(mock_request)
+        mock_request.session.set_expiry.assert_called_with(5*60)
+
+    def test_set_session_timeout_arg_None(self):
+        mock_request = Mock()
+        view_util.set_session_timeout_inactivity(mock_request, None)
+        mock_request.session.set_expiry.assert_called_with(20*60)
+
+    def test_set_session_timeout_NEVER(self):
+        mock_request = Mock()
+        view_util.set_session_timeout_inactivity(mock_request, "NEVER")
+        mock_request.session.set_expiry.assert_not_called()
+
+    def test_set_session_timeout_with_10_minutes(self):
+        mock_request = Mock()
+        view_util.set_session_timeout_inactivity(mock_request, 10)
+        mock_request.session.set_expiry.assert_called_with(600)
+
+    def test_set_session_timeout_with_illegal_arg(self):
+        mock_request = Mock()
+        view_util.set_session_timeout_inactivity(mock_request, "ILLEGAL")
+        mock_request.session.set_expiry.assert_called_with(20*60)
+
