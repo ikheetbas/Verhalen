@@ -19,6 +19,7 @@ with open("config/version.txt") as v_file:
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENVIRONMENT = os.environ.get('ENVIRONMENT', default='prod')
+SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY = os.environ.get('SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY', default=20)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
@@ -203,7 +204,7 @@ LOGGING = {
 }
 
 # production
-if ENVIRONMENT == 'prod':
+if ENVIRONMENT == 'prod' or ENVIRONMENT == 'acc':
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 2592000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -214,11 +215,14 @@ if ENVIRONMENT == 'prod':
     SECURE_REFERRER_POLICY = 'same-origin'
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDER_PROTO', 'https')
 
+# Django Session setting
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 # Django allauth config
 LOGIN_REDIRECT_URL = 'home'
 ACCOUNT_LOGOUT_REDIRECT = 'home'
 ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
-#ACCOUNT_SESSION_REMEMBER = False
+ACCOUNT_SESSION_REMEMBER = False
 
 SITE_ID = 1
 

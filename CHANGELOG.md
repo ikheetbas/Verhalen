@@ -1,6 +1,14 @@
 NPO Resource Manager Changelog 
 =============================
 
+0.2.14 (2021-02-19)
+-------------------
+
+- [RM-92](https://aesset.atlassian.net/browse/RM-92) Automatische logout na x minuten (default 20, in te stellen in de environment settings van de applicatieserver door de SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY setting)
+
+- [RM-89](https://aesset.atlassian.net/browse/RM-89) Verwijderen blokje 'onthouden' op inlogscherm
+
+
 0.2.13 (2021-02-18)
 -------------------
 

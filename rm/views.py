@@ -13,7 +13,8 @@ from django.views.generic import ListView, TemplateView, DetailView
 from rm.constants import NEGOMETRIX, CONTRACTEN, UNKNOWN
 from rm.forms import UploadFileForm, DatasetForm
 from rm.models import InterfaceCall, DataPerOrgUnit
-from rm.view_util import get_datasets_for_user, get_active_datasets_per_interface_for_users_org_units, process_file
+from rm.view_util import set_session_timeout_inactivity, get_minutes_timeout, get_datasets_for_user, \
+    get_active_datasets_per_interface_for_users_org_units, process_file
 from users.models import CustomUser
 
 logger = logging.getLogger(__name__)
@@ -22,11 +23,17 @@ logger = logging.getLogger(__name__)
 class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
 
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        minutes_timeout = get_minutes_timeout()
+        set_session_timeout_inactivity(request, minutes_timeout)
+
 
 class UploadsListView(ListView):
     # model = InterfaceCall
     context_object_name = 'uploads_list'
     template_name = 'rm/uploads_list.html'
+
     # ordering = ['-date_time_creation'] is done through DataTables in JavaScript (see custom.css)
 
     def get_queryset(self):

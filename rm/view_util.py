@@ -4,6 +4,7 @@ from typing import Dict, List
 from django.db.models.functions import Now
 from django.urls import reverse, NoReverseMatch
 
+from config import settings
 from rm.constants import CONTRACTEN, FileStatus
 from rm.interface_file_util import check_file_and_interface_type
 from rm.models import DataPerOrgUnit, DataSetType, InterfaceDefinition, InterfaceCall
@@ -249,3 +250,38 @@ def process_file(file, user, expected_system=None):
         return interface_call.id, "ERROR", ex.__str__()
 
     return interface_call.id, "OK", "File has been processed"
+
+
+def set_session_timeout_inactivity(request, minutes_timeout=5):
+    """
+    Sets the timeout of the session, defaults to 5 minutes.
+    When set to NEVER, it will NEVER expire.
+    """
+    if not minutes_timeout:
+        minutes_timeout = 20
+
+    if type(minutes_timeout) == str and minutes_timeout == 'NEVER':
+        logger.debug("Not setting session.set_expiry because setting is: NEVER")
+        return
+
+    if not type(minutes_timeout) == int:
+        minutes_timeout = 20
+
+    seconds_timeout = minutes_timeout * 60
+
+    logger.debug(f"Setting session.set_expiry to {seconds_timeout} seconds")
+    request.session.set_expiry(seconds_timeout)
+
+
+def get_minutes_timeout():
+    """
+    Gets the minutes_timeout from the settings.py or sets a default
+    """
+    try:
+        minutes_timeout = settings.SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY
+        logger.info(f"Found setting SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY: {minutes_timeout}")
+    except AttributeError:
+        minutes_timeout = 20
+        logger.warning(
+            f"Found NO setting SESSION_TIMEOUT_AFTER_MINUTES_INACTIVITY, using default: {minutes_timeout} minutes")
+    return minutes_timeout
