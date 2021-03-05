@@ -1,2 +1,6 @@
+# ignore al (hidden) files starting with . and ~
 .*
+~*
+
+# do add these files starting with .
 !.gitignore
